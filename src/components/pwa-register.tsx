@@ -1,0 +1,17 @@
+"use client";
+
+import { useEffect } from "react";
+
+export function PwaRegister() {
+  useEffect(() => {
+    if (!("serviceWorker" in navigator) || process.env.NODE_ENV !== "production") {
+      return;
+    }
+
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // A instalação do PWA não deve bloquear o carregamento do sistema.
+    });
+  }, []);
+
+  return null;
+}

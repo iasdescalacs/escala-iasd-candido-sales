@@ -1,0 +1,19 @@
+{
+  "name": "ESCALA IASD CANDIDO SALES",
+  "short_name": "Escala IASD",
+  "description": "Sistema web para organização de escalas da IASD Candido Sales.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f8f3",
+  "theme_color": "#2f6f56",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
