@@ -1,5 +1,7 @@
 import { hasSupabaseBrowserEnv } from "@/lib/supabase/env";
 
+export const dynamic = "force-dynamic";
+
 export default function SupabaseStatusPage() {
   const configurado = hasSupabaseBrowserEnv();
 

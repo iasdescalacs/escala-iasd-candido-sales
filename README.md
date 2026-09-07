@@ -19,12 +19,11 @@ Entregue até agora:
 - Tipagem inicial do banco em `src/types/database.ts`.
 - Página segura de status em `/status/supabase`.
 
-Pendente para concluir a conexão real:
+Conexão real:
 
-- Configurar `NEXT_PUBLIC_SUPABASE_URL`.
-- Configurar `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-- Publicar as variáveis na Vercel.
-- Confirmar o status configurado em produção.
+- `NEXT_PUBLIC_SUPABASE_URL` configurada localmente e na Vercel.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` configurada localmente e na Vercel.
+- Status de configuração confirmado pela rota `/status/supabase`.
 
 Funcionalidades de escala, autenticação e regras de negócio ainda não foram implementadas.
 
