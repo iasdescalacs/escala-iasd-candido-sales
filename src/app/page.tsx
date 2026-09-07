@@ -1,79 +1,102 @@
+import Link from "next/link";
+import { ArrowRight, CalendarCheck, ShieldCheck, Smartphone } from "lucide-react";
+
+const destaques = [
+  {
+    icon: CalendarCheck,
+    title: "Escalas organizadas",
+    description:
+      "Base preparada para evoluir as escalas de pregadores, música e equipes por igreja.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Acesso por perfil",
+    description:
+      "A autenticação será construída na próxima etapa, respeitando aprovação e permissões.",
+  },
+  {
+    icon: Smartphone,
+    title: "Pronto para PWA",
+    description:
+      "Manifest e service worker inicial já preparados para instalação e evolução offline segura.",
+  },
+];
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#f7f8f3]">
-      <section className="border-b border-[#d8ddcf] bg-white">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-8 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#2f6f56]">
-              Sistema web
-            </p>
-            <h1 className="mt-3 max-w-3xl text-4xl font-semibold text-[#20251f] sm:text-5xl">
-              ESCALA IASD CANDIDO SALES
-            </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-[#536052]">
-              Base inicial preparada para construir, etapa por etapa, a
-              organização de escalas da igreja com Next.js, TypeScript,
-              Tailwind CSS, Supabase e PWA.
-            </p>
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <section className="grid gap-8 py-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+            Sistema web
+          </p>
+          <h1 className="mt-4 max-w-3xl text-4xl font-semibold text-foreground sm:text-5xl lg:text-6xl">
+            ESCALA IASD CANDIDO SALES
+          </h1>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-muted sm:text-lg">
+            Estrutura inicial criada para organizar escalas da igreja com
+            Next.js, TypeScript, Tailwind CSS, Supabase e PWA desde a base.
+          </p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primary-strong focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+              href="/login"
+            >
+              Acessar login
+              <ArrowRight size={18} aria-hidden="true" />
+            </Link>
+            <Link
+              className="inline-flex h-11 items-center justify-center rounded-md border border-border bg-surface px-5 text-sm font-semibold text-foreground transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
+              href="/painel"
+            >
+              Ver painel provisório
+            </Link>
           </div>
-          <div className="grid min-w-64 grid-cols-2 gap-3 text-sm">
-            <StatusItem label="Frontend" value="Preparado" />
-            <StatusItem label="PWA" value="Preparado" />
-            <StatusItem label="Supabase" value="Aguardando env" />
-            <StatusItem label="Deploy" value="Em configuração" />
+        </div>
+
+        <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <StatusItem label="Projeto" value="Etapa 1" />
+            <StatusItem label="Tema" value="Claro e escuro" />
+            <StatusItem label="Menu" value="Responsivo" />
+            <StatusItem label="PWA" value="Inicial" />
           </div>
         </div>
       </section>
 
-      <section className="mx-auto grid w-full max-w-6xl gap-6 px-6 py-8 sm:px-8 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-lg border border-[#d8ddcf] bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-[#20251f]">
-            Etapa 1: fundação do projeto
-          </h2>
-          <p className="mt-3 leading-7 text-[#536052]">
-            Esta primeira entrega cria a estrutura profissional do sistema,
-            configura metadados, prepara o aplicativo instalável e deixa a
-            integração com Supabase pronta para receber as credenciais.
-          </p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {[
-              "Next.js com App Router",
-              "TypeScript em modo estrito",
-              "Tailwind CSS configurado",
-              "Manifest e service worker inicial",
-              "Cliente Supabase tipado",
-              "README em português",
-            ].map((item) => (
-              <div
-                className="rounded-md border border-[#e1e5dc] bg-[#fbfcf8] px-4 py-3 text-sm font-medium text-[#2e352d]"
-                key={item}
-              >
-                {item}
+      <section className="grid gap-4 py-8 md:grid-cols-3">
+        {destaques.map((item) => {
+          const Icon = item.icon;
+
+          return (
+            <article
+              className="rounded-lg border border-border bg-surface p-5 shadow-sm"
+              key={item.title}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-soft text-primary">
+                <Icon size={20} aria-hidden="true" />
               </div>
-            ))}
-          </div>
-        </div>
-
-        <aside className="rounded-lg border border-[#d8ddcf] bg-[#253d35] p-6 text-white shadow-sm">
-          <h2 className="text-lg font-semibold">Próximo passo</h2>
-          <p className="mt-3 leading-7 text-[#dce8df]">
-            Após confirmar o deploy inicial, a próxima etapa recomendada é
-            modelar as entidades principais no PostgreSQL: membros, funções,
-            equipes e escalas.
-          </p>
-        </aside>
+              <h2 className="mt-4 text-lg font-semibold text-foreground">
+                {item.title}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {item.description}
+              </p>
+            </article>
+          );
+        })}
       </section>
-    </main>
+    </div>
   );
 }
 
 function StatusItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[#d8ddcf] bg-[#fbfcf8] p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#66715f]">
+    <div className="rounded-md border border-border bg-surface-muted p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
         {label}
       </p>
-      <p className="mt-2 font-semibold text-[#20251f]">{value}</p>
+      <p className="mt-2 font-semibold text-foreground">{value}</p>
     </div>
   );
 }

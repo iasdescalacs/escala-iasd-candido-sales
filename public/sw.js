@@ -1,5 +1,5 @@
 const CACHE_NAME = "escala-iasd-candido-sales-v1";
-const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/icon.svg"];
+const APP_SHELL = ["/", "/login", "/painel", "/manifest.json", "/icons/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -25,6 +25,10 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
+    return;
+  }
+
+  if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
 

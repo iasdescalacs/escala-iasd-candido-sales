@@ -4,22 +4,23 @@ Sistema web para organização de escalas da IASD Candido Sales.
 
 ## Etapa Atual
 
-### Etapa 2: Conexão Supabase
+### Etapa 1: Estrutura Inicial do Projeto
 
-Entregue até agora:
+Entregue nesta etapa:
 
 - Projeto Next.js com App Router.
 - TypeScript em modo estrito.
 - Tailwind CSS configurado.
-- Preparação inicial de PWA com manifest, ícone e service worker.
-- Cliente Supabase preparado para usar PostgreSQL via variáveis de ambiente.
-- Interface inicial em português do Brasil.
-- Cliente Supabase para navegador usando `@supabase/ssr`.
-- Cliente Supabase para servidor usando cookies do App Router.
-- Tipagem inicial do banco em `src/types/database.ts`.
-- Página segura de status em `/status/supabase`.
+- Pastas organizadas em `src/app`, `src/components`, `src/lib` e `src/config`.
+- Layout principal com menu responsivo.
+- Tema claro e escuro com base visual no azul `#2E6DE7`.
+- Página inicial.
+- Páginas provisórias de login e painel, sem autenticação.
+- Preparação inicial de PWA com `manifest.json`, ícone e service worker.
+- `.env.example` para variáveis públicas do Supabase.
+- README com instalação, execução local e estrutura do projeto.
 
-Conexão real:
+Também preservado da preparação anterior:
 
 - `NEXT_PUBLIC_SUPABASE_URL` configurada localmente e na Vercel.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` configurada localmente e na Vercel.
@@ -64,6 +65,27 @@ Verifique a conexão local:
 
 ```text
 http://localhost:3000/status/supabase
+```
+
+## Estrutura do Projeto
+
+```text
+src/
+  app/
+    login/
+    painel/
+    status/supabase/
+    globals.css
+    layout.tsx
+    page.tsx
+  components/
+  config/
+  lib/
+  types/
+public/
+  icons/
+  manifest.json
+  sw.js
 ```
 
 ## Scripts
