@@ -4,9 +4,9 @@ Sistema web para organização de escalas da IASD Candido Sales.
 
 ## Etapa Atual
 
-### Etapa 1: Fundação do Projeto
+### Etapa 2: Conexão Supabase
 
-Entregue nesta etapa:
+Entregue até agora:
 
 - Projeto Next.js com App Router.
 - TypeScript em modo estrito.
@@ -14,6 +14,17 @@ Entregue nesta etapa:
 - Preparação inicial de PWA com manifest, ícone e service worker.
 - Cliente Supabase preparado para usar PostgreSQL via variáveis de ambiente.
 - Interface inicial em português do Brasil.
+- Cliente Supabase para navegador usando `@supabase/ssr`.
+- Cliente Supabase para servidor usando cookies do App Router.
+- Tipagem inicial do banco em `src/types/database.ts`.
+- Página segura de status em `/status/supabase`.
+
+Pendente para concluir a conexão real:
+
+- Configurar `NEXT_PUBLIC_SUPABASE_URL`.
+- Configurar `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Publicar as variáveis na Vercel.
+- Confirmar o status configurado em produção.
 
 Funcionalidades de escala, autenticação e regras de negócio ainda não foram implementadas.
 
@@ -36,6 +47,8 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
+Use somente a chave pública `anon`/`publishable` no front-end. Nunca use a `service_role key` no navegador.
+
 Instale as dependências:
 
 ```bash
@@ -46,6 +59,12 @@ Execute em desenvolvimento:
 
 ```bash
 npm run dev
+```
+
+Verifique a conexão local:
+
+```text
+http://localhost:3000/status/supabase
 ```
 
 ## Scripts
