@@ -113,3 +113,20 @@ https://www.escalaiasd.com.br
   - domínio principal;
   - domínio `www`;
   - domínio `vercel.app`.
+
+## Regras de Autenticação e Acesso
+
+- Usuário novo deve ficar aguardando aprovação.
+- Usuário bloqueado não pode acessar o sistema.
+- Usuário inativo não pode acessar o sistema.
+- Uma pessoa pode ter várias funções na mesma conta, como Ancião, Líder de Música, Cantor e Pregador.
+- Administrador pode gerenciar todo o sistema.
+- Ancião gerencia pregadores das igrejas vinculadas e pregadores que marcaram disponibilidade para serem escalados naquela igreja.
+- Líder de música gerencia cantores e grupos das igrejas vinculadas e cantores que marcaram disponibilidade para serem escalados naquela igreja.
+- Pregador acessa sua disponibilidade e agenda, podendo marcar outras igrejas onde aceita ser escalado.
+- Cantor acessa sua disponibilidade e agenda, podendo marcar outras igrejas onde aceita ser escalado.
+- O sistema não deve permitir acesso indevido por alteração direta de URL.
+- Menus protegidos só devem aparecer para usuário logado e aprovado.
+- Usuário não logado vê apenas início, login e cadastro.
+- Logout deve estar sempre visível para usuário logado.
+- Deve existir uma ação administrativa para limpar o banco de dados e manter somente o usuário Admin.
