@@ -4,7 +4,7 @@ Sistema web para organização de escalas da IASD Candido Sales.
 
 ## Etapa Atual
 
-### Etapa 3: Supabase
+### Etapa 4: Banco inicial
 
 Entregue nesta etapa:
 
@@ -29,6 +29,15 @@ Entregue nesta etapa:
 - Cliente admin Supabase somente servidor, usando `SUPABASE_SERVICE_ROLE_KEY`.
 - Variáveis `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `NEXT_PUBLIC_SITE_URL` configuradas localmente e na Vercel.
 - `.env.example` atualizado sem valores reais.
+- Migration inicial do banco em `supabase/migrations/20260907162000_initial_schema.sql`.
+- Tabelas iniciais para usuarios, perfis/funcoes, igrejas, vinculos entre usuarios e igrejas, historico, configuracoes e notificacoes basicas.
+- UUIDs, `created_at`, `updated_at`, `deleted_at`, indices, foreign keys e constraints basicas.
+- RLS ativado e forcado nas tabelas iniciais.
+- Politicas minimas para usuario autenticado, usuario aprovado, destinatario de notificacao e administrador.
+- Dados ficticios de teste em `supabase/seed.sql`.
+- Scripts manuais de recuperacao/admin em `supabase/manual/`.
+- Tipos TypeScript iniciais do banco em `src/types/database.ts`.
+- Arquivo de validacao local em `supabase/tests/validate_initial_schema.sql`.
 
 Também preservado da preparação anterior:
 
@@ -40,6 +49,7 @@ Pendente nesta etapa:
 
 - Configurar `SUPABASE_SERVICE_ROLE_KEY` localmente e na Vercel.
 - Confirmar conexão inicial com o host Supabase informado.
+- Aplicar as migrations no projeto Supabase remoto depois que a conexao do projeto estiver disponivel.
 
 Funcionalidades de escala, autenticação e regras de negócio ainda não foram implementadas.
 
@@ -105,6 +115,12 @@ public/
   icons/
   manifest.json
   sw.js
+supabase/
+  config.toml
+  migrations/
+  manual/
+  tests/
+  seed.sql
 ```
 
 ## Scripts
@@ -114,6 +130,70 @@ npm run lint
 npm run typecheck
 npm run build
 ```
+
+## Banco de Dados
+
+A estrutura inicial do banco fica em:
+
+```text
+supabase/migrations/20260907162000_initial_schema.sql
+```
+
+Ela cria:
+
+- `users`
+- `roles`
+- `churches`
+- `user_roles`
+- `user_church_links`
+- `history`
+- `settings`
+- `notifications`
+
+O seed de teste fica em:
+
+```text
+supabase/seed.sql
+```
+
+Os scripts manuais de administracao e recuperacao ficam em:
+
+```text
+supabase/manual/
+```
+
+### Validar Migrations
+
+Com Docker e Supabase CLI disponiveis:
+
+```bash
+supabase db reset
+```
+
+Para validar em PostgreSQL puro via `psql`:
+
+```bash
+docker run --rm -e POSTGRES_PASSWORD=postgres -v "$PWD/supabase:/supabase" postgres:16 \
+  psql -v ON_ERROR_STOP=1 -U postgres -f /supabase/tests/validate_initial_schema.sql
+```
+
+Nesta maquina, o Docker estava instalado, mas o daemon nao estava em execucao. Por isso a Etapa 4 tambem foi validada com PostgreSQL em WebAssembly, removendo apenas as linhas de extensoes `pgcrypto` e `citext` por limitacao do validador local. O resultado validou:
+
+- 8 tabelas com RLS e `force row level security`.
+- 11 politicas.
+- 8 foreign keys.
+- 4 usuarios ficticios do seed.
+
+### Aplicar no Supabase Remoto
+
+Depois de confirmar `SUPABASE_SERVICE_ROLE_KEY` e a conexao com o projeto Supabase:
+
+```bash
+supabase link --project-ref xypgaqmzunmdbxadvfhp
+supabase db push
+```
+
+Nao aplique `supabase/seed.sql` em producao sem revisar os dados ficticios.
 
 ## Deploy
 
