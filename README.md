@@ -130,3 +130,38 @@ https://www.escalaiasd.com.br
 - Usuário não logado vê apenas início, login e cadastro.
 - Logout deve estar sempre visível para usuário logado.
 - Deve existir uma ação administrativa para limpar o banco de dados e manter somente o usuário Admin.
+
+## Regras de Interface
+
+- Toda a interface deve usar português do Brasil.
+- O layout deve ser responsivo desde a primeira etapa para celular, tablet e computador.
+- O menu deve funcionar bem em celular, tablet e computador.
+- O menu não pode causar barra de rolagem horizontal.
+- Inputs devem ocupar espaço de forma eficiente, usando colunas quando houver espaço disponível.
+- Evitar formulários muito longos em uma única coluna quando houver espaço para organização lateral.
+- Usar tema claro e escuro.
+- A referência visual de cores deve seguir o site da ACMS (`https://www.acmsnet.org/`), com azul principal `#2E6DE7`, branco e neutros claros como base.
+- Garantir contraste adequado em textos, botões, menus e estados.
+- Botões importantes devem ter estados de carregamento.
+- Ações destrutivas devem pedir confirmação antes da execução.
+- Campos de senha devem ter botão para mostrar ou ocultar a senha.
+- Campos de telefone devem usar máscara.
+- Nomes devem ser formatados com inicial maiúscula por palavra.
+- Textos em calendários não podem ultrapassar o quadrado do dia.
+- Cards devem ser organizados por importância.
+- O painel deve mostrar informações úteis ao perfil logado.
+
+## Regras de PWA
+
+- Criar manifest completo.
+- Criar service worker.
+- Não cachear dados pessoais sensíveis.
+- Permitir instalação no Android.
+- Explicar instalação no iPhone via Safari.
+- O botão de instalar deve poder ser fechado.
+- A pergunta de instalação pode aparecer novamente ao abrir o site.
+- Notificação de ativar push deve ter botão fechar.
+- Avisar quando o usuário estiver offline.
+- Permitir consulta offline apenas de dados já carregados e seguros.
+- Sincronizar quando a internet voltar.
+- Atualizar service worker com segurança.
