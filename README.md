@@ -65,3 +65,33 @@ Domínio futuro planejado:
 ```text
 https://www.escalaiasd.com.br
 ```
+
+## Regras de Trabalho
+
+- Trabalhar sempre por etapas e implementar somente a etapa solicitada.
+- Não avançar para a próxima etapa sem autorização.
+- Antes de alterar arquivos, examinar o projeto existente, incluindo `README.md`, `AGENTS.md` e `package.json`.
+- Preservar funcionalidades existentes e seguir os padrões já usados no código.
+- Usar TypeScript com tipagem clara e interface em português do Brasil.
+- Manter o sistema responsivo para celular, tablet e computador.
+- Não expor dados sensíveis no front-end e nunca usar `service_role` key no navegador.
+- Usar variáveis de ambiente para chaves e URLs.
+- Atualizar este README sempre que criar ou alterar funcionalidades.
+- Executar testes antes de concluir e corrigir erros encontrados.
+- Fazer commits pequenos e descritivos ao final de cada etapa.
+- Publicar no Vercel ao final de cada etapa e confirmar status `Ready`.
+
+## Regras de Git, GitHub e Vercel
+
+- Configurar o Git com o e-mail real vinculado ao GitHub.
+- Verificar `git status` antes de commitar.
+- Não usar `git reset --hard`.
+- Não apagar alterações do usuário sem autorização.
+- Depois do commit, enviar para o GitHub.
+- Depois do push, publicar ou confirmar deploy na Vercel.
+- Se o deploy falhar, verificar logs antes de tentar novamente.
+- Se a Vercel bloquear o deploy por e-mail, corrigir `user.email` e refazer o commit.
+- Sempre confirmar aliases de produção:
+  - domínio principal;
+  - domínio `www`;
+  - domínio `vercel.app`.
