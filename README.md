@@ -4,7 +4,7 @@ Sistema web para organização de escalas da IASD Candido Sales.
 
 ## Etapa Atual
 
-### Etapa 1: Estrutura Inicial do Projeto
+### Etapa 2: GitHub e Vercel
 
 Entregue nesta etapa:
 
@@ -19,6 +19,11 @@ Entregue nesta etapa:
 - Preparação inicial de PWA com `manifest.json`, ícone e service worker.
 - `.env.example` para variáveis públicas do Supabase.
 - README com instalação, execução local e estrutura do projeto.
+- Git configurado com `user.name=iasdescalacs`.
+- Git configurado com `user.email=iasdescalacs@gmail.com`.
+- Repositório GitHub conectado em `origin`.
+- Branch `main` criada e enviada para o GitHub.
+- Projeto Vercel conectado localmente pela CLI.
 
 Também preservado da preparação anterior:
 
@@ -105,6 +110,61 @@ Domínio futuro planejado:
 ```text
 https://www.escalaiasd.com.br
 ```
+
+### Como Publicar
+
+Antes de publicar, confira o estado do Git:
+
+```bash
+git status
+```
+
+Execute as verificações disponíveis:
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Faça commit pequeno e descritivo:
+
+```bash
+git add .
+git commit -m "tipo: descricao curta"
+```
+
+Envie para o GitHub:
+
+```bash
+git push
+```
+
+Publique manualmente na Vercel quando necessário:
+
+```bash
+npx vercel --prod --yes
+```
+
+Confirme o status do deploy:
+
+```bash
+npx vercel inspect https://escala-iasd-candido-sales-two.vercel.app
+```
+
+### Deploy Automático
+
+A branch principal do projeto é `main`.
+
+O deploy automático da branch `main` deve ser habilitado conectando o projeto Vercel ao repositório GitHub `iasdescalacs/escala-iasd-candido-sales`.
+
+Status atual:
+
+- Branch `main` enviada para o GitHub.
+- Projeto Vercel vinculado localmente.
+- Conexão GitHub -> Vercel pendente porque a conta Vercel precisa adicionar uma Login Connection com GitHub.
+
+Depois de conectar GitHub na Vercel, cada push na branch `main` deve gerar um deploy automático.
 
 ## Regras de Trabalho
 
