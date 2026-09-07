@@ -1,9 +1,9 @@
-import { hasSupabaseBrowserEnv } from "@/lib/supabase/env";
+import { getSupabaseConnectionStatus } from "@/lib/supabase/status";
 
 export const dynamic = "force-dynamic";
 
-export default function SupabaseStatusPage() {
-  const configurado = hasSupabaseBrowserEnv();
+export default async function SupabaseStatusPage() {
+  const status = await getSupabaseConnectionStatus();
 
   return (
     <div className="px-4 py-8 sm:px-6 lg:px-8">
@@ -21,22 +21,68 @@ export default function SupabaseStatusPage() {
                 Variáveis de ambiente
               </h2>
               <p className="mt-2 leading-7 text-muted">
-                O sistema verifica somente se a URL e a chave pública foram
-                configuradas. Nenhum valor sensível é exibido nesta tela.
+                O sistema verifica variáveis públicas, variável administrativa
+                de servidor e uma chamada inicial ao Supabase. Nenhum valor
+                sensível é exibido nesta tela.
               </p>
             </div>
             <span
               className={`inline-flex rounded-md px-3 py-2 text-sm font-semibold ${
-                configurado
+                status.connectionOk
                   ? "bg-primary-soft text-primary-strong"
                   : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/35 dark:text-yellow-200"
               }`}
             >
-              {configurado ? "Configurado" : "Pendente"}
+              {status.connectionOk ? "Conectado" : "Pendente"}
             </span>
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <StatusItem
+              label="Browser"
+              ok={status.browserEnvConfigured}
+              text="URL e chave pública"
+            />
+            <StatusItem
+              label="Admin"
+              ok={status.adminEnvConfigured}
+              text="Service role somente no servidor"
+            />
+            <StatusItem
+              label="Site"
+              ok={status.siteEnvConfigured}
+              text="URL pública do sistema"
+            />
+            <StatusItem
+              label="Conexão"
+              ok={status.connectionOk}
+              text={status.message}
+            />
           </div>
         </section>
       </div>
+    </div>
+  );
+}
+
+function StatusItem({
+  label,
+  ok,
+  text,
+}: {
+  label: string;
+  ok: boolean;
+  text: string;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-surface-muted p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+        {label}
+      </p>
+      <p className="mt-2 font-semibold text-foreground">
+        {ok ? "Configurado" : "Pendente"}
+      </p>
+      <p className="mt-1 text-sm leading-6 text-muted">{text}</p>
     </div>
   );
 }

@@ -4,7 +4,7 @@ Sistema web para organização de escalas da IASD Candido Sales.
 
 ## Etapa Atual
 
-### Etapa 2: GitHub e Vercel
+### Etapa 3: Supabase
 
 Entregue nesta etapa:
 
@@ -24,12 +24,22 @@ Entregue nesta etapa:
 - Repositório GitHub conectado em `origin`.
 - Branch `main` criada e enviada para o GitHub.
 - Projeto Vercel conectado localmente pela CLI.
+- Cliente Supabase para browser.
+- Cliente Supabase para server.
+- Cliente admin Supabase somente servidor, usando `SUPABASE_SERVICE_ROLE_KEY`.
+- Variáveis `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `NEXT_PUBLIC_SITE_URL` configuradas localmente e na Vercel.
+- `.env.example` atualizado sem valores reais.
 
 Também preservado da preparação anterior:
 
 - `NEXT_PUBLIC_SUPABASE_URL` configurada localmente e na Vercel.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` configurada localmente e na Vercel.
 - Status de configuração confirmado pela rota `/status/supabase`.
+
+Pendente nesta etapa:
+
+- Configurar `SUPABASE_SERVICE_ROLE_KEY` localmente e na Vercel.
+- Confirmar conexão inicial com o host Supabase informado.
 
 Funcionalidades de escala, autenticação e regras de negócio ainda não foram implementadas.
 
@@ -50,9 +60,11 @@ Crie um arquivo `.env.local` com base em `.env.example`:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_SITE_URL=
 ```
 
-Use somente a chave pública `anon`/`publishable` no front-end. Nunca use a `service_role key` no navegador.
+Use somente a chave pública `anon`/`publishable` no front-end. A `SUPABASE_SERVICE_ROLE_KEY` deve existir apenas no servidor e na Vercel como variável secreta.
 
 Instale as dependências:
 
@@ -71,6 +83,8 @@ Verifique a conexão local:
 ```text
 http://localhost:3000/status/supabase
 ```
+
+Essa página não exibe valores de chaves. Ela mostra apenas se as variáveis estão configuradas e se a chamada inicial ao Supabase respondeu.
 
 ## Estrutura do Projeto
 
