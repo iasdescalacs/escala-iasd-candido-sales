@@ -46,6 +46,7 @@ Entregue até esta etapa:
 - Admin pode criar usuários já vinculados a uma função e igreja.
 - Cadastro público permite escolher tipo de usuário e igreja onde é membro.
 - Login usa apenas e-mail e senha.
+- Formulários exibem sucesso e erro em uma pequena janela de aviso flutuante com opção de fechar.
 - Tipo de usuário/função é escolhido no cadastro público ou definido pelo administrador ao criar usuários.
 - Menu `Status Supabase` aparece somente para administrador.
 - Página administrativa de cultos em `/admin/cultos`.
