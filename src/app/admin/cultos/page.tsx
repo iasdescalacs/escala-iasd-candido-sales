@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { SpecialWorshipForm } from "@/components/admin/special-worship-form";
 import { WorshipGenerationForm } from "@/components/admin/worship-generation-form";
+import { getChurchOptions } from "@/lib/admin/lookups";
 import { requireAdminUser } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import {
   buildCalendarDays,
   getAdjacentMonth,
   getMonthName,
+  getSpecialWorshipLabel,
   getTemplateLabel,
   type WorshipServiceType,
+  type WorshipSpecialType,
 } from "@/lib/cultos/schedule";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -22,6 +26,9 @@ type WorshipServiceRow = {
   end_time: string;
   preacher_name: string | null;
   singer_name: string | null;
+  is_special: boolean;
+  special_type: WorshipSpecialType | null;
+  title: string | null;
 };
 
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -47,7 +54,7 @@ export default async function AdminCultosPage({
   const next = getAdjacentMonth(viewYear, viewMonth, 1);
   const calendarDays = buildCalendarDays(viewYear, viewMonth);
   const supabase = createAdminSupabaseClient();
-  const [{ data: churches }, { data: services }] = await Promise.all([
+  const [{ data: churches }, { data: services }, churchOptions] = await Promise.all([
     supabase
       .from("churches")
       .select("id,name")
@@ -55,12 +62,13 @@ export default async function AdminCultosPage({
       .order("name", { ascending: true }),
     supabase
       .from("worship_services")
-      .select("id,church_id,service_date,service_type,start_time,end_time,preacher_name,singer_name")
+      .select("id,church_id,service_date,service_type,start_time,end_time,preacher_name,singer_name,is_special,special_type,title")
       .gte("service_date", monthStart)
       .lte("service_date", monthEnd)
       .is("deleted_at", null)
       .order("service_date", { ascending: true })
       .order("start_time", { ascending: true }),
+    getChurchOptions(),
   ]);
   const churchNames = new Map(
     (churches ?? []).map((church) => [church.id, church.name]),
@@ -88,6 +96,13 @@ export default async function AdminCultosPage({
           Gerar cultos
         </h2>
         <WorshipGenerationForm defaultMonth={viewMonth} defaultYear={viewYear} />
+      </section>
+
+      <section className="mt-6">
+        <h2 className="mb-3 text-lg font-semibold text-foreground">
+          Criar culto especial
+        </h2>
+        <SpecialWorshipForm churches={churchOptions} defaultDate={monthStart} />
       </section>
 
       <section className="mt-6 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
@@ -151,8 +166,16 @@ export default async function AdminCultosPage({
                       key={service.id}
                     >
                       <p className="truncate font-semibold text-primary-strong">
-                        {formatTime(service.start_time)} {getTemplateLabel(service.service_type)}
+                        {formatTime(service.start_time)}{" "}
+                        {service.is_special
+                          ? getSpecialWorshipLabel(service.special_type)
+                          : getTemplateLabel(service.service_type)}
                       </p>
+                      {service.is_special ? (
+                        <p className="truncate font-semibold">
+                          {service.title ?? "Culto especial"}
+                        </p>
+                      ) : null}
                       <p className="truncate">
                         {churchNames.get(service.church_id) ?? "Igreja"}
                       </p>

@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildCalendarDays,
+  buildSpecialWorshipOccurrences,
   buildWorshipOccurrences,
+  validateSpecialWorshipRange,
   validateMonthRange,
 } from "../../src/lib/cultos/schedule.ts";
 
@@ -51,4 +53,44 @@ test("calendario mensal preenche semanas completas", () => {
   assert.equal(days.length % 7, 0);
   assert.equal(days.some((day) => day.date === "2026-09-01"), true);
   assert.equal(days.some((day) => day.date === "2026-09-30"), true);
+});
+
+test("cria cultos especiais em todos os dias do periodo", () => {
+  const occurrences = buildSpecialWorshipOccurrences({
+    title: "Semana de Oração Jovem",
+    specialType: "semana_oracao",
+    startDate: "2026-09-14",
+    endDate: "2026-09-18",
+    startTime: "19:45",
+    endTime: "21:00",
+  });
+
+  assert.equal(occurrences.length, 5);
+  assert.equal(occurrences[0].serviceDate, "2026-09-14");
+  assert.equal(occurrences[4].serviceDate, "2026-09-18");
+});
+
+test("valida periodo e horario de culto especial", () => {
+  assert.equal(
+    validateSpecialWorshipRange({
+      title: "Culto de Gratidão",
+      specialType: "culto_gratidao",
+      startDate: "2026-09-20",
+      endDate: "2026-09-20",
+      startTime: "19:45",
+      endTime: "21:00",
+    }),
+    null,
+  );
+  assert.equal(
+    validateSpecialWorshipRange({
+      title: "Culto da Virada",
+      specialType: "culto_virada",
+      startDate: "2026-12-31",
+      endDate: "2026-12-31",
+      startTime: "21:00",
+      endTime: "19:45",
+    }),
+    "O horário de término deve ser posterior ao início.",
+  );
 });

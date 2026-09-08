@@ -1,7 +1,13 @@
-export type WorshipServiceType = "quarta" | "sabado" | "domingo";
+export type WorshipServiceType = "quarta" | "sabado" | "domingo" | "especial";
+export type WorshipSpecialType =
+  | "semana_oracao"
+  | "mini_semana_oracao"
+  | "culto_gratidao"
+  | "culto_virada"
+  | "outro";
 
 export type WorshipTemplate = {
-  type: WorshipServiceType;
+  type: Exclude<WorshipServiceType, "especial">;
   weekday: number;
   label: string;
   startTime: string;
@@ -13,6 +19,14 @@ export type WorshipOccurrence = {
   serviceType: WorshipServiceType;
   startTime: string;
   endTime: string;
+};
+
+export type SpecialWorshipOccurrence = {
+  serviceDate: string;
+  startTime: string;
+  endTime: string;
+  title: string;
+  specialType: WorshipSpecialType;
 };
 
 export type CalendarDay = {
@@ -43,6 +57,17 @@ export const worshipTemplates: WorshipTemplate[] = [
     startTime: "08:45",
     endTime: "12:00",
   },
+];
+
+export const specialWorshipOptions: Array<{
+  value: WorshipSpecialType;
+  label: string;
+}> = [
+  { value: "semana_oracao", label: "Semana de Oração" },
+  { value: "mini_semana_oracao", label: "Mini Semana de Oração" },
+  { value: "culto_gratidao", label: "Culto de Gratidão" },
+  { value: "culto_virada", label: "Culto da Virada" },
+  { value: "outro", label: "Outro culto especial" },
 ];
 
 export function validateMonthRange({
@@ -113,6 +138,98 @@ export function buildWorshipOccurrences({
   return occurrences;
 }
 
+export function validateSpecialWorshipRange({
+  title,
+  specialType,
+  startDate,
+  endDate,
+  startTime,
+  endTime,
+}: {
+  title: string;
+  specialType: string;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+}) {
+  if (!title.trim()) {
+    return "Informe o nome do culto especial.";
+  }
+
+  if (!isSpecialWorshipType(specialType)) {
+    return "Escolha um tipo de culto especial válido.";
+  }
+
+  if (!isDateKey(startDate) || !isDateKey(endDate)) {
+    return "Informe datas válidas.";
+  }
+
+  if (endDate < startDate) {
+    return "A data final deve ser igual ou posterior à data inicial.";
+  }
+
+  if (!isTimeValue(startTime) || !isTimeValue(endTime)) {
+    return "Informe horários válidos.";
+  }
+
+  if (endTime <= startTime) {
+    return "O horário de término deve ser posterior ao início.";
+  }
+
+  if (countDaysInclusive(startDate, endDate) > 31) {
+    return "Cultos especiais podem ter no máximo 31 dias por criação.";
+  }
+
+  return null;
+}
+
+export function buildSpecialWorshipOccurrences({
+  title,
+  specialType,
+  startDate,
+  endDate,
+  startTime,
+  endTime,
+}: {
+  title: string;
+  specialType: WorshipSpecialType;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+}) {
+  const validationError = validateSpecialWorshipRange({
+    title,
+    specialType,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+  });
+
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const occurrences: SpecialWorshipOccurrence[] = [];
+  const current = parseDateKey(startDate);
+  const finalDate = parseDateKey(endDate);
+
+  while (current <= finalDate) {
+    occurrences.push({
+      serviceDate: toDateInputValue(current),
+      specialType,
+      title: title.trim(),
+      startTime,
+      endTime,
+    });
+    current.setUTCDate(current.getUTCDate() + 1);
+  }
+
+  return occurrences;
+}
+
 export function buildCalendarDays(year: number, month: number): CalendarDay[] {
   if (!Number.isInteger(year) || !isValidMonth(month)) {
     return [];
@@ -170,11 +287,51 @@ export function getMonthName(month: number) {
 }
 
 export function getTemplateLabel(type: WorshipServiceType) {
+  if (type === "especial") {
+    return "Especial";
+  }
+
   return worshipTemplates.find((template) => template.type === type)?.label ?? type;
+}
+
+export function getSpecialWorshipLabel(type: WorshipSpecialType | string | null) {
+  return (
+    specialWorshipOptions.find((option) => option.value === type)?.label ??
+    "Culto especial"
+  );
 }
 
 function isValidMonth(month: number) {
   return Number.isInteger(month) && month >= 1 && month <= 12;
+}
+
+function isSpecialWorshipType(value: string): value is WorshipSpecialType {
+  return specialWorshipOptions.some((option) => option.value === value);
+}
+
+function isDateKey(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  return toDateInputValue(parseDateKey(value)) === value;
+}
+
+function isTimeValue(value: string) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function countDaysInclusive(startDate: string, endDate: string) {
+  const start = parseDateKey(startDate).getTime();
+  const end = parseDateKey(endDate).getTime();
+  const oneDay = 24 * 60 * 60 * 1000;
+
+  return Math.floor((end - start) / oneDay) + 1;
+}
+
+function parseDateKey(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
 }
 
 function formatDateKey(year: number, month: number, day: number) {

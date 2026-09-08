@@ -6,8 +6,11 @@ import { requireAdminUser } from "@/lib/auth/session";
 import type { AuthActionState } from "@/lib/auth/actions";
 import type { Database } from "@/types/database";
 import {
+  buildSpecialWorshipOccurrences,
   buildWorshipOccurrences,
+  validateSpecialWorshipRange,
   validateMonthRange,
+  type WorshipSpecialType,
 } from "./schedule";
 
 type WorshipServiceInsert =
@@ -106,7 +109,120 @@ export async function generateWorshipServicesAction(
   };
 }
 
+export async function createSpecialWorshipServicesAction(
+  _state: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  await requireAdminUser();
+
+  const churchId = readString(formData, "churchId");
+  const title = readString(formData, "title");
+  const specialType = readString(formData, "specialType");
+  const startDate = readString(formData, "startDate");
+  const endDate = readString(formData, "endDate") || startDate;
+  const startTime = readString(formData, "startTime") || "19:45";
+  const endTime = readString(formData, "endTime") || "21:00";
+
+  if (!churchId) {
+    return { message: "Selecione a igreja do culto especial." };
+  }
+
+  const validationError = validateSpecialWorshipRange({
+    title,
+    specialType,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+  });
+
+  if (validationError) {
+    return { message: validationError };
+  }
+
+  const supabase = createAdminSupabaseClient();
+  const { data: church } = await supabase
+    .from("churches")
+    .select("id")
+    .eq("id", churchId)
+    .eq("active", true)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!church) {
+    return { message: "Igreja ativa não localizada." };
+  }
+
+  const occurrences = buildSpecialWorshipOccurrences({
+    title,
+    specialType: specialType as WorshipSpecialType,
+    startDate,
+    endDate,
+    startTime,
+    endTime,
+  });
+  const { data: existingServices, error: existingError } = await supabase
+    .from("worship_services")
+    .select("service_date,start_time,title")
+    .eq("church_id", churchId)
+    .eq("service_type", "especial")
+    .gte("service_date", startDate)
+    .lte("service_date", endDate)
+    .is("deleted_at", null);
+
+  if (existingError) {
+    return { message: "Não foi possível verificar cultos especiais existentes." };
+  }
+
+  const existingKeys = new Set(
+    (existingServices ?? []).map(
+      (service) => `${service.service_date}:${formatTime(service.start_time)}:${service.title}`,
+    ),
+  );
+  const rows: WorshipServiceInsert[] = occurrences
+    .filter(
+      (occurrence) =>
+        !existingKeys.has(
+          `${occurrence.serviceDate}:${occurrence.startTime}:${occurrence.title}`,
+        ),
+    )
+    .map((occurrence) => ({
+      church_id: churchId,
+      service_date: occurrence.serviceDate,
+      service_type: "especial",
+      special_type: occurrence.specialType,
+      is_special: true,
+      title: occurrence.title,
+      start_time: occurrence.startTime,
+      end_time: occurrence.endTime,
+    }));
+
+  if (rows.length === 0) {
+    return {
+      ok: true,
+      message: "Esse culto especial já estava criado para o período informado.",
+    };
+  }
+
+  const { error: insertError } = await supabase.from("worship_services").insert(rows);
+
+  if (insertError) {
+    return { message: "Não foi possível criar o culto especial." };
+  }
+
+  revalidatePath("/admin/cultos");
+
+  return {
+    ok: true,
+    message: `${rows.length} culto(s) especial(is) criado(s) com sucesso.`,
+  };
+}
+
 function readString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function formatTime(value: string) {
+  return value.slice(0, 5);
 }

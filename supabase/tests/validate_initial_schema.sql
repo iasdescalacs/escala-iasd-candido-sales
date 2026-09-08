@@ -38,6 +38,8 @@ $$;
 \i /supabase/migrations/20260908013500_allow_manual_admin_recovery.sql
 \i /supabase/migrations/20260908021500_seed_default_roles.sql
 \i /supabase/migrations/20260908033000_create_worship_services.sql
+\i /supabase/migrations/20260908043000_add_special_worship_services.sql
+\i /supabase/migrations/20260908043100_adjust_special_worship_uniqueness.sql
 \i /supabase/seed.sql
 
 do $$

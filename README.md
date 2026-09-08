@@ -48,6 +48,8 @@ Entregue até esta etapa:
 - Cultos padrão gerados: quarta-feira das 19:45 às 21:00, sábado das 08:45 às 12:00 e domingo das 19:45 às 21:00.
 - Calendário mensal de cultos com navegação para mês anterior e próximo mês.
 - Cada culto exibe igreja, horário, pregador e cantor/grupo, mantendo pregador e música como `A definir` nesta etapa.
+- Admin pode criar cultos especiais para uma igreja selecionada, como Semana de Oração, Mini Semana de Oração, Culto de Gratidão e Culto da Virada.
+- Cultos especiais podem ter uma data única ou um período de vários dias.
 - Testes de permissões em `tests/auth/access-rules.test.mjs`.
 - Testes de geração de cultos em `tests/cultos/schedule.test.mjs`.
 
@@ -165,6 +167,7 @@ Fluxo inicial:
 - Administrador também pode criar usuários em `/admin/usuarios`, definindo função, igreja, status e senha inicial.
 - Administrador cadastra igrejas em `/admin/igrejas` antes de liberar cadastros públicos vinculados.
 - Administrador gera cultos mensais em `/admin/cultos` para todas as igrejas ativas.
+- Administrador cria cultos especiais em `/admin/cultos`, vinculando o culto a uma igreja específica.
 - O tipo de usuário é escolhido no cadastro público e validado pelo vínculo salvo no banco.
 - Usuários `blocked` ou `inactive` não acessam o sistema.
 - Rotas protegidas redirecionam usuário sem permissão para `/login`.
@@ -189,6 +192,8 @@ supabase/migrations/20260907173000_auth_access_policies.sql
 supabase/migrations/20260908013500_allow_manual_admin_recovery.sql
 supabase/migrations/20260908021500_seed_default_roles.sql
 supabase/migrations/20260908033000_create_worship_services.sql
+supabase/migrations/20260908043000_add_special_worship_services.sql
+supabase/migrations/20260908043100_adjust_special_worship_uniqueness.sql
 ```
 
 Tabelas iniciais:

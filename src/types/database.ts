@@ -296,6 +296,9 @@ export type Database = {
           singer_user_id: Nullable<string>;
           preacher_name: Nullable<string>;
           singer_name: Nullable<string>;
+          is_special: boolean;
+          special_type: Nullable<Database["public"]["Enums"]["worship_special_type"]>;
+          title: Nullable<string>;
           notes: Nullable<string>;
           created_at: string;
           updated_at: string;
@@ -312,6 +315,9 @@ export type Database = {
           singer_user_id?: Nullable<string>;
           preacher_name?: Nullable<string>;
           singer_name?: Nullable<string>;
+          is_special?: boolean;
+          special_type?: Nullable<Database["public"]["Enums"]["worship_special_type"]>;
+          title?: Nullable<string>;
           notes?: Nullable<string>;
           created_at?: string;
           updated_at?: string;
@@ -328,6 +334,9 @@ export type Database = {
           singer_user_id?: Nullable<string>;
           preacher_name?: Nullable<string>;
           singer_name?: Nullable<string>;
+          is_special?: boolean;
+          special_type?: Nullable<Database["public"]["Enums"]["worship_special_type"]>;
+          title?: Nullable<string>;
           notes?: Nullable<string>;
           created_at?: string;
           updated_at?: string;
@@ -355,7 +364,13 @@ export type Database = {
       user_status: "pending" | "approved" | "blocked" | "inactive";
       role_key: "admin" | "anciao" | "lider_musica" | "pregador" | "cantor";
       notification_status: "unread" | "read" | "archived";
-      worship_service_type: "quarta" | "sabado" | "domingo";
+      worship_service_type: "quarta" | "sabado" | "domingo" | "especial";
+      worship_special_type:
+        | "semana_oracao"
+        | "mini_semana_oracao"
+        | "culto_gratidao"
+        | "culto_virada"
+        | "outro";
     };
     CompositeTypes: Record<string, never>;
   };
