@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getSiteUrl, hasSupabaseServerEnv } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { decideSelectedRoleAccess } from "./access-rules";
 import { requireAdminUser, requireApprovedUser } from "./session";
 
 export type AuthActionState = {
@@ -25,6 +27,7 @@ export async function loginAction(
 ): Promise<AuthActionState> {
   const email = readString(formData, "email").toLowerCase();
   const password = readString(formData, "password");
+  const loginRole = readString(formData, "loginRole");
 
   if (!email || !password) {
     return { message: "Informe e-mail e senha." };
@@ -45,7 +48,7 @@ export async function loginAction(
   } = await supabase.auth.getUser();
   const { data: profile } = await supabase
     .from("users")
-    .select("status")
+    .select("id,status")
     .eq("auth_user_id", user?.id ?? "")
     .is("deleted_at", null)
     .maybeSingle();
@@ -62,6 +65,43 @@ export async function loginAction(
   if (profile.status === "blocked" || profile.status === "inactive") {
     await supabase.auth.signOut();
     return { message: "Seu acesso está bloqueado ou inativo. Procure a administração." };
+  }
+
+  const { data: userRoles } = await supabase
+    .from("user_roles")
+    .select("role_id")
+    .eq("user_id", profile.id)
+    .is("deleted_at", null);
+  const roleIds = userRoles?.map((item) => item.role_id) ?? [];
+  const { data: roles } =
+    roleIds.length > 0
+      ? await supabase.from("roles").select("key").in("id", roleIds).is("deleted_at", null)
+      : { data: [] };
+  const roleDecision = decideSelectedRoleAccess(
+    loginRole,
+    roles?.map((role) => role.key) ?? [],
+  );
+
+  if (!roleDecision.allowed) {
+    await supabase.auth.signOut();
+    return {
+      message:
+        roleDecision.reason === "invalid_role"
+          ? "Escolha um tipo de acesso válido."
+          : "Seu cadastro não possui essa função vinculada.",
+    };
+  }
+
+  const cookieStore = await cookies();
+  if (roleDecision.role) {
+    cookieStore.set("escala_active_role", roleDecision.role, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
+  } else {
+    cookieStore.delete("escala_active_role");
   }
 
   redirect("/painel");
@@ -368,6 +408,8 @@ export async function createUserByAdminAction(
 export async function logoutAction() {
   const supabase = await createServerSupabaseClient();
   await supabase.auth.signOut();
+  const cookieStore = await cookies();
+  cookieStore.delete("escala_active_role");
   redirect("/login");
 }
 

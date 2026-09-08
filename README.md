@@ -40,16 +40,14 @@ Entregue até esta etapa:
 - Tela administrativa para criar igrejas.
 - Admin pode criar usuários já vinculados a uma função e igreja.
 - Cadastro público permite escolher tipo de usuário e igreja onde é membro.
-- Login exibe seleção de tipo de acesso como contexto, mas permissões reais vêm do banco.
+- Login exibe seleção de tipo de acesso e valida no servidor se a função está vinculada ao usuário.
+- O painel mostra a função ativa escolhida no login quando houver seleção.
 - Testes de permissões em `tests/auth/access-rules.test.mjs`.
 
 Pendente:
 
-- Configurar `SUPABASE_SERVICE_ROLE_KEY` localmente e na Vercel.
-- Confirmar conexão inicial com o host Supabase informado.
-- Aplicar as migrations no projeto Supabase remoto depois que a conexão do projeto estiver disponível.
-- Criar e promover um usuário admin real no Supabase remoto.
 - Cadastrar pelo menos uma igreja real em `/admin/igrejas` antes de liberar novos cadastros públicos.
+- Confirmar login real do administrador criado no Supabase Auth.
 - Implementar funcionalidades completas de escala em etapas futuras autorizadas.
 
 ## Tecnologias
@@ -156,6 +154,9 @@ Fluxo inicial:
 - O cadastro cria uma conta no Supabase Auth e um perfil em `public.users` com status `pending`.
 - Usuário pendente é enviado para `/aguardando-aprovacao`.
 - Administrador acessa `/admin/usuarios` para aprovar, bloquear ou inativar usuários.
+- Administrador também pode criar usuários em `/admin/usuarios`, definindo função, igreja, status e senha inicial.
+- Administrador cadastra igrejas em `/admin/igrejas` antes de liberar cadastros públicos vinculados.
+- No login, a opção `Entrar como` só ativa uma função se ela já estiver vinculada ao usuário.
 - Usuários `blocked` ou `inactive` não acessam o sistema.
 - Rotas protegidas redirecionam usuário sem permissão para `/login`.
 
@@ -232,7 +233,7 @@ Resultado validado:
 Depois de confirmar `SUPABASE_SERVICE_ROLE_KEY` e a conexão com o projeto Supabase:
 
 ```bash
-supabase link --project-ref xypgaqmzunmdbxadvfhp
+supabase link --project-ref vqahnrifpkmhbvkgvtet
 supabase db push
 ```
 

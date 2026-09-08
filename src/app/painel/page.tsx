@@ -4,6 +4,7 @@ import { requireApprovedUser } from "@/lib/auth/session";
 export default async function PainelPage() {
   const profile = await requireApprovedUser();
   const roles = profile.roles.map((role) => role.name).join(", ") || "Sem função";
+  const activeRole = profile.activeRole?.name ?? "Permissões cadastradas";
 
   const cards = [
     {
@@ -17,6 +18,12 @@ export default async function PainelPage() {
       title: "Funções",
       value: roles,
       description: "As permissões são verificadas no servidor e no banco.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Acesso ativo",
+      value: activeRole,
+      description: "A função escolhida no login é validada antes de abrir o painel.",
     },
     {
       icon: CalendarDays,
@@ -47,7 +54,7 @@ export default async function PainelPage() {
         </p>
       </section>
 
-      <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;
 

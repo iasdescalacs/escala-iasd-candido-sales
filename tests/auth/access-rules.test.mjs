@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   accessReasonToLoginMessage,
+  decideSelectedRoleAccess,
   decideProtectedAccess,
 } from "../../src/lib/auth/access-rules.ts";
 
@@ -62,4 +63,32 @@ test("mensagens de bloqueio ficam em portugues", () => {
     accessReasonToLoginMessage("blocked"),
     "Seu acesso está bloqueado. Procure a administração.",
   );
+});
+
+test("permite login sem escolher funcao ativa", () => {
+  assert.deepEqual(decideSelectedRoleAccess("", ["pregador"]), {
+    allowed: true,
+    role: null,
+  });
+});
+
+test("nega funcao de login invalida", () => {
+  assert.deepEqual(decideSelectedRoleAccess("admin", ["admin"]), {
+    allowed: false,
+    reason: "invalid_role",
+  });
+});
+
+test("nega funcao de login nao vinculada ao cadastro", () => {
+  assert.deepEqual(decideSelectedRoleAccess("cantor", ["pregador"]), {
+    allowed: false,
+    reason: "role_not_assigned",
+  });
+});
+
+test("permite funcao de login vinculada ao cadastro", () => {
+  assert.deepEqual(decideSelectedRoleAccess("pregador", ["pregador", "cantor"]), {
+    allowed: true,
+    role: "pregador",
+  });
 });
