@@ -179,6 +179,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_availability: {
+        Row: {
+          id: string;
+          user_id: string;
+          role_id: string;
+          service_date: string;
+          available: boolean;
+          created_at: string;
+          updated_at: string;
+          deleted_at: Nullable<string>;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          role_id: string;
+          service_date: string;
+          available?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          role_id?: string;
+          service_date?: string;
+          available?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Relationships: [];
+      };
       history: {
         Row: {
           id: string;

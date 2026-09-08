@@ -55,8 +55,13 @@ Entregue até esta etapa:
 - Cada culto exibe igreja, horário, pregador e cantor/grupo, mantendo pregador e música como `A definir` nesta etapa.
 - Admin pode criar cultos especiais para uma igreja selecionada, como Semana de Oração, Mini Semana de Oração, Culto de Gratidão e Culto da Virada.
 - Cultos especiais podem ter uma data única ou um período de vários dias.
+- Página de disponibilidade em `/disponibilidade` para usuários aprovados.
+- Pregadores e cantores podem marcar dias disponíveis no calendário de cultos do mês.
+- Usuários com as duas funções veem seções separadas para Pregador e Cantor.
+- Pregadores e cantores podem escolher as igrejas onde aceitam ser escalados.
 - Testes de permissões em `tests/auth/access-rules.test.mjs`.
 - Testes de geração de cultos em `tests/cultos/schedule.test.mjs`.
+- Testes de regras de disponibilidade em `tests/disponibilidade/rules.test.mjs`.
 
 Pendente:
 
@@ -116,6 +121,7 @@ src/
     admin/usuarios/
     admin/igrejas/
     admin/cultos/
+    disponibilidade/
     aguardando-aprovacao/
     alterar-senha/
     auth/callback/
@@ -174,6 +180,7 @@ Fluxo inicial:
 - Administrador cadastra igrejas em `/admin/igrejas` antes de liberar cadastros públicos vinculados.
 - Administrador gera cultos mensais em `/admin/cultos` para todas as igrejas ativas.
 - Administrador cria cultos especiais em `/admin/cultos`, vinculando o culto a uma igreja específica.
+- Pregadores e cantores informam disponibilidade em `/disponibilidade`.
 - O tipo de usuário é escolhido no cadastro público e validado pelo vínculo salvo no banco.
 - Usuários `blocked` ou `inactive` não acessam o sistema.
 - Rotas protegidas redirecionam usuário sem permissão para `/login`.
@@ -200,6 +207,7 @@ supabase/migrations/20260908021500_seed_default_roles.sql
 supabase/migrations/20260908033000_create_worship_services.sql
 supabase/migrations/20260908043000_add_special_worship_services.sql
 supabase/migrations/20260908043100_adjust_special_worship_uniqueness.sql
+supabase/migrations/20260908120000_create_user_availability.sql
 ```
 
 Tabelas iniciais:
@@ -213,6 +221,7 @@ Tabelas iniciais:
 - `settings`
 - `notifications`
 - `worship_services`
+- `user_availability`
 
 O seed de teste fica em:
 
@@ -245,8 +254,8 @@ Nesta máquina, o Docker estava instalado, mas o daemon não estava em execuçã
 
 Resultado validado:
 
-- 9 tabelas com RLS e `force row level security`.
-- 13 políticas.
+- 10 tabelas com RLS e `force row level security`.
+- 15 políticas.
 - 1 trigger de proteção de campos sensíveis.
 - 4 usuários fictícios do seed.
 

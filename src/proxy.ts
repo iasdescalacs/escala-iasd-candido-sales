@@ -2,7 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
 
-const protectedPrefixes = ["/painel", "/perfil", "/alterar-senha"];
+const protectedPrefixes = [
+  "/painel",
+  "/perfil",
+  "/alterar-senha",
+  "/disponibilidade",
+];
 const adminPrefixes = ["/admin"];
 
 export async function proxy(request: NextRequest) {
@@ -89,6 +94,7 @@ export const config = {
     "/painel/:path*",
     "/perfil/:path*",
     "/alterar-senha/:path*",
+    "/disponibilidade/:path*",
     "/admin/:path*",
   ],
 };

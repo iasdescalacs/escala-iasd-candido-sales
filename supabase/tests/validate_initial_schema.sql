@@ -40,6 +40,7 @@ $$;
 \i /supabase/migrations/20260908033000_create_worship_services.sql
 \i /supabase/migrations/20260908043000_add_special_worship_services.sql
 \i /supabase/migrations/20260908043100_adjust_special_worship_uniqueness.sql
+\i /supabase/migrations/20260908120000_create_user_availability.sql
 \i /supabase/seed.sql
 
 do $$
@@ -62,13 +63,14 @@ begin
       'history',
       'settings',
       'notifications',
-      'worship_services'
+      'worship_services',
+      'user_availability'
     )
     and c.relrowsecurity is true
     and c.relforcerowsecurity is true;
 
-  if rls_tables <> 9 then
-    raise exception 'RLS esperado em 9 tabelas, encontrado %.', rls_tables;
+  if rls_tables <> 10 then
+    raise exception 'RLS esperado em 10 tabelas, encontrado %.', rls_tables;
   end if;
 
   select count(*)
@@ -76,8 +78,8 @@ begin
   from pg_policies
   where schemaname = 'public';
 
-  if policy_count < 12 then
-    raise exception 'Politicas esperadas >= 12, encontrado %.', policy_count;
+  if policy_count < 14 then
+    raise exception 'Politicas esperadas >= 14, encontrado %.', policy_count;
   end if;
 
   select count(*)

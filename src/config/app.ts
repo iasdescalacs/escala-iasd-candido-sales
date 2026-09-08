@@ -26,6 +26,10 @@ export const protectedNavigation = [
     href: "/painel",
   },
   {
+    label: "Disponibilidade",
+    href: "/disponibilidade",
+  },
+  {
     label: "Perfil",
     href: "/perfil",
   },
