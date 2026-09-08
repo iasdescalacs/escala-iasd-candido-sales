@@ -37,6 +37,10 @@ Entregue até esta etapa:
 - Perfil do usuário.
 - Proteção de rotas com `src/proxy.ts` e validação nas páginas/actions do servidor.
 - Tela administrativa inicial para aprovar, bloquear ou inativar usuários.
+- Tela administrativa para criar igrejas.
+- Admin pode criar usuários já vinculados a uma função e igreja.
+- Cadastro público permite escolher tipo de usuário e igreja onde é membro.
+- Login exibe seleção de tipo de acesso como contexto, mas permissões reais vêm do banco.
 - Testes de permissões em `tests/auth/access-rules.test.mjs`.
 
 Pendente:
@@ -45,6 +49,7 @@ Pendente:
 - Confirmar conexão inicial com o host Supabase informado.
 - Aplicar as migrations no projeto Supabase remoto depois que a conexão do projeto estiver disponível.
 - Criar e promover um usuário admin real no Supabase remoto.
+- Cadastrar pelo menos uma igreja real em `/admin/igrejas` antes de liberar novos cadastros públicos.
 - Implementar funcionalidades completas de escala em etapas futuras autorizadas.
 
 ## Tecnologias
@@ -96,6 +101,7 @@ Essa página não exibe valores de chaves. Ela mostra apenas se as variáveis es
 src/
   app/
     admin/usuarios/
+    admin/igrejas/
     aguardando-aprovacao/
     alterar-senha/
     auth/callback/
@@ -171,6 +177,7 @@ Migrations:
 supabase/migrations/20260907162000_initial_schema.sql
 supabase/migrations/20260907173000_auth_access_policies.sql
 supabase/migrations/20260908013500_allow_manual_admin_recovery.sql
+supabase/migrations/20260908021500_seed_default_roles.sql
 ```
 
 Tabelas iniciais:

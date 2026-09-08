@@ -1,24 +1,26 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import type { ChurchOption, RoleOption } from "@/lib/admin/lookups";
-import { signUpAction, type AuthActionState } from "@/lib/auth/actions";
-import { ActionMessage } from "./action-message";
-import { PasswordField } from "./password-field";
-import { PhoneInput } from "./phone-input";
-import { SubmitButton } from "./submit-button";
+import {
+  createUserByAdminAction,
+  type AuthActionState,
+} from "@/lib/auth/actions";
+import { ActionMessage } from "@/components/auth/action-message";
+import { PasswordField } from "@/components/auth/password-field";
+import { PhoneInput } from "@/components/auth/phone-input";
+import { SubmitButton } from "@/components/auth/submit-button";
 
 const initialState: AuthActionState = { message: "" };
 
-export function SignUpForm({
+export function AdminCreateUserForm({
   roles,
   churches,
 }: {
   roles: RoleOption[];
   churches: ChurchOption[];
 }) {
-  const [state, formAction] = useActionState(signUpAction, initialState);
+  const [state, formAction] = useActionState(createUserByAdminAction, initialState);
   const hasOptions = roles.length > 0 && churches.length > 0;
 
   return (
@@ -27,33 +29,20 @@ export function SignUpForm({
 
       {!hasOptions ? (
         <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning">
-          O cadastro depende de pelo menos uma igreja ativa cadastrada pelo administrador.
+          Cadastre pelo menos uma igreja ativa antes de criar usuários vinculados.
         </p>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <label className="grid gap-2 text-sm font-medium text-foreground sm:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-3">
+        <label className="grid gap-2 text-sm font-medium text-foreground lg:col-span-2">
           Nome completo
           <input
             autoComplete="name"
             className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
             name="fullName"
-            placeholder="Seu nome completo"
+            placeholder="Nome do usuário"
             required
             type="text"
-          />
-        </label>
-
-        <label className="grid gap-2 text-sm font-medium text-foreground">
-          E-mail
-          <input
-            autoComplete="email"
-            className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
-            inputMode="email"
-            name="email"
-            placeholder="seuemail@exemplo.com"
-            required
-            type="email"
           />
         </label>
 
@@ -63,7 +52,20 @@ export function SignUpForm({
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-foreground">
-          Tipo de usuário
+          E-mail
+          <input
+            autoComplete="email"
+            className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+            inputMode="email"
+            name="email"
+            placeholder="usuario@exemplo.com"
+            required
+            type="email"
+          />
+        </label>
+
+        <label className="grid gap-2 text-sm font-medium text-foreground">
+          Função
           <select
             className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             disabled={!hasOptions}
@@ -71,6 +73,7 @@ export function SignUpForm({
             required
           >
             <option value="">Selecione</option>
+            <option value="admin">Administrador</option>
             {roles.map((role) => (
               <option key={role.id} value={role.key}>
                 {role.name}
@@ -80,7 +83,7 @@ export function SignUpForm({
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-foreground">
-          Igreja onde é membro
+          Igreja
           <select
             className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
             disabled={!hasOptions}
@@ -96,21 +99,24 @@ export function SignUpForm({
           </select>
         </label>
 
-        <PasswordField autoComplete="new-password" label="Senha" name="password" />
-        <PasswordField
-          autoComplete="new-password"
-          label="Confirmar senha"
-          name="confirmPassword"
-          placeholder="Repita sua senha"
-        />
+        <label className="grid gap-2 text-sm font-medium text-foreground">
+          Status
+          <select
+            className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+            name="status"
+            required
+          >
+            <option value="approved">Aprovado</option>
+            <option value="pending">Pendente</option>
+            <option value="blocked">Bloqueado</option>
+            <option value="inactive">Inativo</option>
+          </select>
+        </label>
+
+        <PasswordField autoComplete="new-password" label="Senha inicial" name="password" />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <SubmitButton>Solicitar cadastro</SubmitButton>
-        <Link className="text-sm font-medium text-primary hover:text-primary-strong" href="/login">
-          Já tenho cadastro
-        </Link>
-      </div>
+      <SubmitButton>Criar usuário</SubmitButton>
     </form>
   );
 }

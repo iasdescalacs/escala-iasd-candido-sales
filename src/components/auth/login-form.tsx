@@ -34,6 +34,20 @@ export function LoginForm() {
 
       <PasswordField autoComplete="current-password" label="Senha" name="password" />
 
+      <label className="grid gap-2 text-sm font-medium text-foreground">
+        Entrar como
+        <select
+          className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+          name="loginRole"
+        >
+          <option value="">Usar minhas permissões cadastradas</option>
+          <option value="anciao">Ancião</option>
+          <option value="lider_musica">Líder de música</option>
+          <option value="cantor">Cantor</option>
+          <option value="pregador">Pregador</option>
+        </select>
+      </label>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SubmitButton>Entrar</SubmitButton>
         <Link className="text-sm font-medium text-primary hover:text-primary-strong" href="/recuperar-senha">

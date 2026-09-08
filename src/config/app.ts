@@ -36,6 +36,10 @@ export const adminNavigation = [
     label: "Usuários",
     href: "/admin/usuarios",
   },
+  {
+    label: "Igrejas",
+    href: "/admin/igrejas",
+  },
 ];
 
 export const supportNavigation = [

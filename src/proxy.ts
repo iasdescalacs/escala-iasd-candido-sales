@@ -85,7 +85,12 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/painel/:path*", "/perfil/:path*", "/alterar-senha/:path*", "/admin/:path*"],
+  matcher: [
+    "/painel/:path*",
+    "/perfil/:path*",
+    "/alterar-senha/:path*",
+    "/admin/:path*",
+  ],
 };
 
 function isProtectedPath(pathname: string) {

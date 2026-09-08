@@ -12,6 +12,9 @@ export type AuthActionState = {
   ok?: boolean;
 };
 
+type UserStatus = "pending" | "approved" | "blocked" | "inactive";
+type RoleKey = "admin" | "anciao" | "lider_musica" | "pregador" | "cantor";
+
 const initialError = {
   message: "Não foi possível concluir a ação. Tente novamente.",
 };
@@ -37,10 +40,13 @@ export async function loginAction(
     return { message: "E-mail ou senha inválidos." };
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data: profile } = await supabase
     .from("users")
     .select("status")
-    .eq("auth_user_id", (await supabase.auth.getUser()).data.user?.id ?? "")
+    .eq("auth_user_id", user?.id ?? "")
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -68,11 +74,17 @@ export async function signUpAction(
   const fullName = formatPersonName(readString(formData, "fullName"));
   const email = readString(formData, "email").toLowerCase();
   const phone = readString(formData, "phone");
+  const roleKey = readString(formData, "roleKey");
+  const churchId = readString(formData, "churchId");
   const password = readString(formData, "password");
   const confirmPassword = readString(formData, "confirmPassword");
 
-  if (!fullName || !email || !phone || !password || !confirmPassword) {
+  if (!fullName || !email || !phone || !roleKey || !churchId || !password || !confirmPassword) {
     return { message: "Preencha todos os campos obrigatórios." };
+  }
+
+  if (!isAssignableRole(roleKey)) {
+    return { message: "Escolha um tipo de usuário válido." };
   }
 
   if (password.length < 8) {
@@ -109,21 +121,32 @@ export async function signUpAction(
   }
 
   const admin = createAdminSupabaseClient();
-  const { error: profileError } = await admin.from("users").upsert(
-    {
-      auth_user_id: data.user.id,
-      full_name: fullName,
-      email,
-      phone,
-      status: "pending",
-      deleted_at: null,
-    },
-    { onConflict: "auth_user_id" },
-  );
+  const { data: profile, error: profileError } = await admin
+    .from("users")
+    .upsert(
+      {
+        auth_user_id: data.user.id,
+        full_name: fullName,
+        email,
+        phone,
+        status: "pending",
+        deleted_at: null,
+      },
+      { onConflict: "auth_user_id" },
+    )
+    .select("id")
+    .single();
 
   if (profileError) {
     return { message: "Cadastro criado no Auth, mas o perfil pendente falhou." };
   }
+
+  await attachRoleAndChurch(admin, {
+    userId: profile.id,
+    roleKey,
+    churchId,
+    canBeScheduled: roleKey === "pregador" || roleKey === "cantor",
+  });
 
   redirect("/aguardando-aprovacao");
 }
@@ -219,17 +242,127 @@ export async function updateUserStatusAction(formData: FormData) {
   const userId = readString(formData, "userId");
   const status = readString(formData, "status");
 
-  if (!userId || !["pending", "approved", "blocked", "inactive"].includes(status)) {
+  if (!userId || !isUserStatus(status)) {
     return;
   }
 
-  const supabase = await createServerSupabaseClient();
-  await supabase
-    .from("users")
-    .update({ status: status as "pending" | "approved" | "blocked" | "inactive" })
-    .eq("id", userId);
+  const admin = createAdminSupabaseClient();
+  await admin.from("users").update({ status }).eq("id", userId);
 
   revalidatePath("/admin/usuarios");
+}
+
+export async function createChurchAction(
+  _state: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  await requireAdminUser();
+
+  const name = formatPersonName(readString(formData, "name"));
+  const city = formatPersonName(readString(formData, "city") || "Candido Sales");
+  const state = readString(formData, "state").toUpperCase() || "BA";
+
+  if (!name || state.length !== 2) {
+    return { message: "Informe nome da igreja, cidade e UF com 2 letras." };
+  }
+
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin.from("churches").upsert(
+    {
+      name,
+      city,
+      state,
+      active: true,
+      deleted_at: null,
+    },
+    { onConflict: "name" },
+  );
+
+  if (error) {
+    return { message: "Não foi possível salvar a igreja." };
+  }
+
+  revalidatePath("/admin/igrejas");
+  revalidatePath("/cadastro");
+
+  return { ok: true, message: "Igreja salva com sucesso." };
+}
+
+export async function createUserByAdminAction(
+  _state: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  await requireAdminUser();
+
+  const fullName = formatPersonName(readString(formData, "fullName"));
+  const email = readString(formData, "email").toLowerCase();
+  const phone = readString(formData, "phone");
+  const roleKey = readString(formData, "roleKey");
+  const churchId = readString(formData, "churchId");
+  const password = readString(formData, "password");
+  const status = readString(formData, "status") || "approved";
+
+  if (!fullName || !email || !phone || !roleKey || !churchId || !password) {
+    return { message: "Preencha todos os campos obrigatórios." };
+  }
+
+  if (!isAssignableRole(roleKey) && roleKey !== "admin") {
+    return { message: "Escolha uma função válida." };
+  }
+
+  if (!isUserStatus(status)) {
+    return { message: "Escolha um status válido." };
+  }
+
+  if (password.length < 8) {
+    return { message: "A senha precisa ter pelo menos 8 caracteres." };
+  }
+
+  const admin = createAdminSupabaseClient();
+  const { data: authUser, error: authError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName,
+      phone,
+    },
+  });
+
+  if (authError || !authUser.user) {
+    return { message: authError?.message ?? "Não foi possível criar o usuário." };
+  }
+
+  const { data: profile, error: profileError } = await admin
+    .from("users")
+    .upsert(
+      {
+        auth_user_id: authUser.user.id,
+        full_name: fullName,
+        email,
+        phone,
+        status,
+        deleted_at: null,
+      },
+      { onConflict: "auth_user_id" },
+    )
+    .select("id")
+    .single();
+
+  if (profileError) {
+    return { message: "Usuário criado no Auth, mas o perfil falhou." };
+  }
+
+  await attachRoleAndChurch(admin, {
+    userId: profile.id,
+    roleKey,
+    churchId,
+    canBeScheduled: roleKey === "pregador" || roleKey === "cantor",
+  });
+
+  revalidatePath("/admin/usuarios");
+
+  return { ok: true, message: "Usuário criado com sucesso." };
 }
 
 export async function logoutAction() {
@@ -241,6 +374,76 @@ export async function logoutAction() {
 function readString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value.trim() : "";
+}
+
+function isAssignableRole(roleKey: string): roleKey is Exclude<RoleKey, "admin"> {
+  return ["anciao", "lider_musica", "pregador", "cantor"].includes(roleKey);
+}
+
+function isUserStatus(status: string): status is UserStatus {
+  return ["pending", "approved", "blocked", "inactive"].includes(status);
+}
+
+async function attachRoleAndChurch(
+  admin: ReturnType<typeof createAdminSupabaseClient>,
+  {
+    userId,
+    roleKey,
+    churchId,
+    canBeScheduled,
+  }: {
+    userId: string;
+    roleKey: RoleKey | string;
+    churchId: string;
+    canBeScheduled: boolean;
+  },
+) {
+  const { data: role } = await admin
+    .from("roles")
+    .select("id")
+    .eq("key", roleKey as RoleKey)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!role) {
+    return;
+  }
+
+  const { data: currentRoleLink } = await admin
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("role_id", role.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!currentRoleLink) {
+    await admin.from("user_roles").insert({
+      user_id: userId,
+      role_id: role.id,
+      deleted_at: null,
+    });
+  }
+
+  const { data: currentChurchLink } = await admin
+    .from("user_church_links")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("church_id", churchId)
+    .eq("role_id", role.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!currentChurchLink) {
+    await admin.from("user_church_links").insert({
+      user_id: userId,
+      church_id: churchId,
+      role_id: role.id,
+      can_be_scheduled: canBeScheduled,
+      is_manager: roleKey === "anciao" || roleKey === "lider_musica",
+      deleted_at: null,
+    });
+  }
 }
 
 function formatPersonName(value: string) {

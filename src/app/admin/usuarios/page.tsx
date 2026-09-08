@@ -1,4 +1,6 @@
+import { AdminCreateUserForm } from "@/components/admin/admin-create-user-form";
 import { UserStatusActions } from "@/components/admin/user-status-actions";
+import { getChurchOptions, getRoleOptions } from "@/lib/admin/lookups";
 import { requireAdminUser } from "@/lib/auth/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -11,6 +13,10 @@ const statusLabels = {
 
 export default async function AdminUsuariosPage() {
   await requireAdminUser();
+  const [roles, churches] = await Promise.all([
+    getRoleOptions(),
+    getChurchOptions(),
+  ]);
   const supabase = await createServerSupabaseClient();
   const { data: users } = await supabase
     .from("users")
@@ -33,7 +39,19 @@ export default async function AdminUsuariosPage() {
         </p>
       </section>
 
+      <section className="mt-6">
+        <h2 className="mb-3 text-lg font-semibold text-foreground">
+          Criar usuário
+        </h2>
+        <AdminCreateUserForm churches={churches} roles={roles} />
+      </section>
+
       <section className="mt-6 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
+        <div className="border-b border-border px-4 py-3">
+          <h2 className="text-lg font-semibold text-foreground">
+            Usuários cadastrados
+          </h2>
+        </div>
         <div className="grid gap-3 p-4">
           {(users ?? []).map((user) => (
             <article
