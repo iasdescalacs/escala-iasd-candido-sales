@@ -59,7 +59,13 @@ Entregue até esta etapa:
 - Pregadores e cantores podem marcar dias disponíveis no calendário de cultos do mês.
 - Usuários com as duas funções veem seções separadas para Pregador e Cantor.
 - Pregadores e cantores podem escolher as igrejas onde aceitam ser escalados.
+- Cadastro público permite selecionar mais de uma função para a mesma conta.
+- Admin pode criar e editar usuários com múltiplas funções.
+- Perfil do usuário permite adicionar ou remover funções de escala (`Pregador` e `Cantor`).
+- Funções gerenciais, como `Ancião` e `Líder de Música`, ficam vinculadas à igreja principal selecionada no cadastro ou pelo administrador.
+- Igrejas onde o usuário aceita ser escalado como pregador ou cantor continuam sendo definidas em `/disponibilidade`.
 - Testes de permissões em `tests/auth/access-rules.test.mjs`.
+- Testes de regras de múltiplas funções em `tests/auth/role-rules.test.mjs`.
 - Testes de geração de cultos em `tests/cultos/schedule.test.mjs`.
 - Testes de regras de disponibilidade em `tests/disponibilidade/rules.test.mjs`.
 
@@ -176,7 +182,8 @@ Fluxo inicial:
 - O cadastro cria uma conta no Supabase Auth e um perfil em `public.users` com status `pending`.
 - Usuário pendente é enviado para `/aguardando-aprovacao`.
 - Administrador acessa `/admin/usuarios` para aprovar, bloquear ou inativar usuários.
-- Administrador também pode criar usuários em `/admin/usuarios`, definindo função, igreja, status e senha inicial.
+- Administrador também pode criar usuários em `/admin/usuarios`, definindo uma ou mais funções, igreja, status e senha inicial.
+- Administrador pode adicionar ou desmarcar funções na edição do usuário em `/admin/usuarios/[id]/editar`.
 - Administrador cadastra igrejas em `/admin/igrejas` antes de liberar cadastros públicos vinculados.
 - Administrador gera cultos mensais em `/admin/cultos` para todas as igrejas ativas.
 - Administrador cria cultos especiais em `/admin/cultos`, vinculando o culto a uma igreja específica.

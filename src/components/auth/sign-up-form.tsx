@@ -62,22 +62,29 @@ export function SignUpForm({
           <PhoneInput />
         </label>
 
-        <label className="grid gap-2 text-sm font-medium text-foreground">
-          Tipo de usuário
-          <select
-            className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-            disabled={!hasOptions}
-            name="roleKey"
-            required
-          >
-            <option value="">Selecione</option>
+        <fieldset className="grid gap-2 text-sm font-medium text-foreground sm:col-span-2">
+          <legend>Funções</legend>
+          <div className="grid gap-2 rounded-md border border-border bg-background p-3 sm:grid-cols-2">
             {roles.map((role) => (
-              <option key={role.id} value={role.key}>
+              <label
+                className="flex min-h-10 items-center gap-3 rounded-md px-2 text-sm font-medium text-foreground transition hover:bg-surface-muted"
+                key={role.id}
+              >
+                <input
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
+                  disabled={!hasOptions}
+                  name="roleKeys"
+                  type="checkbox"
+                  value={role.key}
+                />
                 {role.name}
-              </option>
+              </label>
             ))}
-          </select>
-        </label>
+          </div>
+          <span className="text-xs font-normal text-muted">
+            Selecione uma ou mais funções. O acesso só será liberado após aprovação.
+          </span>
+        </fieldset>
 
         <label className="grid gap-2 text-sm font-medium text-foreground">
           Igreja onde é membro

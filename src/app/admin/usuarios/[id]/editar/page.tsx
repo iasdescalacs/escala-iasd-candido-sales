@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { AdminEditUserForm } from "@/components/admin/admin-edit-user-form";
-import { getRoleOptions } from "@/lib/admin/lookups";
+import { getChurchOptions, getRoleOptions } from "@/lib/admin/lookups";
 import { requireAdminUser } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
@@ -22,7 +22,7 @@ export default async function AdminEditarUsuarioPage({
 
   const { id } = await params;
   const supabase = createAdminSupabaseClient();
-  const [{ data: user }, roles, { data: userRoles }] = await Promise.all([
+  const [{ data: user }, roles, churches, { data: userRoles }, { data: userChurchLinks }] = await Promise.all([
     supabase
       .from("users")
       .select("id,full_name,email,phone,status")
@@ -30,11 +30,19 @@ export default async function AdminEditarUsuarioPage({
       .is("deleted_at", null)
       .maybeSingle(),
     getRoleOptions({ includeAdmin: true }),
+    getChurchOptions(),
     supabase
       .from("user_roles")
       .select("role_id")
       .eq("user_id", id)
       .is("deleted_at", null),
+    supabase
+      .from("user_church_links")
+      .select("church_id")
+      .eq("user_id", id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true })
+      .limit(1),
   ]);
 
   if (!user) {
@@ -60,9 +68,11 @@ export default async function AdminEditarUsuarioPage({
 
       <section className="mt-6">
         <AdminEditUserForm
-          currentRoleKey={
-            roles.find((role) => role.id === userRoles?.[0]?.role_id)?.key ?? ""
-          }
+          churches={churches}
+          currentChurchId={userChurchLinks?.[0]?.church_id ?? ""}
+          currentRoleKeys={roles
+            .filter((role) => userRoles?.some((userRole) => userRole.role_id === role.id))
+            .map((role) => role.key)}
           roles={roles}
           user={user}
         />

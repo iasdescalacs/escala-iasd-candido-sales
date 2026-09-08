@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ProfileForm } from "@/components/auth/profile-form";
 import { requireApprovedUser } from "@/lib/auth/session";
 
@@ -15,8 +15,7 @@ export default async function PerfilPage() {
           Seus dados
         </h1>
         <p className="mt-3 leading-7 text-muted">
-          Mantenha seu nome e telefone atualizados. Alterações de e-mail, status
-          e permissões são administrativas.
+          Mantenha seu nome, telefone e funções de escala atualizados. Alterações de e-mail, status e funções gerenciais são administrativas.
         </p>
         <Link
           className="mt-5 inline-flex h-10 items-center rounded-md border border-border px-4 text-sm font-medium text-foreground transition hover:bg-surface-muted"
@@ -26,7 +25,7 @@ export default async function PerfilPage() {
         </Link>
       </section>
 
-      <ProfileForm user={profile.appUser} />
+      <ProfileForm roles={profile.roles} user={profile.appUser} />
     </div>
   );
 }

@@ -94,23 +94,36 @@ export function AdminCreateUserForm({
           />
         </label>
 
-        <label className="grid gap-2 text-sm font-medium text-foreground">
-          Função
-          <select
-            className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-            disabled={!hasOptions}
-            name="roleKey"
-            required
-          >
-            <option value="">Selecione</option>
-            <option value="admin">Administrador</option>
+        <fieldset className="grid gap-2 text-sm font-medium text-foreground lg:col-span-2">
+          <legend>Funções</legend>
+          <div className="grid gap-2 rounded-md border border-border bg-background p-3 sm:grid-cols-2">
+            <label className="flex min-h-10 items-center gap-3 rounded-md px-2 text-sm font-medium text-foreground transition hover:bg-surface-muted">
+              <input
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
+                disabled={!hasOptions}
+                name="roleKeys"
+                type="checkbox"
+                value="admin"
+              />
+              Administrador
+            </label>
             {roles.map((role) => (
-              <option key={role.id} value={role.key}>
+              <label
+                className="flex min-h-10 items-center gap-3 rounded-md px-2 text-sm font-medium text-foreground transition hover:bg-surface-muted"
+                key={role.id}
+              >
+                <input
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
+                  disabled={!hasOptions}
+                  name="roleKeys"
+                  type="checkbox"
+                  value={role.key}
+                />
                 {role.name}
-              </option>
+              </label>
             ))}
-          </select>
-        </label>
+          </div>
+        </fieldset>
 
         <label className="grid gap-2 text-sm font-medium text-foreground">
           Igreja

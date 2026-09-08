@@ -5,22 +5,26 @@ import { useActionState } from "react";
 import { ActionMessage } from "@/components/auth/action-message";
 import { PhoneInput } from "@/components/auth/phone-input";
 import { SubmitButton } from "@/components/auth/submit-button";
+import type { ChurchOption, RoleOption } from "@/lib/admin/lookups";
 import {
   updateUserByAdminAction,
   type AuthActionState,
 } from "@/lib/auth/actions";
-import type { RoleOption } from "@/lib/admin/lookups";
 
 const initialState: AuthActionState = { message: "" };
 
 type UserStatus = "pending" | "approved" | "blocked" | "inactive";
 
 export function AdminEditUserForm({
-  currentRoleKey,
+  churches,
+  currentChurchId,
+  currentRoleKeys,
   roles,
   user,
 }: {
-  currentRoleKey: string;
+  churches: ChurchOption[];
+  currentChurchId: string;
+  currentRoleKeys: string[];
   roles: RoleOption[];
   user: {
     id: string;
@@ -31,6 +35,7 @@ export function AdminEditUserForm({
   };
 }) {
   const [state, formAction] = useActionState(updateUserByAdminAction, initialState);
+  const selectedRoles = new Set(currentRoleKeys);
 
   return (
     <form action={formAction} className="grid gap-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
@@ -67,21 +72,45 @@ export function AdminEditUserForm({
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-foreground">
-          Função
+          Igreja principal
           <select
             className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-            defaultValue={currentRoleKey}
-            name="roleKey"
+            defaultValue={currentChurchId}
+            name="churchId"
             required
           >
             <option value="">Selecione</option>
-            {roles.map((role) => (
-              <option key={role.id} value={role.key}>
-                {role.name}
+            {churches.map((church) => (
+              <option key={church.id} value={church.id}>
+                {church.name}
               </option>
             ))}
           </select>
         </label>
+
+        <fieldset className="grid gap-2 text-sm font-medium text-foreground md:col-span-2">
+          <legend>Funções</legend>
+          <div className="grid gap-2 rounded-md border border-border bg-background p-3 sm:grid-cols-2">
+            {roles.map((role) => (
+              <label
+                className="flex min-h-10 items-center gap-3 rounded-md px-2 text-sm font-medium text-foreground transition hover:bg-surface-muted"
+                key={role.id}
+              >
+                <input
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
+                  defaultChecked={selectedRoles.has(role.key)}
+                  name="roleKeys"
+                  type="checkbox"
+                  value={role.key}
+                />
+                {role.name}
+              </label>
+            ))}
+          </div>
+          <span className="text-xs font-normal text-muted">
+            Ancião e líder de música ficam vinculados à igreja principal. Pregador e cantor escolhem igrejas de escala em Disponibilidade.
+          </span>
+        </fieldset>
 
         <label className="grid gap-2 text-sm font-medium text-foreground">
           Status
