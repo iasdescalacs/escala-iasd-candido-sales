@@ -9,6 +9,8 @@ export async function AppShell({ children }: { children: ReactNode }) {
     isAuthenticated: Boolean(profile),
     isApproved: accessProfile?.status === "approved",
     isAdmin: accessProfile?.roles.includes("admin") ?? false,
+    isElder: accessProfile?.roles.includes("anciao") ?? false,
+    isMusicLeader: accessProfile?.roles.includes("lider_musica") ?? false,
     isPending: accessProfile?.status === "pending",
   };
 

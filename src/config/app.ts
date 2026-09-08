@@ -30,8 +30,26 @@ export const protectedNavigation = [
     href: "/disponibilidade",
   },
   {
+    label: "Minha Agenda",
+    href: "/agenda",
+  },
+  {
     label: "Perfil",
     href: "/perfil",
+  },
+];
+
+export const elderNavigation = [
+  {
+    label: "Escala Pregação",
+    href: "/escalas/pregacao",
+  },
+];
+
+export const musicLeaderNavigation = [
+  {
+    label: "Escala Louvor",
+    href: "/escalas/louvor",
   },
 ];
 

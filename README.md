@@ -60,6 +60,11 @@ Entregue até esta etapa:
 - Pregadores e cantores podem marcar dias disponíveis no calendário de cultos do mês.
 - Usuários com as duas funções veem seções separadas para Pregador e Cantor.
 - Pregadores e cantores podem escolher as igrejas onde aceitam ser escalados.
+- Calendário de disponibilidade mostra apenas um culto representativo por dia para não repetir a quantidade de igrejas.
+- Página `/escalas/pregacao` permite ao ancião ou admin escalar, trocar e remover pregadores disponíveis por culto e igreja.
+- Página `/escalas/louvor` permite ao líder de música ou admin escalar, trocar e remover cantores disponíveis por culto e igreja.
+- Página `/agenda` permite aos usuários aprovados consultar suas escalas, notificações e solicitar permuta com pessoa da mesma função.
+- Pedidos de permuta ficam pendentes para aprovação do ancião, líder de música ou admin e geram notificações no sistema.
 - Cadastro público permite selecionar mais de uma função para a mesma conta.
 - Admin pode criar e editar usuários com múltiplas funções.
 - Perfil do usuário permite adicionar ou remover funções de escala (`Pregador` e `Cantor`).
@@ -216,6 +221,7 @@ supabase/migrations/20260908033000_create_worship_services.sql
 supabase/migrations/20260908043000_add_special_worship_services.sql
 supabase/migrations/20260908043100_adjust_special_worship_uniqueness.sql
 supabase/migrations/20260908120000_create_user_availability.sql
+supabase/migrations/20260908143000_create_swap_requests.sql
 ```
 
 Tabelas iniciais:

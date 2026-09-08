@@ -111,6 +111,7 @@ export function AvailabilityRoleForm({
         <div className="grid grid-cols-7">
           {calendarDays.map((day) => {
             const services = servicesByDate[day.date] ?? [];
+            const firstService = services[0];
             const hasServices = services.length > 0;
 
             return (
@@ -140,19 +141,18 @@ export function AvailabilityRoleForm({
                 </div>
 
                 <div className="mt-2 grid gap-1">
-                  {services.map((service) => (
+                  {firstService ? (
                     <div
                       className="min-w-0 rounded-md bg-primary-soft px-2 py-1 text-[11px] leading-4 text-primary-strong"
-                      key={service.id}
                     >
                       <p className="truncate font-semibold">
-                        {service.title ?? getTemplateLabel(service.service_type)}
+                        {firstService.title ?? getTemplateLabel(firstService.service_type)}
                       </p>
                       <p className="truncate text-muted">
-                        {service.start_time.slice(0, 5)}
+                        {firstService.start_time.slice(0, 5)}
                       </p>
                     </div>
-                  ))}
+                  ) : null}
                 </div>
               </label>
             );

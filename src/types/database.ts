@@ -317,6 +317,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      swap_requests: {
+        Row: {
+          id: string;
+          requester_user_id: string;
+          target_user_id: string;
+          source_service_id: string;
+          target_service_id: string;
+          role_key: Database["public"]["Enums"]["role_key"];
+          status: Database["public"]["Enums"]["swap_request_status"];
+          reason: Nullable<string>;
+          decided_by_user_id: Nullable<string>;
+          decided_at: Nullable<string>;
+          created_at: string;
+          updated_at: string;
+          deleted_at: Nullable<string>;
+        };
+        Insert: {
+          id?: string;
+          requester_user_id: string;
+          target_user_id: string;
+          source_service_id: string;
+          target_service_id: string;
+          role_key: Database["public"]["Enums"]["role_key"];
+          status?: Database["public"]["Enums"]["swap_request_status"];
+          reason?: Nullable<string>;
+          decided_by_user_id?: Nullable<string>;
+          decided_at?: Nullable<string>;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Update: {
+          id?: string;
+          requester_user_id?: string;
+          target_user_id?: string;
+          source_service_id?: string;
+          target_service_id?: string;
+          role_key?: Database["public"]["Enums"]["role_key"];
+          status?: Database["public"]["Enums"]["swap_request_status"];
+          reason?: Nullable<string>;
+          decided_by_user_id?: Nullable<string>;
+          decided_at?: Nullable<string>;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Relationships: [];
+      };
       worship_services: {
         Row: {
           id: string;
@@ -397,6 +445,7 @@ export type Database = {
       user_status: "pending" | "approved" | "blocked" | "inactive";
       role_key: "admin" | "anciao" | "lider_musica" | "pregador" | "cantor";
       notification_status: "unread" | "read" | "archived";
+      swap_request_status: "pending" | "approved" | "rejected" | "cancelled";
       worship_service_type: "quarta" | "sabado" | "domingo" | "especial";
       worship_special_type:
         | "semana_oracao"

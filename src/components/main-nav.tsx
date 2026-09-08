@@ -7,6 +7,8 @@ import { useState } from "react";
 import {
   adminNavigation,
   appConfig,
+  elderNavigation,
+  musicLeaderNavigation,
   protectedNavigation,
   publicNavigation,
   supportNavigation,
@@ -19,6 +21,8 @@ type MainNavProps = {
     isAuthenticated: boolean;
     isApproved: boolean;
     isAdmin: boolean;
+    isElder: boolean;
+    isMusicLeader: boolean;
     isPending: boolean;
   };
 };
@@ -102,6 +106,8 @@ function getNavigation(viewer: MainNavProps["viewer"]) {
   if (viewer.isApproved) {
     return [
       ...protectedNavigation,
+      ...(viewer.isAdmin || viewer.isElder ? elderNavigation : []),
+      ...(viewer.isAdmin || viewer.isMusicLeader ? musicLeaderNavigation : []),
       ...(viewer.isAdmin ? adminNavigation : []),
       ...(viewer.isAdmin ? supportNavigation : []),
     ];
