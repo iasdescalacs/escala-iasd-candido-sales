@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Pencil } from "lucide-react";
 import { AdminCreateUserForm } from "@/components/admin/admin-create-user-form";
 import { UserStatusActions } from "@/components/admin/user-status-actions";
 import { getChurchOptions, getRoleOptions } from "@/lib/admin/lookups";
@@ -55,9 +57,17 @@ export default async function AdminUsuariosPage() {
         <div className="grid gap-3 p-4">
           {(users ?? []).map((user) => (
             <article
-              className="grid gap-3 rounded-md border border-border bg-background p-4 lg:grid-cols-[1.2fr_1fr_auto]"
+              className="relative grid gap-3 rounded-md border border-border bg-background p-4 pr-14 lg:grid-cols-[1.2fr_1fr_auto]"
               key={user.id}
             >
+              <Link
+                aria-label={`Editar ${user.full_name}`}
+                className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-surface text-muted transition hover:bg-surface-muted hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                href={`/admin/usuarios/${user.id}/editar`}
+                title="Editar usuário"
+              >
+                <Pencil size={16} aria-hidden="true" />
+              </Link>
               <div className="min-w-0">
                 <h2 className="truncate font-semibold text-foreground">
                   {user.full_name}

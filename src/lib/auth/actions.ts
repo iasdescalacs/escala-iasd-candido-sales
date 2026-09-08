@@ -252,6 +252,42 @@ export async function updateUserStatusAction(formData: FormData) {
   revalidatePath("/admin/usuarios");
 }
 
+export async function updateUserByAdminAction(
+  _state: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  await requireAdminUser();
+
+  const userId = readString(formData, "userId");
+  const fullName = formatPersonName(readString(formData, "fullName"));
+  const phone = readString(formData, "phone");
+  const status = readString(formData, "status");
+
+  if (!userId || !fullName || !phone || !isUserStatus(status)) {
+    return { message: "Preencha nome, telefone e status." };
+  }
+
+  const admin = createAdminSupabaseClient();
+  const { error } = await admin
+    .from("users")
+    .update({
+      full_name: fullName,
+      phone,
+      status,
+    })
+    .eq("id", userId)
+    .is("deleted_at", null);
+
+  if (error) {
+    return { message: "Não foi possível atualizar o usuário." };
+  }
+
+  revalidatePath("/admin/usuarios");
+  revalidatePath(`/admin/usuarios/${userId}/editar`);
+
+  return { ok: true, message: "Usuário atualizado com sucesso." };
+}
+
 export async function createChurchAction(
   _state: AuthActionState,
   formData: FormData,

@@ -38,6 +38,8 @@ Entregue até esta etapa:
 - Proteção de rotas com `src/proxy.ts` e validação nas páginas/actions do servidor.
 - Tela administrativa inicial para aprovar, bloquear ou inativar usuários.
 - Botões de status em `/admin/usuarios` aparecem somente quando a ação ainda é aplicável ao usuário.
+- Cards de usuários em `/admin/usuarios` têm ícone de edição no topo direito.
+- Admin pode editar nome, telefone e status em `/admin/usuarios/[id]/editar`.
 - Tela administrativa para criar igrejas.
 - Admin pode criar usuários já vinculados a uma função e igreja.
 - Cadastro público permite escolher tipo de usuário e igreja onde é membro.
