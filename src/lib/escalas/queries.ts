@@ -24,7 +24,7 @@ export type ScheduleService = Pick<
 
 export type ScheduleChurch = Pick<
   Database["public"]["Tables"]["churches"]["Row"],
-  "id" | "name"
+  "id" | "name" | "city" | "state"
 >;
 
 export type VolunteerOption = {
@@ -44,6 +44,8 @@ export type SwapRequestSummary = Database["public"]["Tables"]["swap_requests"]["
 export type UserAgendaItem = ScheduleService & {
   roleKey: ScheduleRoleKey;
   church_name: string;
+  church_city: string;
+  church_state: string;
 };
 
 export type NotificationSummary = Pick<
@@ -112,7 +114,7 @@ export async function getSchedulePageData({
     await Promise.all([
       supabase
         .from("churches")
-        .select("id,name")
+        .select("id,name,city,state")
         .in("id", managedChurchIds)
         .is("deleted_at", null)
         .order("name", { ascending: true }),
@@ -172,7 +174,7 @@ export async function getUserAgendaPageData({
         .is("deleted_at", null)
         .order("service_date", { ascending: true })
         .order("start_time", { ascending: true }),
-      supabase.from("churches").select("id,name").is("deleted_at", null),
+      supabase.from("churches").select("id,name,city,state").is("deleted_at", null),
       supabase
         .from("notifications")
         .select("id,title,body,status,created_at")
@@ -187,7 +189,7 @@ export async function getUserAgendaPageData({
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
     ]);
-  const churchNames = new Map((churches ?? []).map((church) => [church.id, church.name]));
+  const churchMap = new Map((churches ?? []).map((church) => [church.id, church]));
   const agenda: UserAgendaItem[] = [];
 
   for (const service of (services ?? []) as ScheduleService[]) {
@@ -195,7 +197,9 @@ export async function getUserAgendaPageData({
       agenda.push({
         ...service,
         roleKey: "pregador",
-        church_name: churchNames.get(service.church_id) ?? "Igreja",
+        church_name: churchMap.get(service.church_id)?.name ?? "Igreja",
+        church_city: churchMap.get(service.church_id)?.city ?? "Candido Sales",
+        church_state: churchMap.get(service.church_id)?.state ?? "BA",
       });
     }
 
@@ -203,7 +207,9 @@ export async function getUserAgendaPageData({
       agenda.push({
         ...service,
         roleKey: "cantor",
-        church_name: churchNames.get(service.church_id) ?? "Igreja",
+        church_name: churchMap.get(service.church_id)?.name ?? "Igreja",
+        church_city: churchMap.get(service.church_id)?.city ?? "Candido Sales",
+        church_state: churchMap.get(service.church_id)?.state ?? "BA",
       });
     }
   }

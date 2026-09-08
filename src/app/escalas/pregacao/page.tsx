@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PdfDownloadButton } from "@/components/pdf/pdf-download-button";
 import { ScheduleCalendar } from "@/components/schedule/schedule-calendar";
 import {
   buildCalendarDays,
   getAdjacentMonth,
   getMonthName,
+  getTemplateLabel,
 } from "@/lib/cultos/schedule";
+import type { ScheduleChurch, ScheduleService } from "@/lib/escalas/queries";
 import { getSchedulePageData } from "@/lib/escalas/queries";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -35,7 +38,6 @@ export default async function EscalaPregacaoPage({
   if (!data.allowed) {
     return <AccessDenied />;
   }
-
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <Header
@@ -43,6 +45,7 @@ export default async function EscalaPregacaoPage({
         month={month}
         nextHref={`/escalas/pregacao?mes=${next.month}&ano=${next.year}`}
         previousHref={`/escalas/pregacao?mes=${previous.month}&ano=${previous.year}`}
+        pdfSections={buildSchedulePdfSections(data.services, data.churches)}
         title="Escala de pregação"
         year={year}
       />
@@ -66,6 +69,7 @@ function Header({
   description,
   month,
   nextHref,
+  pdfSections,
   previousHref,
   title,
   year,
@@ -73,6 +77,7 @@ function Header({
   description: string;
   month: number;
   nextHref: string;
+  pdfSections: Parameters<typeof PdfDownloadButton>[0]["sections"];
   previousHref: string;
   title: string;
   year: number;
@@ -90,7 +95,13 @@ function Header({
             {capitalize(getMonthName(month))} de {year}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <PdfDownloadButton
+            fileName={`escala-pregacao-${year}-${String(month).padStart(2, "0")}.pdf`}
+            sections={pdfSections}
+            subtitle={`${capitalize(getMonthName(month))} de ${year}`}
+            title={title}
+          />
           <CalendarLink href={previousHref} label="Mês anterior" position="previous" />
           <CalendarLink href={nextHref} label="Próximo mês" position="next" />
         </div>
@@ -145,4 +156,35 @@ function normalizeMonth(month: number) {
 
 function capitalize(value: string) {
   return value.charAt(0).toLocaleUpperCase("pt-BR") + value.slice(1);
+}
+
+function buildSchedulePdfSections(
+  services: ScheduleService[],
+  churches: ScheduleChurch[],
+) {
+  const churchMap = new Map(churches.map((church) => [church.id, church]));
+
+  return [
+    {
+      title: "Cultos do mês",
+      rows: services.map((service) => {
+        const church = churchMap.get(service.church_id);
+
+        return [
+          { label: "Data", value: formatDate(service.service_date) },
+          { label: "Horário", value: service.start_time.slice(0, 5) },
+          { label: "Igreja", value: church ? `${church.name} - ${church.city}/${church.state}` : "Igreja" },
+          { label: "Culto", value: service.title ?? getTemplateLabel(service.service_type) },
+          { label: "Pregador", value: service.preacher_name ?? "A definir" },
+          { label: "Louvor", value: service.singer_name ?? "A definir" },
+        ];
+      }),
+    },
+  ];
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
+    new Date(`${value}T00:00:00.000Z`),
+  );
 }

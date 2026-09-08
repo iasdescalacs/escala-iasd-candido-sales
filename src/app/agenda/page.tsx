@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Bell, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { PdfDownloadButton } from "@/components/pdf/pdf-download-button";
+import { AgendaCalendar } from "@/components/schedule/agenda-calendar";
 import { SwapRequestForm } from "@/components/schedule/swap-request-form";
 import {
   buildCalendarDays,
@@ -27,7 +29,7 @@ export default async function AgendaPage({
   const previous = getAdjacentMonth(year, month, -1);
   const next = getAdjacentMonth(year, month, 1);
   const data = await getUserAgendaPageData({ monthStart, monthEnd });
-  const agendaByDate = groupAgendaByDate(data.agenda);
+  const monthLabel = `${capitalize(getMonthName(month))} de ${year}`;
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -43,54 +45,31 @@ export default async function AgendaPage({
             <p className="mt-3 max-w-3xl leading-7 text-muted">
               Consulte suas escalas de pregação e louvor e solicite permuta com outra pessoa da mesma função.
             </p>
-            <p className="mt-2 text-sm font-semibold text-primary">
-              {capitalize(getMonthName(month))} de {year}
-            </p>
+            <p className="mt-2 text-sm font-semibold text-primary">{monthLabel}</p>
           </div>
-          <div className="flex gap-2">
-            <CalendarLink href={`/agenda?mes=${previous.month}&ano=${previous.year}`} label="Mês anterior" position="previous" />
-            <CalendarLink href={`/agenda?mes=${next.month}&ano=${next.year}`} label="Próximo mês" position="next" />
+          <div className="flex flex-wrap gap-2">
+            <PdfDownloadButton
+              fileName={`minha-agenda-${year}-${String(month).padStart(2, "0")}.pdf`}
+              sections={buildAgendaPdfSections(data.agenda)}
+              subtitle={monthLabel}
+              title="Minha agenda"
+            />
+            <CalendarLink
+              href={`/agenda?mes=${previous.month}&ano=${previous.year}`}
+              label="Mês anterior"
+              position="previous"
+            />
+            <CalendarLink
+              href={`/agenda?mes=${next.month}&ano=${next.year}`}
+              label="Próximo mês"
+              position="next"
+            />
           </div>
         </div>
       </section>
 
       <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.55fr]">
-        <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
-          <div className="border-b border-border px-4 py-3">
-            <h2 className="text-lg font-semibold text-foreground">Calendário</h2>
-          </div>
-          <div className="grid grid-cols-7 border-b border-border bg-surface-muted">
-            {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
-              <div className="px-2 py-2 text-center text-xs font-semibold uppercase text-muted" key={day}>
-                {day}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7">
-            {buildCalendarDays(year, month).map((day) => (
-              <div
-                className={`min-h-32 min-w-0 border-b border-r border-border p-2 ${
-                  day.currentMonth ? "bg-background" : "bg-surface-muted/60"
-                }`}
-                key={day.date}
-              >
-                <span className={`text-xs font-semibold ${day.currentMonth ? "text-foreground" : "text-muted"}`}>
-                  {day.day}
-                </span>
-                <div className="mt-2 grid gap-1">
-                  {(agendaByDate[day.date] ?? []).map((item) => (
-                    <div className="rounded-md bg-primary-soft px-2 py-1 text-[11px] leading-4 text-primary-strong" key={`${item.id}-${item.roleKey}`}>
-                      <p className="truncate font-semibold">
-                        {item.roleKey === "pregador" ? "Pregação" : "Louvor"}
-                      </p>
-                      <p className="truncate text-muted">{item.church_name}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <AgendaCalendar agenda={data.agenda} calendarDays={buildCalendarDays(year, month)} />
 
         <aside className="rounded-lg border border-border bg-surface p-4 shadow-sm">
           <div className="flex items-center gap-2">
@@ -126,6 +105,9 @@ export default async function AgendaPage({
               </h3>
               <p className="mt-1 text-sm text-muted">
                 {item.church_name} · {item.title ?? getTemplateLabel(item.service_type)}
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Local: {item.church_name} - {item.church_city}/{item.church_state}
               </p>
             </div>
             <SwapRequestForm item={item} targets={data.swapTargets} />
@@ -163,19 +145,6 @@ function CalendarLink({
   );
 }
 
-function groupAgendaByDate(
-  agenda: Awaited<ReturnType<typeof getUserAgendaPageData>>["agenda"],
-) {
-  const grouped: Record<string, typeof agenda> = {};
-
-  for (const item of agenda) {
-    grouped[item.service_date] = grouped[item.service_date] ?? [];
-    grouped[item.service_date].push(item);
-  }
-
-  return grouped;
-}
-
 function parseNumberParam(
   value: string | string[] | undefined,
   fallback: number,
@@ -197,4 +166,22 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
     new Date(`${value}T00:00:00.000Z`),
   );
+}
+
+function buildAgendaPdfSections(
+  agenda: Awaited<ReturnType<typeof getUserAgendaPageData>>["agenda"],
+) {
+  return [
+    {
+      title: "Escalas do mês",
+      rows: agenda.map((item) => [
+        { label: "Data", value: formatDate(item.service_date) },
+        { label: "Horário", value: item.start_time.slice(0, 5) },
+        { label: "Função", value: item.roleKey === "pregador" ? "Pregação" : "Louvor" },
+        { label: "Igreja", value: `${item.church_name} - ${item.church_city}/${item.church_state}` },
+        { label: "Pregador", value: item.preacher_name ?? "A definir" },
+        { label: "Louvor", value: item.singer_name ?? "A definir" },
+      ]),
+    },
+  ];
 }
