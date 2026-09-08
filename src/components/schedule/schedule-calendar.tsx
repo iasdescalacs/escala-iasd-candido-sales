@@ -151,24 +151,22 @@ export function ScheduleCalendar({
                             </option>
                           ))}
                         </select>
-                        <ScheduleFormButton
-                          className="bg-success text-white hover:brightness-95"
-                          icon="save"
-                          label="Salvar"
-                        />
-                      </form>
-
-                      {assignedName ? (
-                        <form action={clearScheduleAction}>
-                          <input name="serviceId" type="hidden" value={service.id} />
-                          <input name="roleKey" type="hidden" value={roleKey} />
+                        <div className={`grid gap-1.5 ${assignedName ? "grid-cols-2" : ""}`}>
                           <ScheduleFormButton
-                            className="bg-red-600 text-white hover:bg-red-700"
-                            icon="delete"
-                            label="Excluir"
+                            className="bg-success text-white hover:brightness-95"
+                            icon="save"
+                            label="Salvar"
                           />
-                        </form>
-                      ) : null}
+                          {assignedName ? (
+                            <ScheduleFormButton
+                              className="bg-red-600 text-white hover:bg-red-700"
+                              formAction={clearScheduleAction}
+                              icon="delete"
+                              label="Excluir"
+                            />
+                          ) : null}
+                        </div>
+                      </form>
                     </article>
                   );
                 })}
@@ -183,10 +181,12 @@ export function ScheduleCalendar({
 
 function ScheduleFormButton({
   className,
+  formAction,
   icon,
   label,
 }: {
   className: string;
+  formAction?: (formData: FormData) => void | Promise<void>;
   icon: "delete" | "save";
   label: string;
 }) {
@@ -196,13 +196,14 @@ function ScheduleFormButton({
   return (
     <button
       aria-label={label}
-      className={`inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md px-2 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
+      className={`inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-md px-1.5 text-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
       disabled={pending}
+      formAction={formAction}
       title={label}
       type="submit"
     >
-      {pending ? <Loader2 className="animate-spin" size={14} /> : <Icon size={14} />}
-      <span>{pending ? "Aguarde" : label}</span>
+      {pending ? <Loader2 className="shrink-0 animate-spin" size={12} /> : <Icon className="shrink-0" size={12} />}
+      <span className="truncate">{pending ? "..." : label}</span>
     </button>
   );
 }
