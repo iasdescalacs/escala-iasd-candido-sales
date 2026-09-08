@@ -13,6 +13,7 @@ Entregue até esta etapa:
 - Tailwind CSS configurado.
 - Pastas organizadas em `src/app`, `src/components`, `src/lib` e `src/config`.
 - Layout principal com menu responsivo.
+- Menu principal no desktop/tablet reorganiza automaticamente os links excedentes no submenu `Mais`.
 - Tema claro e escuro com base visual no azul `#2E6DE7`.
 - Página inicial.
 - PWA inicial com `manifest.json`, ícone e service worker.

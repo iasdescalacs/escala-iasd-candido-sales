@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown, Menu, X } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   adminNavigation,
   appConfig,
@@ -27,6 +27,11 @@ type MainNavProps = {
   };
 };
 
+type NavigationItem = {
+  label: string;
+  href: string;
+};
+
 export function MainNav({ viewer }: MainNavProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -43,16 +48,7 @@ export function MainNav({ viewer }: MainNavProps) {
           <span className="block truncate">{appConfig.name}</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Menu principal">
-          {navigation.map((item) => (
-            <NavLink
-              active={pathname === item.href}
-              href={item.href}
-              key={item.href}
-              label={item.label}
-            />
-          ))}
-        </nav>
+        <DesktopNavigation items={navigation} pathname={pathname} />
 
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
@@ -92,7 +88,149 @@ export function MainNav({ viewer }: MainNavProps) {
   );
 }
 
-function getNavigation(viewer: MainNavProps["viewer"]) {
+function DesktopNavigation({
+  items,
+  pathname,
+}: {
+  items: NavigationItem[];
+  pathname: string;
+}) {
+  const [visibleCount, setVisibleCount] = useState(items.length);
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const moreRef = useRef<HTMLButtonElement>(null);
+
+  const calculateVisibleItems = useCallback(() => {
+    const containerWidth = containerRef.current?.getBoundingClientRect().width ?? 0;
+
+    if (containerWidth <= 0) {
+      return;
+    }
+
+    const itemWidths = items.map(
+      (_, index) => (itemRefs.current[index]?.getBoundingClientRect().width ?? 0) + 4,
+    );
+    const moreWidth = (moreRef.current?.getBoundingClientRect().width ?? 92) + 4;
+    const allItemsWidth = itemWidths.reduce((total, width) => total + width, 0);
+
+    if (allItemsWidth <= containerWidth) {
+      setVisibleCount(items.length);
+      return;
+    }
+
+    let usedWidth = moreWidth;
+    let nextVisibleCount = 0;
+
+    for (const width of itemWidths) {
+      if (usedWidth + width > containerWidth) {
+        break;
+      }
+
+      usedWidth += width;
+      nextVisibleCount += 1;
+    }
+
+    setVisibleCount(Math.max(1, nextVisibleCount));
+  }, [items]);
+
+  useLayoutEffect(() => {
+    calculateVisibleItems();
+  }, [calculateVisibleItems]);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(calculateVisibleItems);
+    const container = containerRef.current;
+
+    if (container) {
+      observer.observe(container);
+    }
+
+    window.addEventListener("resize", calculateVisibleItems);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", calculateVisibleItems);
+    };
+  }, [calculateVisibleItems]);
+
+  const visibleItems = items.slice(0, visibleCount);
+  const overflowItems = items.slice(visibleCount);
+  const hasActiveOverflowItem = overflowItems.some((item) => pathname === item.href);
+
+  return (
+    <div className="hidden min-w-0 flex-1 justify-end md:flex" ref={containerRef}>
+      <div className="pointer-events-none fixed -left-[9999px] top-0 flex gap-1 opacity-0">
+        {items.map((item, index) => (
+          <Link
+            className="rounded-md px-3 py-2 text-sm font-medium"
+            href={item.href}
+            key={item.href}
+            ref={(element) => {
+              itemRefs.current[index] = element;
+            }}
+            tabIndex={-1}
+          >
+            {item.label}
+          </Link>
+        ))}
+        <button
+          className="inline-flex rounded-md px-3 py-2 text-sm font-medium"
+          ref={moreRef}
+          tabIndex={-1}
+          type="button"
+        >
+          Mais
+        </button>
+      </div>
+
+      <nav className="flex min-w-0 items-center justify-end gap-1" aria-label="Menu principal">
+        {visibleItems.map((item) => (
+          <NavLink
+            active={pathname === item.href}
+            href={item.href}
+            key={item.href}
+            label={item.label}
+          />
+        ))}
+
+        {overflowItems.length > 0 ? (
+          <div className="relative">
+            <button
+              aria-expanded={isMoreOpen}
+              className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition ${
+                hasActiveOverflowItem
+                  ? "bg-primary-soft text-primary-strong"
+                  : "text-muted hover:bg-surface-muted hover:text-foreground"
+              }`}
+              onClick={() => setIsMoreOpen((current) => !current)}
+              type="button"
+            >
+              Mais
+              <ChevronDown size={15} aria-hidden="true" />
+            </button>
+
+            {isMoreOpen ? (
+              <div className="absolute right-0 top-full z-50 mt-2 grid min-w-52 gap-1 rounded-lg border border-border bg-surface p-2 shadow-lg">
+                {overflowItems.map((item) => (
+                  <NavLink
+                    active={pathname === item.href}
+                    href={item.href}
+                    key={item.href}
+                    label={item.label}
+                    onClick={() => setIsMoreOpen(false)}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </nav>
+    </div>
+  );
+}
+
+function getNavigation(viewer: MainNavProps["viewer"]): NavigationItem[] {
   if (!viewer.isAuthenticated) {
     return publicNavigation;
   }
