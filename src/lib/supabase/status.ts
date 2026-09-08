@@ -13,10 +13,14 @@ export async function getSupabaseConnectionStatus(): Promise<SupabaseConnectionS
   const siteEnvConfigured = hasSiteEnv();
 
   try {
-    const { supabaseUrl } = getSupabaseBrowserEnv();
+    const { supabaseAnonKey, supabaseUrl } = getSupabaseBrowserEnv();
     const healthUrl = new URL("/auth/v1/health", supabaseUrl);
     const response = await fetch(healthUrl, {
       cache: "no-store",
+      headers: {
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+      },
     });
 
     return {

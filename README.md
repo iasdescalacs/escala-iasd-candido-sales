@@ -105,6 +105,7 @@ http://localhost:3000/status/supabase
 ```
 
 Essa página não exibe valores de chaves. Ela mostra apenas se as variáveis estão configuradas e se a chamada inicial ao Supabase respondeu.
+A verificação usa a chave pública apenas nos headers `apikey` e `Authorization`; nenhum valor sensível é renderizado na interface.
 
 ## Estrutura do Projeto
 
