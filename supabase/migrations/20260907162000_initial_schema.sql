@@ -4,11 +4,23 @@
 create extension if not exists "pgcrypto";
 create extension if not exists "citext";
 
-create type public.user_status as enum ('pending', 'approved', 'blocked', 'inactive');
-create type public.role_key as enum ('admin', 'anciao', 'lider_musica', 'pregador', 'cantor');
-create type public.notification_status as enum ('unread', 'read', 'archived');
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'user_status' and typnamespace = 'public'::regnamespace) then
+    create type public.user_status as enum ('pending', 'approved', 'blocked', 'inactive');
+  end if;
 
-create table public.users (
+  if not exists (select 1 from pg_type where typname = 'role_key' and typnamespace = 'public'::regnamespace) then
+    create type public.role_key as enum ('admin', 'anciao', 'lider_musica', 'pregador', 'cantor');
+  end if;
+
+  if not exists (select 1 from pg_type where typname = 'notification_status' and typnamespace = 'public'::regnamespace) then
+    create type public.notification_status as enum ('unread', 'read', 'archived');
+  end if;
+end;
+$$;
+
+create table if not exists public.users (
   id uuid primary key default gen_random_uuid(),
   auth_user_id uuid unique references auth.users(id) on delete set null,
   full_name text not null,
@@ -22,7 +34,7 @@ create table public.users (
   constraint users_email_not_blank check (length(trim(email::text)) > 0)
 );
 
-create table public.roles (
+create table if not exists public.roles (
   id uuid primary key default gen_random_uuid(),
   key public.role_key not null unique,
   name text not null,
@@ -32,7 +44,7 @@ create table public.roles (
   deleted_at timestamptz
 );
 
-create table public.churches (
+create table if not exists public.churches (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
   city text not null default 'Candido Sales',
@@ -44,7 +56,7 @@ create table public.churches (
   constraint churches_name_not_blank check (length(trim(name)) > 0)
 );
 
-create table public.user_roles (
+create table if not exists public.user_roles (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
   role_id uuid not null references public.roles(id) on delete restrict,
@@ -54,7 +66,7 @@ create table public.user_roles (
   deleted_at timestamptz
 );
 
-create table public.user_church_links (
+create table if not exists public.user_church_links (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
   church_id uuid not null references public.churches(id) on delete cascade,
@@ -67,7 +79,7 @@ create table public.user_church_links (
   deleted_at timestamptz
 );
 
-create table public.history (
+create table if not exists public.history (
   id uuid primary key default gen_random_uuid(),
   actor_user_id uuid references public.users(id) on delete set null,
   entity_table text not null,
@@ -81,7 +93,7 @@ create table public.history (
   constraint history_action_not_blank check (length(trim(action)) > 0)
 );
 
-create table public.settings (
+create table if not exists public.settings (
   id uuid primary key default gen_random_uuid(),
   key text not null unique,
   value jsonb not null default '{}'::jsonb,
@@ -92,7 +104,7 @@ create table public.settings (
   constraint settings_key_not_blank check (length(trim(key)) > 0)
 );
 
-create table public.notifications (
+create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
   title text not null,
@@ -106,30 +118,30 @@ create table public.notifications (
   constraint notifications_title_not_blank check (length(trim(title)) > 0)
 );
 
-create unique index user_roles_unique_active_role
+create unique index if not exists user_roles_unique_active_role
   on public.user_roles (user_id, role_id)
   where deleted_at is null;
 
-create unique index user_church_links_unique_active_link
+create unique index if not exists user_church_links_unique_active_link
   on public.user_church_links (user_id, church_id, role_id)
   where deleted_at is null;
 
-create index users_auth_user_id_idx on public.users (auth_user_id);
-create index users_status_idx on public.users (status) where deleted_at is null;
-create index users_deleted_at_idx on public.users (deleted_at);
-create index roles_key_idx on public.roles (key) where deleted_at is null;
-create index churches_active_idx on public.churches (active) where deleted_at is null;
-create index churches_deleted_at_idx on public.churches (deleted_at);
-create index user_roles_user_id_idx on public.user_roles (user_id) where deleted_at is null;
-create index user_roles_role_id_idx on public.user_roles (role_id) where deleted_at is null;
-create index user_church_links_user_id_idx on public.user_church_links (user_id) where deleted_at is null;
-create index user_church_links_church_id_idx on public.user_church_links (church_id) where deleted_at is null;
-create index user_church_links_role_id_idx on public.user_church_links (role_id) where deleted_at is null;
-create index history_actor_user_id_idx on public.history (actor_user_id);
-create index history_entity_idx on public.history (entity_table, entity_id);
-create index settings_key_idx on public.settings (key) where deleted_at is null;
-create index notifications_user_status_idx on public.notifications (user_id, status) where deleted_at is null;
-create index notifications_created_at_idx on public.notifications (created_at desc) where deleted_at is null;
+create index if not exists users_auth_user_id_idx on public.users (auth_user_id);
+create index if not exists users_status_idx on public.users (status) where deleted_at is null;
+create index if not exists users_deleted_at_idx on public.users (deleted_at);
+create index if not exists roles_key_idx on public.roles (key) where deleted_at is null;
+create index if not exists churches_active_idx on public.churches (active) where deleted_at is null;
+create index if not exists churches_deleted_at_idx on public.churches (deleted_at);
+create index if not exists user_roles_user_id_idx on public.user_roles (user_id) where deleted_at is null;
+create index if not exists user_roles_role_id_idx on public.user_roles (role_id) where deleted_at is null;
+create index if not exists user_church_links_user_id_idx on public.user_church_links (user_id) where deleted_at is null;
+create index if not exists user_church_links_church_id_idx on public.user_church_links (church_id) where deleted_at is null;
+create index if not exists user_church_links_role_id_idx on public.user_church_links (role_id) where deleted_at is null;
+create index if not exists history_actor_user_id_idx on public.history (actor_user_id);
+create index if not exists history_entity_idx on public.history (entity_table, entity_id);
+create index if not exists settings_key_idx on public.settings (key) where deleted_at is null;
+create index if not exists notifications_user_status_idx on public.notifications (user_id, status) where deleted_at is null;
+create index if not exists notifications_created_at_idx on public.notifications (created_at desc) where deleted_at is null;
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -140,6 +152,15 @@ begin
   return new;
 end;
 $$;
+
+drop trigger if exists set_users_updated_at on public.users;
+drop trigger if exists set_roles_updated_at on public.roles;
+drop trigger if exists set_churches_updated_at on public.churches;
+drop trigger if exists set_user_roles_updated_at on public.user_roles;
+drop trigger if exists set_user_church_links_updated_at on public.user_church_links;
+drop trigger if exists set_history_updated_at on public.history;
+drop trigger if exists set_settings_updated_at on public.settings;
+drop trigger if exists set_notifications_updated_at on public.notifications;
 
 create trigger set_users_updated_at before update on public.users
   for each row execute function public.set_updated_at();
@@ -232,6 +253,18 @@ alter table public.user_church_links force row level security;
 alter table public.history force row level security;
 alter table public.settings force row level security;
 alter table public.notifications force row level security;
+
+drop policy if exists "usuarios veem proprio cadastro ou admin" on public.users;
+drop policy if exists "usuarios criam cadastro pendente" on public.users;
+drop policy if exists "usuarios atualizam proprio cadastro permitido" on public.users;
+drop policy if exists "perfis visiveis para aprovados" on public.roles;
+drop policy if exists "igrejas visiveis para aprovados" on public.churches;
+drop policy if exists "vinculos de perfis visiveis ao proprio usuario" on public.user_roles;
+drop policy if exists "vinculos com igrejas visiveis ao proprio usuario" on public.user_church_links;
+drop policy if exists "historico somente admin" on public.history;
+drop policy if exists "configuracoes visiveis para aprovados" on public.settings;
+drop policy if exists "notificacoes visiveis ao destinatario" on public.notifications;
+drop policy if exists "notificacoes atualizadas pelo destinatario" on public.notifications;
 
 create policy "usuarios veem proprio cadastro ou admin"
   on public.users for select
