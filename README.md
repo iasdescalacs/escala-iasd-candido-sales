@@ -40,8 +40,8 @@ Entregue até esta etapa:
 - Tela administrativa para criar igrejas.
 - Admin pode criar usuários já vinculados a uma função e igreja.
 - Cadastro público permite escolher tipo de usuário e igreja onde é membro.
-- Login exibe seleção de tipo de acesso e valida no servidor se a função está vinculada ao usuário.
-- O painel mostra a função ativa escolhida no login quando houver seleção.
+- Login usa apenas e-mail e senha.
+- Tipo de usuário/função é escolhido no cadastro público ou definido pelo administrador ao criar usuários.
 - Testes de permissões em `tests/auth/access-rules.test.mjs`.
 
 Pendente:
@@ -156,7 +156,7 @@ Fluxo inicial:
 - Administrador acessa `/admin/usuarios` para aprovar, bloquear ou inativar usuários.
 - Administrador também pode criar usuários em `/admin/usuarios`, definindo função, igreja, status e senha inicial.
 - Administrador cadastra igrejas em `/admin/igrejas` antes de liberar cadastros públicos vinculados.
-- No login, a opção `Entrar como` só ativa uma função se ela já estiver vinculada ao usuário.
+- O tipo de usuário é escolhido no cadastro público e validado pelo vínculo salvo no banco.
 - Usuários `blocked` ou `inactive` não acessam o sistema.
 - Rotas protegidas redirecionam usuário sem permissão para `/login`.
 

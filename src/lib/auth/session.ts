@@ -1,13 +1,11 @@
 import "server-only";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 import {
   accessReasonToLoginMessage,
   decideProtectedAccess,
-  isLoginRoleKey,
   type AccessProfile,
 } from "./access-rules";
 
@@ -19,7 +17,6 @@ export type CurrentUserProfile = {
   email: string;
   appUser: AppUserRow | null;
   roles: RoleRow[];
-  activeRole: RoleRow | null;
 };
 
 export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null> {
@@ -61,14 +58,11 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null
     }
   }
 
-  const activeRole = await getActiveRole(roles);
-
   return {
     authUserId: user.id,
     email: user.email ?? appUser?.email ?? "",
     appUser,
     roles,
-    activeRole,
   };
 }
 
@@ -116,15 +110,4 @@ function redirectForDecision(reason: Parameters<typeof accessReasonToLoginMessag
 
   const message = encodeURIComponent(accessReasonToLoginMessage(reason));
   redirect(`/login?mensagem=${message}`);
-}
-
-async function getActiveRole(roles: RoleRow[]) {
-  const cookieStore = await cookies();
-  const roleKey = cookieStore.get("escala_active_role")?.value ?? "";
-
-  if (!isLoginRoleKey(roleKey)) {
-    return null;
-  }
-
-  return roles.find((role) => role.key === roleKey) ?? null;
 }

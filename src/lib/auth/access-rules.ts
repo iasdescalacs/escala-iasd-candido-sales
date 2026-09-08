@@ -1,5 +1,4 @@
 export type AppUserStatus = "pending" | "approved" | "blocked" | "inactive";
-export type LoginRoleKey = "anciao" | "lider_musica" | "pregador" | "cantor";
 
 export type AccessProfile = {
   status: AppUserStatus | null;
@@ -18,10 +17,6 @@ export type AccessDecision =
         | "inactive"
         | "admin_required";
     };
-
-export type SelectedRoleDecision =
-  | { allowed: true; role: LoginRoleKey | null }
-  | { allowed: false; reason: "invalid_role" | "role_not_assigned" };
 
 type AccessDeniedReason = Extract<AccessDecision, { allowed: false }>["reason"];
 
@@ -67,27 +62,4 @@ export function accessReasonToLoginMessage(reason: AccessDeniedReason) {
   };
 
   return messages[reason];
-}
-
-export function decideSelectedRoleAccess(
-  requestedRole: string,
-  assignedRoles: string[],
-): SelectedRoleDecision {
-  if (!requestedRole) {
-    return { allowed: true, role: null };
-  }
-
-  if (!isLoginRoleKey(requestedRole)) {
-    return { allowed: false, reason: "invalid_role" };
-  }
-
-  if (!assignedRoles.includes(requestedRole)) {
-    return { allowed: false, reason: "role_not_assigned" };
-  }
-
-  return { allowed: true, role: requestedRole };
-}
-
-export function isLoginRoleKey(value: string): value is LoginRoleKey {
-  return ["anciao", "lider_musica", "pregador", "cantor"].includes(value);
 }
