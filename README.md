@@ -47,6 +47,7 @@ Entregue até esta etapa:
 - Cadastro público permite escolher tipo de usuário e igreja onde é membro.
 - Login usa apenas e-mail e senha.
 - Tipo de usuário/função é escolhido no cadastro público ou definido pelo administrador ao criar usuários.
+- Menu `Status Supabase` aparece somente para administrador.
 - Página administrativa de cultos em `/admin/cultos`.
 - Admin pode gerar cultos para todas as igrejas ativas por mês, ou por intervalo de até 3 meses no mesmo ano.
 - Cultos padrão gerados: quarta-feira das 19:45 às 21:00, sábado das 08:45 às 12:00 e domingo das 19:45 às 21:00.

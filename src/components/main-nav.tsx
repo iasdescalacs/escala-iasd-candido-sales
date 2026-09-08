@@ -90,13 +90,12 @@ export function MainNav({ viewer }: MainNavProps) {
 
 function getNavigation(viewer: MainNavProps["viewer"]) {
   if (!viewer.isAuthenticated) {
-    return [...publicNavigation, ...supportNavigation];
+    return publicNavigation;
   }
 
   if (viewer.isPending) {
     return [
       { label: "Aguardando aprovação", href: "/aguardando-aprovacao" },
-      ...supportNavigation,
     ];
   }
 
@@ -104,11 +103,11 @@ function getNavigation(viewer: MainNavProps["viewer"]) {
     return [
       ...protectedNavigation,
       ...(viewer.isAdmin ? adminNavigation : []),
-      ...supportNavigation,
+      ...(viewer.isAdmin ? supportNavigation : []),
     ];
   }
 
-  return supportNavigation;
+  return [];
 }
 
 function NavLink({
