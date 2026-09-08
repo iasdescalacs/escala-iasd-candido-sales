@@ -12,13 +12,13 @@ const destaques = [
     icon: ShieldCheck,
     title: "Acesso por perfil",
     description:
-      "A autenticação será construída na próxima etapa, respeitando aprovação e permissões.",
+      "Login, cadastro pendente, aprovação administrativa e proteção de rotas já preparados.",
   },
   {
     icon: Smartphone,
     title: "Pronto para PWA",
     description:
-      "Manifest e service worker inicial já preparados para instalação e evolução offline segura.",
+      "Manifest e service worker inicial preparados para instalação e evolução offline segura.",
   },
 ];
 
@@ -34,8 +34,8 @@ export default function Home() {
             ESCALA IASD CANDIDO SALES
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-muted sm:text-lg">
-            Estrutura inicial criada para organizar escalas da igreja com
-            Next.js, TypeScript, Tailwind CSS, Supabase e PWA desde a base.
+            Sistema em etapas para organizar escalas da igreja com Next.js,
+            TypeScript, Tailwind CSS, Supabase e PWA desde a base.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
@@ -47,19 +47,19 @@ export default function Home() {
             </Link>
             <Link
               className="inline-flex h-11 items-center justify-center rounded-md border border-border bg-surface px-5 text-sm font-semibold text-foreground transition hover:bg-surface-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
-              href="/painel"
+              href="/cadastro"
             >
-              Ver painel provisório
+              Solicitar cadastro
             </Link>
           </div>
         </div>
 
         <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
           <div className="grid gap-3 sm:grid-cols-2">
-            <StatusItem label="Projeto" value="Etapa 1" />
+            <StatusItem label="Projeto" value="Etapa 5" />
             <StatusItem label="Tema" value="Claro e escuro" />
             <StatusItem label="Menu" value="Responsivo" />
-            <StatusItem label="PWA" value="Inicial" />
+            <StatusItem label="Acesso" value="Protegido" />
           </div>
         </div>
       </section>

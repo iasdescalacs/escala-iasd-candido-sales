@@ -4,12 +4,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import { appConfig, publicNavigation } from "@/config/app";
+import {
+  adminNavigation,
+  appConfig,
+  protectedNavigation,
+  publicNavigation,
+  supportNavigation,
+} from "@/config/app";
+import { LogoutButton } from "@/components/auth/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-export function MainNav() {
+type MainNavProps = {
+  viewer: {
+    isAuthenticated: boolean;
+    isApproved: boolean;
+    isAdmin: boolean;
+    isPending: boolean;
+  };
+};
+
+export function MainNav({ viewer }: MainNavProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const navigation = getNavigation(viewer);
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-surface/95 backdrop-blur">
@@ -23,7 +40,7 @@ export function MainNav() {
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Menu principal">
-          {publicNavigation.map((item) => (
+          {navigation.map((item) => (
             <NavLink
               active={pathname === item.href}
               href={item.href}
@@ -35,6 +52,7 @@ export function MainNav() {
 
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
+          {viewer.isAuthenticated ? <div className="hidden md:block"><LogoutButton /></div> : null}
           <button
             aria-expanded={isOpen}
             aria-label={isOpen ? "Fechar menu" : "Abrir menu"}
@@ -53,7 +71,7 @@ export function MainNav() {
           className="border-t border-border bg-surface px-4 py-3 md:hidden"
         >
           <div className="mx-auto grid max-w-6xl gap-2">
-            {publicNavigation.map((item) => (
+            {navigation.map((item) => (
               <NavLink
                 active={pathname === item.href}
                 href={item.href}
@@ -62,11 +80,35 @@ export function MainNav() {
                 onClick={() => setIsOpen(false)}
               />
             ))}
+            {viewer.isAuthenticated ? <LogoutButton /> : null}
           </div>
         </nav>
       ) : null}
     </header>
   );
+}
+
+function getNavigation(viewer: MainNavProps["viewer"]) {
+  if (!viewer.isAuthenticated) {
+    return [...publicNavigation, ...supportNavigation];
+  }
+
+  if (viewer.isPending) {
+    return [
+      { label: "Aguardando aprovação", href: "/aguardando-aprovacao" },
+      ...supportNavigation,
+    ];
+  }
+
+  if (viewer.isApproved) {
+    return [
+      ...protectedNavigation,
+      ...(viewer.isAdmin ? adminNavigation : []),
+      ...supportNavigation,
+    ];
+  }
+
+  return supportNavigation;
 }
 
 function NavLink({

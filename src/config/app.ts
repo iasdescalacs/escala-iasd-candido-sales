@@ -15,9 +15,30 @@ export const publicNavigation = [
     href: "/login",
   },
   {
+    label: "Cadastro",
+    href: "/cadastro",
+  },
+];
+
+export const protectedNavigation = [
+  {
     label: "Painel",
     href: "/painel",
   },
+  {
+    label: "Perfil",
+    href: "/perfil",
+  },
+];
+
+export const adminNavigation = [
+  {
+    label: "Usuários",
+    href: "/admin/usuarios",
+  },
+];
+
+export const supportNavigation = [
   {
     label: "Status Supabase",
     href: "/status/supabase",

@@ -4,9 +4,9 @@ Sistema web para organização de escalas da IASD Candido Sales.
 
 ## Etapa Atual
 
-### Etapa 4: Banco inicial
+### Etapa 5: Autenticação
 
-Entregue nesta etapa:
+Entregue até esta etapa:
 
 - Projeto Next.js com App Router.
 - TypeScript em modo estrito.
@@ -15,10 +15,7 @@ Entregue nesta etapa:
 - Layout principal com menu responsivo.
 - Tema claro e escuro com base visual no azul `#2E6DE7`.
 - Página inicial.
-- Páginas provisórias de login e painel, sem autenticação.
-- Preparação inicial de PWA com `manifest.json`, ícone e service worker.
-- `.env.example` para variáveis públicas do Supabase.
-- README com instalação, execução local e estrutura do projeto.
+- PWA inicial com `manifest.json`, ícone e service worker.
 - Git configurado com `user.name=iasdescalacs`.
 - Git configurado com `user.email=iasdescalacs@gmail.com`.
 - Repositório GitHub conectado em `origin`.
@@ -29,29 +26,26 @@ Entregue nesta etapa:
 - Cliente admin Supabase somente servidor, usando `SUPABASE_SERVICE_ROLE_KEY`.
 - Variáveis `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e `NEXT_PUBLIC_SITE_URL` configuradas localmente e na Vercel.
 - `.env.example` atualizado sem valores reais.
-- Migration inicial do banco em `supabase/migrations/20260907162000_initial_schema.sql`.
-- Tabelas iniciais para usuarios, perfis/funcoes, igrejas, vinculos entre usuarios e igrejas, historico, configuracoes e notificacoes basicas.
-- UUIDs, `created_at`, `updated_at`, `deleted_at`, indices, foreign keys e constraints basicas.
-- RLS ativado e forcado nas tabelas iniciais.
-- Politicas minimas para usuario autenticado, usuario aprovado, destinatario de notificacao e administrador.
-- Dados ficticios de teste em `supabase/seed.sql`.
-- Scripts manuais de recuperacao/admin em `supabase/manual/`.
+- Banco inicial em `supabase/migrations/20260907162000_initial_schema.sql`.
+- Reforço de segurança em `supabase/migrations/20260907173000_auth_access_policies.sql`.
+- Dados fictícios de teste em `supabase/seed.sql`.
+- Scripts manuais de recuperação/admin em `supabase/manual/`.
 - Tipos TypeScript iniciais do banco em `src/types/database.ts`.
-- Arquivo de validacao local em `supabase/tests/validate_initial_schema.sql`.
+- Login, logout, cadastro, recuperação de senha e alteração de senha.
+- Cadastro novo com perfil pendente em `public.users`.
+- Tela de aguardando aprovação.
+- Perfil do usuário.
+- Proteção de rotas com `src/proxy.ts` e validação nas páginas/actions do servidor.
+- Tela administrativa inicial para aprovar, bloquear ou inativar usuários.
+- Testes de permissões em `tests/auth/access-rules.test.mjs`.
 
-Também preservado da preparação anterior:
-
-- `NEXT_PUBLIC_SUPABASE_URL` configurada localmente e na Vercel.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` configurada localmente e na Vercel.
-- Status de configuração confirmado pela rota `/status/supabase`.
-
-Pendente nesta etapa:
+Pendente:
 
 - Configurar `SUPABASE_SERVICE_ROLE_KEY` localmente e na Vercel.
 - Confirmar conexão inicial com o host Supabase informado.
-- Aplicar as migrations no projeto Supabase remoto depois que a conexao do projeto estiver disponivel.
-
-Funcionalidades de escala, autenticação e regras de negócio ainda não foram implementadas.
+- Aplicar as migrations no projeto Supabase remoto depois que a conexão do projeto estiver disponível.
+- Criar e promover um usuário admin real no Supabase remoto.
+- Implementar funcionalidades completas de escala em etapas futuras autorizadas.
 
 ## Tecnologias
 
@@ -101,16 +95,28 @@ Essa página não exibe valores de chaves. Ela mostra apenas se as variáveis es
 ```text
 src/
   app/
+    admin/usuarios/
+    aguardando-aprovacao/
+    alterar-senha/
+    auth/callback/
+    cadastro/
     login/
     painel/
+    perfil/
+    recuperar-senha/
     status/supabase/
     globals.css
     layout.tsx
     page.tsx
   components/
+    admin/
+    auth/
   config/
   lib/
+    auth/
+    supabase/
   types/
+  proxy.ts
 public/
   icons/
   manifest.json
@@ -121,25 +127,52 @@ supabase/
   manual/
   tests/
   seed.sql
+tests/
+  auth/
 ```
 
 ## Scripts
 
 ```bash
 npm run lint
+npm run test
 npm run typecheck
 npm run build
 ```
 
+## Autenticação
+
+A autenticação usa Supabase Auth e as tabelas públicas do sistema.
+
+Fluxo inicial:
+
+- Usuário solicita cadastro em `/cadastro`.
+- O cadastro cria uma conta no Supabase Auth e um perfil em `public.users` com status `pending`.
+- Usuário pendente é enviado para `/aguardando-aprovacao`.
+- Administrador acessa `/admin/usuarios` para aprovar, bloquear ou inativar usuários.
+- Usuários `blocked` ou `inactive` não acessam o sistema.
+- Rotas protegidas redirecionam usuário sem permissão para `/login`.
+
+Não existe usuário admin real criado automaticamente em produção. O seed contém apenas `admin@iasd.local` para teste local e não cria conta real no Supabase Auth.
+
+Para promover um admin real depois de criar o cadastro:
+
+```bash
+psql "$DATABASE_URL" -v admin_email='email@dominio.com' -f supabase/manual/promote-admin.sql
+```
+
+Nunca coloque `SUPABASE_SERVICE_ROLE_KEY`, tokens ou senhas no front-end ou no chat.
+
 ## Banco de Dados
 
-A estrutura inicial do banco fica em:
+Migrations:
 
 ```text
 supabase/migrations/20260907162000_initial_schema.sql
+supabase/migrations/20260907173000_auth_access_policies.sql
 ```
 
-Ela cria:
+Tabelas iniciais:
 
 - `users`
 - `roles`
@@ -156,7 +189,7 @@ O seed de teste fica em:
 supabase/seed.sql
 ```
 
-Os scripts manuais de administracao e recuperacao ficam em:
+Os scripts manuais de administração e recuperação ficam em:
 
 ```text
 supabase/manual/
@@ -164,7 +197,7 @@ supabase/manual/
 
 ### Validar Migrations
 
-Com Docker e Supabase CLI disponiveis:
+Com Docker e Supabase CLI disponíveis:
 
 ```bash
 supabase db reset
@@ -177,23 +210,25 @@ docker run --rm -e POSTGRES_PASSWORD=postgres -v "$PWD/supabase:/supabase" postg
   psql -v ON_ERROR_STOP=1 -U postgres -f /supabase/tests/validate_initial_schema.sql
 ```
 
-Nesta maquina, o Docker estava instalado, mas o daemon nao estava em execucao. Por isso a Etapa 4 tambem foi validada com PostgreSQL em WebAssembly, removendo apenas as linhas de extensoes `pgcrypto` e `citext` por limitacao do validador local. O resultado validou:
+Nesta máquina, o Docker estava instalado, mas o daemon não estava em execução. Por isso as migrations também foram validadas com PostgreSQL em WebAssembly, removendo apenas as linhas de extensões `pgcrypto` e `citext` por limitação do validador local.
+
+Resultado validado:
 
 - 8 tabelas com RLS e `force row level security`.
-- 11 politicas.
-- 8 foreign keys.
-- 4 usuarios ficticios do seed.
+- 11 políticas.
+- 1 trigger de proteção de campos sensíveis.
+- 4 usuários fictícios do seed.
 
 ### Aplicar no Supabase Remoto
 
-Depois de confirmar `SUPABASE_SERVICE_ROLE_KEY` e a conexao com o projeto Supabase:
+Depois de confirmar `SUPABASE_SERVICE_ROLE_KEY` e a conexão com o projeto Supabase:
 
 ```bash
 supabase link --project-ref xypgaqmzunmdbxadvfhp
 supabase db push
 ```
 
-Nao aplique `supabase/seed.sql` em producao sem revisar os dados ficticios.
+Não aplique `supabase/seed.sql` em produção sem revisar os dados fictícios.
 
 ## Deploy
 
@@ -217,6 +252,7 @@ Execute as verificações disponíveis:
 
 ```bash
 npm run lint
+npm run test
 npm run typecheck
 npm run build
 ```

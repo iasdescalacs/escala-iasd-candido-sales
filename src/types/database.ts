@@ -45,6 +45,7 @@ export type Database = {
           updated_at?: string;
           deleted_at?: Nullable<string>;
         };
+        Relationships: [];
       };
       roles: {
         Row: {
@@ -74,6 +75,7 @@ export type Database = {
           updated_at?: string;
           deleted_at?: Nullable<string>;
         };
+        Relationships: [];
       };
       churches: {
         Row: {
@@ -106,6 +108,7 @@ export type Database = {
           updated_at?: string;
           deleted_at?: Nullable<string>;
         };
+        Relationships: [];
       };
       user_roles: {
         Row: {
@@ -135,6 +138,7 @@ export type Database = {
           updated_at?: string;
           deleted_at?: Nullable<string>;
         };
+        Relationships: [];
       };
       user_church_links: {
         Row: {
@@ -173,6 +177,7 @@ export type Database = {
           updated_at?: string;
           deleted_at?: Nullable<string>;
         };
+        Relationships: [];
       };
       history: {
         Row: {
@@ -208,6 +213,7 @@ export type Database = {
           updated_at?: string;
           deleted_at?: Nullable<string>;
         };
+        Relationships: [];
       };
       settings: {
         Row: {
@@ -237,6 +243,7 @@ export type Database = {
           updated_at?: string;
           deleted_at?: Nullable<string>;
         };
+        Relationships: [];
       };
       notifications: {
         Row: {
@@ -275,6 +282,7 @@ export type Database = {
           updated_at?: string;
           deleted_at?: Nullable<string>;
         };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

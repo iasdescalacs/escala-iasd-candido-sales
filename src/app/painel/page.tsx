@@ -1,27 +1,37 @@
-import { CalendarDays, Church, UsersRound } from "lucide-react";
+import { CalendarDays, Church, ShieldCheck, UsersRound } from "lucide-react";
+import { requireApprovedUser } from "@/lib/auth/session";
 
-const cards = [
-  {
-    icon: CalendarDays,
-    title: "Agenda",
-    value: "Provisória",
-    description: "Área reservada para futuras escalas e disponibilidade.",
-  },
-  {
-    icon: UsersRound,
-    title: "Perfis",
-    value: "Planejados",
-    description: "Admin, ancião, líder de música, pregador e cantor.",
-  },
-  {
-    icon: Church,
-    title: "Igrejas",
-    value: "Em estruturação",
-    description: "Vínculos entre igrejas e pessoas serão definidos depois.",
-  },
-];
+export default async function PainelPage() {
+  const profile = await requireApprovedUser();
+  const roles = profile.roles.map((role) => role.name).join(", ") || "Sem função";
 
-export default function PainelPage() {
+  const cards = [
+    {
+      icon: ShieldCheck,
+      title: "Status",
+      value: "Aprovado",
+      description: "Seu acesso está liberado para as áreas do seu perfil.",
+    },
+    {
+      icon: UsersRound,
+      title: "Funções",
+      value: roles,
+      description: "As permissões são verificadas no servidor e no banco.",
+    },
+    {
+      icon: CalendarDays,
+      title: "Agenda",
+      value: "Em breve",
+      description: "A disponibilidade e as escalas serão implementadas em etapa futura.",
+    },
+    {
+      icon: Church,
+      title: "Igrejas",
+      value: "Em breve",
+      description: "Os vínculos com igrejas serão usados nas próximas etapas.",
+    },
+  ];
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
@@ -29,15 +39,15 @@ export default function PainelPage() {
           Painel
         </p>
         <h1 className="mt-3 text-3xl font-semibold text-foreground">
-          Painel provisório
+          Olá, {profile.appUser.full_name}
         </h1>
         <p className="mt-3 max-w-3xl leading-7 text-muted">
-          Esta página existe apenas para validar a estrutura inicial de rotas,
-          layout e navegação. Nenhum dado real ou autenticação foi criado ainda.
+          Este painel já exige login e cadastro aprovado. As funções completas de
+          escala serão criadas nas próximas etapas autorizadas.
         </p>
       </section>
 
-      <section className="mt-6 grid gap-4 md:grid-cols-3">
+      <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
 
@@ -46,13 +56,13 @@ export default function PainelPage() {
               className="rounded-lg border border-border bg-surface p-5 shadow-sm"
               key={card.title}
             >
-              <div className="flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-soft text-primary">
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
                   <Icon size={20} aria-hidden="true" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h2 className="font-semibold text-foreground">{card.title}</h2>
-                  <p className="text-sm text-primary">{card.value}</p>
+                  <p className="break-words text-sm text-primary">{card.value}</p>
                 </div>
               </div>
               <p className="mt-4 text-sm leading-6 text-muted">
