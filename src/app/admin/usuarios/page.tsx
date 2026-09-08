@@ -68,7 +68,7 @@ export default async function AdminUsuariosPage() {
                 <p>{user.phone ?? "Telefone não informado"}</p>
                 <p>Status: {statusLabels[user.status]}</p>
               </div>
-              <UserStatusActions userId={user.id} />
+              <UserStatusActions currentStatus={user.status} userId={user.id} />
             </article>
           ))}
 

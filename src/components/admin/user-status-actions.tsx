@@ -9,10 +9,20 @@ const actions = [
   { label: "Inativar", loadingLabel: "Inativando...", status: "inactive", tone: "muted" },
 ] as const;
 
-export function UserStatusActions({ userId }: { userId: string }) {
+type UserStatus = "pending" | "approved" | "blocked" | "inactive";
+
+export function UserStatusActions({
+  userId,
+  currentStatus,
+}: {
+  userId: string;
+  currentStatus: UserStatus;
+}) {
+  const availableActions = actions.filter((action) => action.status !== currentStatus);
+
   return (
     <div className="flex flex-wrap gap-2">
-      {actions.map((action) => (
+      {availableActions.map((action) => (
         <form
           action={updateUserStatusAction}
           key={action.status}
