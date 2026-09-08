@@ -68,8 +68,9 @@ Entregue até esta etapa:
 - Pregadores e cantores já escalados em um dia não aparecem como disponíveis para outro culto no mesmo dia.
 - O servidor bloqueia conflito de agenda ao salvar escala, mesmo que alguém tente enviar a ação manualmente.
 - Página `/agenda` permite aos usuários aprovados consultar suas escalas, notificações e solicitar permuta com pessoa da mesma função.
-- Calendário de `/agenda` permite tocar ou clicar em uma escala para ver local da igreja, pregador e louvor do culto.
-- Páginas `/agenda`, `/escalas/pregacao` e `/escalas/louvor` têm botão para gerar e baixar PDF do mês exibido.
+- Calendário de `/agenda` permite tocar ou clicar em uma escala para atualizar as seções fixas de `Pregação` e `Louvor`.
+- Permutas aparecem no início da página `/agenda`.
+- Páginas `/agenda`, `/escalas/pregacao` e `/escalas/louvor` têm botão para gerar e baixar PDF em formato de calendário, com versículo sobre serviço cristão.
 - Pedidos de permuta ficam pendentes para aprovação do ancião, líder de música ou admin e geram notificações no sistema.
 - Cadastro público permite selecionar mais de uma função para a mesma conta.
 - Admin pode criar e editar usuários com múltiplas funções.

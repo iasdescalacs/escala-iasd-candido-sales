@@ -2,24 +2,44 @@
 
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { MapPin, Mic2, Music2 } from "lucide-react";
+import { CalendarDays, MapPin, Mic2, Music2 } from "lucide-react";
+import { SwapRequestForm } from "@/components/schedule/swap-request-form";
 import type { CalendarDay } from "@/lib/cultos/schedule";
 import { getTemplateLabel } from "@/lib/cultos/schedule";
-import type { UserAgendaItem } from "@/lib/escalas/queries";
+import type { ScheduleService, UserAgendaItem } from "@/lib/escalas/queries";
 
 export function AgendaCalendar({
   agenda,
   calendarDays,
+  swapTargets,
 }: {
   agenda: UserAgendaItem[];
   calendarDays: CalendarDay[];
+  swapTargets: ScheduleService[];
 }) {
   const agendaByDate = useMemo(() => groupAgendaByDate(agenda), [agenda]);
-  const [selectedItemKey, setSelectedItemKey] = useState(() =>
-    agenda[0] ? getAgendaKey(agenda[0]) : "",
+  const preachingItems = agenda.filter((item) => item.roleKey === "pregador");
+  const musicItems = agenda.filter((item) => item.roleKey === "cantor");
+  const [selectedPreachingKey, setSelectedPreachingKey] = useState(() =>
+    preachingItems[0] ? getAgendaKey(preachingItems[0]) : "",
   );
-  const selectedItem =
-    agenda.find((item) => getAgendaKey(item) === selectedItemKey) ?? agenda[0] ?? null;
+  const [selectedMusicKey, setSelectedMusicKey] = useState(() =>
+    musicItems[0] ? getAgendaKey(musicItems[0]) : "",
+  );
+  const selectedPreaching =
+    preachingItems.find((item) => getAgendaKey(item) === selectedPreachingKey) ??
+    preachingItems[0] ??
+    null;
+  const selectedMusic =
+    musicItems.find((item) => getAgendaKey(item) === selectedMusicKey) ?? musicItems[0] ?? null;
+
+  function selectItem(item: UserAgendaItem) {
+    if (item.roleKey === "pregador") {
+      setSelectedPreachingKey(getAgendaKey(item));
+    } else {
+      setSelectedMusicKey(getAgendaKey(item));
+    }
+  }
 
   return (
     <div className="grid gap-4">
@@ -47,7 +67,9 @@ export function AgendaCalendar({
               </span>
               <div className="mt-2 grid gap-1">
                 {(agendaByDate[day.date] ?? []).map((item) => {
-                  const active = getAgendaKey(item) === selectedItemKey;
+                  const active =
+                    getAgendaKey(item) === selectedPreachingKey ||
+                    getAgendaKey(item) === selectedMusicKey;
 
                   return (
                     <button
@@ -57,7 +79,7 @@ export function AgendaCalendar({
                           : "bg-primary-soft text-primary-strong hover:bg-primary-soft/80"
                       }`}
                       key={getAgendaKey(item)}
-                      onClick={() => setSelectedItemKey(getAgendaKey(item))}
+                      onClick={() => selectItem(item)}
                       type="button"
                     >
                       <p className="truncate font-semibold">
@@ -75,24 +97,63 @@ export function AgendaCalendar({
         </div>
       </div>
 
-      {selectedItem ? <AgendaDetails item={selectedItem} /> : null}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <AgendaRoleSection
+          emptyText="Nenhuma pregação encontrada para este mês."
+          item={selectedPreaching}
+          title="Pregação"
+          targets={swapTargets}
+        />
+        <AgendaRoleSection
+          emptyText="Nenhum louvor encontrado para este mês."
+          item={selectedMusic}
+          title="Louvor"
+          targets={swapTargets}
+        />
+      </section>
     </div>
+  );
+}
+
+function AgendaRoleSection({
+  emptyText,
+  item,
+  targets,
+  title,
+}: {
+  emptyText: string;
+  item: UserAgendaItem | null;
+  targets: ScheduleService[];
+  title: string;
+}) {
+  return (
+    <article className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+      {item ? (
+        <div className="mt-3 grid gap-4">
+          <AgendaDetails item={item} />
+          <SwapRequestForm item={item} targets={targets} />
+        </div>
+      ) : (
+        <div className="mt-3 flex items-center gap-3 rounded-md bg-surface-muted p-3 text-sm text-muted">
+          <CalendarDays size={18} aria-hidden="true" />
+          {emptyText}
+        </div>
+      )}
+    </article>
   );
 }
 
 function AgendaDetails({ item }: { item: UserAgendaItem }) {
   return (
-    <article className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+    <div className="grid gap-3">
       <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">
-        Detalhes da escala
-      </p>
-      <h3 className="mt-2 text-lg font-semibold text-foreground">
         {formatDate(item.service_date)} · {item.start_time.slice(0, 5)}
-      </h3>
-      <p className="mt-1 text-sm text-muted">
+      </p>
+      <p className="text-sm text-muted">
         {item.title ?? getTemplateLabel(item.service_type)}
       </p>
-      <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+      <div className="grid gap-3 text-sm">
         <DetailLine
           icon={<MapPin size={16} aria-hidden="true" />}
           label="Local"
@@ -109,7 +170,7 @@ function AgendaDetails({ item }: { item: UserAgendaItem }) {
           value={item.singer_name ?? "A definir"}
         />
       </div>
-    </article>
+    </div>
   );
 }
 

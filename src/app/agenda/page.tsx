@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { Bell, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bell, CalendarDays, ChevronLeft, ChevronRight, Repeat2 } from "lucide-react";
 import { PdfDownloadButton } from "@/components/pdf/pdf-download-button";
 import { AgendaCalendar } from "@/components/schedule/agenda-calendar";
-import { SwapRequestForm } from "@/components/schedule/swap-request-form";
 import {
   buildCalendarDays,
   getAdjacentMonth,
@@ -12,6 +11,9 @@ import {
 import { getUserAgendaPageData } from "@/lib/escalas/queries";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+const serviceVerse =
+  "Servi uns aos outros, cada um conforme o dom que recebeu. 1 Pedro 4:10";
 
 export default async function AgendaPage({
   searchParams,
@@ -30,6 +32,7 @@ export default async function AgendaPage({
   const next = getAdjacentMonth(year, month, 1);
   const data = await getUserAgendaPageData({ monthStart, monthEnd });
   const monthLabel = `${capitalize(getMonthName(month))} de ${year}`;
+  const calendarDays = buildCalendarDays(year, month);
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -49,10 +52,15 @@ export default async function AgendaPage({
           </div>
           <div className="flex flex-wrap gap-2">
             <PdfDownloadButton
+              calendar={{
+                events: buildAgendaPdfEvents(data.agenda),
+                month,
+                year,
+              }}
               fileName={`minha-agenda-${year}-${String(month).padStart(2, "0")}.pdf`}
-              sections={buildAgendaPdfSections(data.agenda)}
               subtitle={monthLabel}
               title="Minha agenda"
+              verse={serviceVerse}
             />
             <CalendarLink
               href={`/agenda?mes=${previous.month}&ano=${previous.year}`}
@@ -69,7 +77,14 @@ export default async function AgendaPage({
       </section>
 
       <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.55fr]">
-        <AgendaCalendar agenda={data.agenda} calendarDays={buildCalendarDays(year, month)} />
+        <div className="grid gap-4">
+          <SwapRequestsSummary requests={data.swapRequests} />
+          <AgendaCalendar
+            agenda={data.agenda}
+            calendarDays={calendarDays}
+            swapTargets={data.swapTargets}
+          />
+        </div>
 
         <aside className="rounded-lg border border-border bg-surface p-4 shadow-sm">
           <div className="flex items-center gap-2">
@@ -92,35 +107,45 @@ export default async function AgendaPage({
         </aside>
       </section>
 
-      <section className="mt-6 grid gap-4">
-        <h2 className="text-lg font-semibold text-foreground">Minhas escalas</h2>
-        {data.agenda.map((item) => (
-          <article className="grid gap-4 rounded-lg border border-border bg-surface p-4 shadow-sm lg:grid-cols-[1fr_1fr]" key={`${item.id}-${item.roleKey}`}>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">
-                {item.roleKey === "pregador" ? "Pregação" : "Louvor"}
-              </p>
-              <h3 className="mt-2 text-lg font-semibold text-foreground">
-                {formatDate(item.service_date)} · {item.start_time.slice(0, 5)}
-              </h3>
-              <p className="mt-1 text-sm text-muted">
-                {item.church_name} · {item.title ?? getTemplateLabel(item.service_type)}
-              </p>
-              <p className="mt-1 text-sm text-muted">
-                Local: {item.church_name} - {item.church_city}/{item.church_state}
-              </p>
-            </div>
-            <SwapRequestForm item={item} targets={data.swapTargets} />
+      {data.agenda.length === 0 ? (
+        <div className="mt-6 flex items-center gap-3 rounded-lg border border-border bg-surface p-4 text-sm text-muted shadow-sm">
+          <CalendarDays size={18} aria-hidden="true" />
+          Nenhuma escala encontrada para este mês.
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SwapRequestsSummary({
+  requests,
+}: {
+  requests: Awaited<ReturnType<typeof getUserAgendaPageData>>["swapRequests"];
+}) {
+  return (
+    <section className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+      <div className="flex items-center gap-2">
+        <Repeat2 size={18} className="text-primary" aria-hidden="true" />
+        <h2 className="text-lg font-semibold text-foreground">Permutas</h2>
+      </div>
+      <div className="mt-3 grid gap-2">
+        {requests.slice(0, 4).map((request) => (
+          <article className="rounded-md border border-border bg-background p-3 text-sm" key={request.id}>
+            <p className="font-semibold text-foreground">
+              {request.role_key === "pregador" ? "Pregação" : "Louvor"} · {statusLabel(request.status)}
+            </p>
+            <p className="mt-1 text-muted">
+              Solicitada em {formatDateTime(request.created_at)}
+            </p>
           </article>
         ))}
-        {data.agenda.length === 0 ? (
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-surface p-4 text-sm text-muted shadow-sm">
-            <CalendarDays size={18} aria-hidden="true" />
-            Nenhuma escala encontrada para este mês.
-          </div>
+        {requests.length === 0 ? (
+          <p className="rounded-md bg-surface-muted p-3 text-sm text-muted">
+            Nenhuma permuta registrada até agora.
+          </p>
         ) : null}
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }
 
@@ -168,20 +193,38 @@ function formatDate(value: string) {
   );
 }
 
-function buildAgendaPdfSections(
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
+function statusLabel(status: string) {
+  if (status === "approved") {
+    return "aprovada";
+  }
+
+  if (status === "rejected") {
+    return "recusada";
+  }
+
+  return "pendente";
+}
+
+function buildAgendaPdfEvents(
   agenda: Awaited<ReturnType<typeof getUserAgendaPageData>>["agenda"],
 ) {
-  return [
-    {
-      title: "Escalas do mês",
-      rows: agenda.map((item) => [
-        { label: "Data", value: formatDate(item.service_date) },
-        { label: "Horário", value: item.start_time.slice(0, 5) },
-        { label: "Função", value: item.roleKey === "pregador" ? "Pregação" : "Louvor" },
-        { label: "Igreja", value: `${item.church_name} - ${item.church_city}/${item.church_state}` },
-        { label: "Pregador", value: item.preacher_name ?? "A definir" },
-        { label: "Louvor", value: item.singer_name ?? "A definir" },
-      ]),
-    },
-  ];
+  return agenda.map((item) => ({
+    date: item.service_date,
+    title: item.roleKey === "pregador" ? "Pregação" : "Louvor",
+    lines: [
+      item.church_name,
+      item.roleKey === "pregador"
+        ? `Pregador: ${item.preacher_name ?? "A definir"}`
+        : `Louvor: ${item.singer_name ?? "A definir"}`,
+      item.title ?? getTemplateLabel(item.service_type),
+      formatDate(item.service_date),
+    ],
+  }));
 }
