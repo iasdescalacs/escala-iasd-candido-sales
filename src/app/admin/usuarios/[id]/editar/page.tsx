@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { AdminEditUserForm } from "@/components/admin/admin-edit-user-form";
+import { getRoleOptions } from "@/lib/admin/lookups";
 import { requireAdminUser } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
@@ -21,12 +22,20 @@ export default async function AdminEditarUsuarioPage({
 
   const { id } = await params;
   const supabase = createAdminSupabaseClient();
-  const { data: user } = await supabase
-    .from("users")
-    .select("id,full_name,email,phone,status")
-    .eq("id", id)
-    .is("deleted_at", null)
-    .maybeSingle();
+  const [{ data: user }, roles, { data: userRoles }] = await Promise.all([
+    supabase
+      .from("users")
+      .select("id,full_name,email,phone,status")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .maybeSingle(),
+    getRoleOptions({ includeAdmin: true }),
+    supabase
+      .from("user_roles")
+      .select("role_id")
+      .eq("user_id", id)
+      .is("deleted_at", null),
+  ]);
 
   if (!user) {
     notFound();
@@ -50,7 +59,13 @@ export default async function AdminEditarUsuarioPage({
       </section>
 
       <section className="mt-6">
-        <AdminEditUserForm user={user} />
+        <AdminEditUserForm
+          currentRoleKey={
+            roles.find((role) => role.id === userRoles?.[0]?.role_id)?.key ?? ""
+          }
+          roles={roles}
+          user={user}
+        />
       </section>
     </div>
   );

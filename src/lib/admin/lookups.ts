@@ -14,18 +14,27 @@ export type ChurchOption = Pick<
   "id" | "name" | "city" | "state"
 >;
 
-export async function getRoleOptions(): Promise<RoleOption[]> {
+export async function getRoleOptions({
+  includeAdmin = false,
+}: {
+  includeAdmin?: boolean;
+} = {}): Promise<RoleOption[]> {
   if (!hasSupabaseServerEnv()) {
     return [];
   }
 
   const supabase = createAdminSupabaseClient();
-  const { data } = await supabase
+  let query = supabase
     .from("roles")
     .select("id,key,name")
-    .neq("key", "admin")
     .is("deleted_at", null)
     .order("name", { ascending: true });
+
+  if (!includeAdmin) {
+    query = query.neq("key", "admin");
+  }
+
+  const { data } = await query;
 
   return data ?? [];
 }

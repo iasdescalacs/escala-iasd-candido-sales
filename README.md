@@ -39,7 +39,9 @@ Entregue até esta etapa:
 - Tela administrativa inicial para aprovar, bloquear ou inativar usuários.
 - Botões de status em `/admin/usuarios` aparecem somente quando a ação ainda é aplicável ao usuário.
 - Cards de usuários em `/admin/usuarios` têm ícone de edição no topo direito.
-- Admin pode editar nome, telefone e status em `/admin/usuarios/[id]/editar`.
+- A seção de criar usuário em `/admin/usuarios` inicia recolhida e pode ser expandida pelo admin.
+- Admin pode editar nome, telefone, função e status em `/admin/usuarios/[id]/editar`.
+- Admin pode excluir usuários em `/admin/usuarios` com confirmação; a exclusão remove vínculos relacionados no banco.
 - Tela administrativa para criar igrejas.
 - Admin pode criar usuários já vinculados a uma função e igreja.
 - Cadastro público permite escolher tipo de usuário e igreja onde é membro.

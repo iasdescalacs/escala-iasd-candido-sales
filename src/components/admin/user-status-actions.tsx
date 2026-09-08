@@ -1,7 +1,10 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { updateUserStatusAction } from "@/lib/auth/actions";
+import {
+  deleteUserByAdminAction,
+  updateUserStatusAction,
+} from "@/lib/auth/actions";
 
 const actions = [
   { label: "Aprovar", loadingLabel: "Aprovando...", status: "approved", tone: "primary" },
@@ -40,6 +43,21 @@ export function UserStatusActions({
           <StatusButton action={action} />
         </form>
       ))}
+      <form
+        action={deleteUserByAdminAction}
+        onSubmit={(event) => {
+          if (
+            !window.confirm(
+              "Deseja mesmo excluir este usuário? Os vínculos dele com outras tabelas serão removidos.",
+            )
+          ) {
+            event.preventDefault();
+          }
+        }}
+      >
+        <input name="userId" type="hidden" value={userId} />
+        <DeleteButton />
+      </form>
     </div>
   );
 }
@@ -56,6 +74,20 @@ function StatusButton({ action }: { action: (typeof actions)[number] }) {
       type="submit"
     >
       {pending ? action.loadingLabel : action.label}
+    </button>
+  );
+}
+
+function DeleteButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      className="h-9 rounded-md border border-red-500/50 bg-red-500/10 px-3 text-xs font-semibold text-red-700 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-70 dark:text-red-300"
+      disabled={pending}
+      type="submit"
+    >
+      {pending ? "Excluindo..." : "Excluir"}
     </button>
   );
 }

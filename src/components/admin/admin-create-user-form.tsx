@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { ChevronDown, UserPlus } from "lucide-react";
+import { useActionState, useState } from "react";
 import type { ChurchOption, RoleOption } from "@/lib/admin/lookups";
 import {
   createUserByAdminAction,
@@ -21,10 +22,39 @@ export function AdminCreateUserForm({
   churches: ChurchOption[];
 }) {
   const [state, formAction] = useActionState(createUserByAdminAction, initialState);
+  const [isOpen, setIsOpen] = useState(false);
   const hasOptions = roles.length > 0 && churches.length > 0;
 
   return (
-    <form action={formAction} className="grid gap-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
+    <div className="rounded-lg border border-border bg-surface shadow-sm">
+      <button
+        aria-expanded={isOpen}
+        className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left transition hover:bg-surface-muted"
+        onClick={() => setIsOpen((current) => !current)}
+        type="button"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+            <UserPlus size={18} aria-hidden="true" />
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold text-foreground">
+              Criar usuário
+            </span>
+            <span className="block truncate text-sm text-muted">
+              Expandir formulário para cadastrar uma nova pessoa.
+            </span>
+          </span>
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          className={`shrink-0 text-muted transition ${isOpen ? "rotate-180" : ""}`}
+          size={18}
+        />
+      </button>
+
+      {isOpen ? (
+    <form action={formAction} className="grid gap-4 border-t border-border p-6">
       <ActionMessage state={state} />
 
       {!hasOptions ? (
@@ -118,5 +148,7 @@ export function AdminCreateUserForm({
 
       <SubmitButton>Criar usuário</SubmitButton>
     </form>
+      ) : null}
+    </div>
   );
 }

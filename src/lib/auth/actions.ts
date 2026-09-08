@@ -252,6 +252,35 @@ export async function updateUserStatusAction(formData: FormData) {
   revalidatePath("/admin/usuarios");
 }
 
+export async function deleteUserByAdminAction(formData: FormData) {
+  const currentAdmin = await requireAdminUser();
+  const userId = readString(formData, "userId");
+
+  if (!userId || userId === currentAdmin.appUser.id) {
+    return;
+  }
+
+  const admin = createAdminSupabaseClient();
+  const { data: user } = await admin
+    .from("users")
+    .select("auth_user_id")
+    .eq("id", userId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!user) {
+    return;
+  }
+
+  await admin.from("users").delete().eq("id", userId);
+
+  if (user.auth_user_id) {
+    await admin.auth.admin.deleteUser(user.auth_user_id);
+  }
+
+  revalidatePath("/admin/usuarios");
+}
+
 export async function updateUserByAdminAction(
   _state: AuthActionState,
   formData: FormData,
@@ -262,9 +291,10 @@ export async function updateUserByAdminAction(
   const fullName = formatPersonName(readString(formData, "fullName"));
   const phone = readString(formData, "phone");
   const status = readString(formData, "status");
+  const roleKey = readString(formData, "roleKey");
 
-  if (!userId || !fullName || !phone || !isUserStatus(status)) {
-    return { message: "Preencha nome, telefone e status." };
+  if (!userId || !fullName || !phone || !isUserStatus(status) || !isRoleKey(roleKey)) {
+    return { message: "Preencha nome, telefone, função e status." };
   }
 
   const admin = createAdminSupabaseClient();
@@ -280,6 +310,12 @@ export async function updateUserByAdminAction(
 
   if (error) {
     return { message: "Não foi possível atualizar o usuário." };
+  }
+
+  const roleUpdateError = await replaceUserRole(admin, userId, roleKey);
+
+  if (roleUpdateError) {
+    return { message: roleUpdateError };
   }
 
   revalidatePath("/admin/usuarios");
@@ -418,6 +454,63 @@ function isAssignableRole(roleKey: string): roleKey is Exclude<RoleKey, "admin">
 
 function isUserStatus(status: string): status is UserStatus {
   return ["pending", "approved", "blocked", "inactive"].includes(status);
+}
+
+function isRoleKey(roleKey: string): roleKey is RoleKey {
+  return ["admin", "anciao", "lider_musica", "pregador", "cantor"].includes(roleKey);
+}
+
+async function replaceUserRole(
+  admin: ReturnType<typeof createAdminSupabaseClient>,
+  userId: string,
+  roleKey: RoleKey,
+) {
+  const { data: role } = await admin
+    .from("roles")
+    .select("id")
+    .eq("key", roleKey)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!role) {
+    return "Função não localizada.";
+  }
+
+  const now = new Date().toISOString();
+  const canBeScheduled = roleKey === "pregador" || roleKey === "cantor";
+  const isManager = roleKey === "anciao" || roleKey === "lider_musica";
+
+  await admin
+    .from("user_roles")
+    .update({ deleted_at: now })
+    .eq("user_id", userId)
+    .is("deleted_at", null);
+
+  const { error: roleError } = await admin.from("user_roles").insert({
+    user_id: userId,
+    role_id: role.id,
+    deleted_at: null,
+  });
+
+  if (roleError) {
+    return "Não foi possível atualizar a função do usuário.";
+  }
+
+  const { error: churchLinkError } = await admin
+    .from("user_church_links")
+    .update({
+      role_id: role.id,
+      can_be_scheduled: canBeScheduled,
+      is_manager: isManager,
+    })
+    .eq("user_id", userId)
+    .is("deleted_at", null);
+
+  if (churchLinkError) {
+    return "Não foi possível atualizar os vínculos de igreja.";
+  }
+
+  return null;
 }
 
 async function attachRoleAndChurch(

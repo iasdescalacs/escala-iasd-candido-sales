@@ -9,14 +9,19 @@ import {
   updateUserByAdminAction,
   type AuthActionState,
 } from "@/lib/auth/actions";
+import type { RoleOption } from "@/lib/admin/lookups";
 
 const initialState: AuthActionState = { message: "" };
 
 type UserStatus = "pending" | "approved" | "blocked" | "inactive";
 
 export function AdminEditUserForm({
+  currentRoleKey,
+  roles,
   user,
 }: {
+  currentRoleKey: string;
+  roles: RoleOption[];
   user: {
     id: string;
     full_name: string;
@@ -59,6 +64,23 @@ export function AdminEditUserForm({
             value={user.email}
             type="email"
           />
+        </label>
+
+        <label className="grid gap-2 text-sm font-medium text-foreground">
+          Função
+          <select
+            className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+            defaultValue={currentRoleKey}
+            name="roleKey"
+            required
+          >
+            <option value="">Selecione</option>
+            {roles.map((role) => (
+              <option key={role.id} value={role.key}>
+                {role.name}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-foreground">
