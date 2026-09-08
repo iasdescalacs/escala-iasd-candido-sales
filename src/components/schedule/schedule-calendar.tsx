@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
+import { Loader2, Save, Trash2 } from "lucide-react";
+import { useFormStatus } from "react-dom";
 import { ActionMessage } from "@/components/auth/action-message";
-import { SubmitButton } from "@/components/auth/submit-button";
 import {
   assignScheduleAction,
   clearScheduleAction,
@@ -150,18 +151,22 @@ export function ScheduleCalendar({
                             </option>
                           ))}
                         </select>
-                        <SubmitButton className="h-9 px-2 text-[11px]">
-                          Salvar
-                        </SubmitButton>
+                        <ScheduleFormButton
+                          className="bg-success text-white hover:brightness-95"
+                          icon="save"
+                          label="Salvar"
+                        />
                       </form>
 
                       {assignedName ? (
                         <form action={clearScheduleAction}>
                           <input name="serviceId" type="hidden" value={service.id} />
                           <input name="roleKey" type="hidden" value={roleKey} />
-                          <button className="h-8 w-full rounded-md border border-warning/50 bg-warning/10 px-2 text-[11px] font-semibold text-warning transition hover:bg-warning/20" type="submit">
-                            Excluir
-                          </button>
+                          <ScheduleFormButton
+                            className="bg-red-600 text-white hover:bg-red-700"
+                            icon="delete"
+                            label="Excluir"
+                          />
                         </form>
                       ) : null}
                     </article>
@@ -173,6 +178,32 @@ export function ScheduleCalendar({
         </div>
       </section>
     </div>
+  );
+}
+
+function ScheduleFormButton({
+  className,
+  icon,
+  label,
+}: {
+  className: string;
+  icon: "delete" | "save";
+  label: string;
+}) {
+  const { pending } = useFormStatus();
+  const Icon = icon === "save" ? Save : Trash2;
+
+  return (
+    <button
+      aria-label={label}
+      className={`inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md px-2 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
+      disabled={pending}
+      title={label}
+      type="submit"
+    >
+      {pending ? <Loader2 className="animate-spin" size={14} /> : <Icon size={14} />}
+      <span>{pending ? "Aguarde" : label}</span>
+    </button>
   );
 }
 

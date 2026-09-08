@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { AuthActionState } from "@/lib/auth/actions";
 import { requireApprovedUser } from "@/lib/auth/session";
+import { hasVolunteerDateConflict } from "@/lib/escalas/rules";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database } from "@/types/database";
 
@@ -45,6 +46,21 @@ export async function assignScheduleAction(
 
   if (!volunteer) {
     return { message: "Essa pessoa não está disponível para essa igreja e data." };
+  }
+
+  const hasConflict = await volunteerHasConflictOnDate({
+    admin,
+    currentServiceId: serviceId,
+    roleKey,
+    serviceDate: context.service.service_date,
+    userId: volunteer.id,
+  });
+
+  if (hasConflict) {
+    return {
+      message:
+        "Essa pessoa já está escalada nesse dia em outro culto. Escolha outro voluntário disponível.",
+    };
   }
 
   const updatePayload =
@@ -245,13 +261,63 @@ export async function reviewSwapRequestAction(formData: FormData) {
   if (decision === "approved") {
     const { data: services } = await admin
       .from("worship_services")
-      .select("id,preacher_user_id,preacher_name,singer_user_id,singer_name")
+      .select("id,service_date,preacher_user_id,preacher_name,singer_user_id,singer_name")
       .in("id", [request.source_service_id, request.target_service_id])
       .is("deleted_at", null);
     const source = services?.find((service) => service.id === request.source_service_id);
     const target = services?.find((service) => service.id === request.target_service_id);
 
     if (!source || !target) {
+      return;
+    }
+
+    const sourceUserId =
+      request.role_key === "pregador" ? source.preacher_user_id : source.singer_user_id;
+    const targetUserId =
+      request.role_key === "pregador" ? target.preacher_user_id : target.singer_user_id;
+
+    const [sourceConflict, targetConflict] = await Promise.all([
+      targetUserId
+        ? volunteerHasConflictOnDate({
+            admin,
+            currentServiceId: source.id,
+            excludedServiceIds: [target.id],
+            roleKey: request.role_key,
+            serviceDate: source.service_date,
+            userId: targetUserId,
+          })
+        : false,
+      sourceUserId
+        ? volunteerHasConflictOnDate({
+            admin,
+            currentServiceId: target.id,
+            excludedServiceIds: [source.id],
+            roleKey: request.role_key,
+            serviceDate: target.service_date,
+            userId: sourceUserId,
+          })
+        : false,
+    ]);
+
+    if (sourceConflict || targetConflict) {
+      await admin
+        .from("swap_requests")
+        .update({
+          status: "rejected",
+          decided_by_user_id: profile.appUser.id,
+          decided_at: new Date().toISOString(),
+        })
+        .eq("id", request.id);
+
+      await notifyUsers(admin, {
+        userIds: [request.requester_user_id, request.target_user_id],
+        title: "Permuta recusada",
+        body: "A permuta foi recusada porque uma pessoa já está escalada em outro culto no mesmo dia.",
+        metadata: { swapRequestId: request.id, roleKey: request.role_key },
+      });
+
+      revalidatePath("/agenda");
+      revalidateSchedule(request.role_key);
       return;
     }
 
@@ -458,6 +524,46 @@ async function getApproverIds(
   }
 
   return Array.from(approverIds);
+}
+
+async function volunteerHasConflictOnDate({
+  admin,
+  currentServiceId,
+  excludedServiceIds = [],
+  roleKey,
+  serviceDate,
+  userId,
+}: {
+  admin: ReturnType<typeof createAdminSupabaseClient>;
+  currentServiceId: string;
+  excludedServiceIds?: string[];
+  roleKey: RoleKey;
+  serviceDate: string;
+  userId: string;
+}) {
+  const assignmentColumn = roleKey === "pregador" ? "preacher_user_id" : "singer_user_id";
+  const { data } = await admin
+    .from("worship_services")
+    .select("id,service_date,preacher_user_id,singer_user_id")
+    .eq("service_date", serviceDate)
+    .eq(assignmentColumn, userId)
+    .is("deleted_at", null);
+
+  return hasVolunteerDateConflict({
+    assignments: (data ?? [])
+      .filter((assignment) => !excludedServiceIds.includes(assignment.id))
+      .map((assignment) => ({
+        serviceId: assignment.id,
+        serviceDate: assignment.service_date,
+        userId:
+          roleKey === "pregador"
+            ? assignment.preacher_user_id
+            : assignment.singer_user_id,
+      })),
+    currentServiceId,
+    serviceDate,
+    userId,
+  });
 }
 
 async function notifyUsers(

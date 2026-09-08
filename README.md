@@ -63,6 +63,9 @@ Entregue até esta etapa:
 - Calendário de disponibilidade mostra apenas um culto representativo por dia para não repetir a quantidade de igrejas.
 - Página `/escalas/pregacao` permite ao ancião ou admin escalar, trocar e remover pregadores disponíveis por culto e igreja.
 - Página `/escalas/louvor` permite ao líder de música ou admin escalar, trocar e remover cantores disponíveis por culto e igreja.
+- Botões de salvar e excluir nas escalas são compactos, com ícones, usando verde para salvar e vermelho para excluir.
+- Pregadores e cantores já escalados em um dia não aparecem como disponíveis para outro culto no mesmo dia.
+- O servidor bloqueia conflito de agenda ao salvar escala, mesmo que alguém tente enviar a ação manualmente.
 - Página `/agenda` permite aos usuários aprovados consultar suas escalas, notificações e solicitar permuta com pessoa da mesma função.
 - Pedidos de permuta ficam pendentes para aprovação do ancião, líder de música ou admin e geram notificações no sistema.
 - Cadastro público permite selecionar mais de uma função para a mesma conta.
@@ -74,6 +77,7 @@ Entregue até esta etapa:
 - Testes de regras de múltiplas funções em `tests/auth/role-rules.test.mjs`.
 - Testes de geração de cultos em `tests/cultos/schedule.test.mjs`.
 - Testes de regras de disponibilidade em `tests/disponibilidade/rules.test.mjs`.
+- Testes de regras de conflito de escala em `tests/escalas/rules.test.mjs`.
 
 Pendente:
 

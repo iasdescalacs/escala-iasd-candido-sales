@@ -1,6 +1,7 @@
 import "server-only";
 
 import { requireApprovedUser } from "@/lib/auth/session";
+import { getOccupiedVolunteerDateKeys } from "@/lib/escalas/rules";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database } from "@/types/database";
 
@@ -127,6 +128,7 @@ export async function getSchedulePageData({
         .order("service_date", { ascending: true })
         .order("start_time", { ascending: true }),
       getVolunteerOptions(supabase, {
+        roleKey: scheduleRoleKey,
         roleId: scheduleRole.id,
         churchIds: managedChurchIds,
         monthStart,
@@ -251,18 +253,21 @@ async function getManagedChurchIds(
 async function getVolunteerOptions(
   supabase: ReturnType<typeof createAdminSupabaseClient>,
   {
+    roleKey,
     roleId,
     churchIds,
     monthStart,
     monthEnd,
   }: {
+    roleKey: ScheduleRoleKey;
     roleId: string;
     churchIds: string[];
     monthStart: string;
     monthEnd: string;
   },
 ) {
-  const [{ data: links }, { data: availability }] = await Promise.all([
+  const assignmentColumn = roleKey === "pregador" ? "preacher_user_id" : "singer_user_id";
+  const [{ data: links }, { data: availability }, { data: assignments }] = await Promise.all([
     supabase
       .from("user_church_links")
       .select("user_id,church_id")
@@ -277,6 +282,13 @@ async function getVolunteerOptions(
       .eq("available", true)
       .gte("service_date", monthStart)
       .lte("service_date", monthEnd)
+      .is("deleted_at", null),
+    supabase
+      .from("worship_services")
+      .select("id,service_date,preacher_user_id,singer_user_id")
+      .gte("service_date", monthStart)
+      .lte("service_date", monthEnd)
+      .not(assignmentColumn, "is", null)
       .is("deleted_at", null),
   ]);
   const userIds = Array.from(
@@ -300,13 +312,25 @@ async function getVolunteerOptions(
   const availabilityByUserDate = new Set(
     (availability ?? []).map((item) => `${item.user_id}:${item.service_date}`),
   );
+  const occupiedByUserDate = getOccupiedVolunteerDateKeys(
+    (assignments ?? []).map((assignment) => ({
+      serviceId: assignment.id,
+      serviceDate: assignment.service_date,
+      userId:
+        roleKey === "pregador"
+          ? assignment.preacher_user_id
+          : assignment.singer_user_id,
+    })),
+  );
   const volunteers: VolunteerOption[] = [];
 
   for (const link of links ?? []) {
     for (const available of availability ?? []) {
+      const userDateKey = `${link.user_id}:${available.service_date}`;
       if (
         available.user_id === link.user_id &&
-        availabilityByUserDate.has(`${link.user_id}:${available.service_date}`) &&
+        availabilityByUserDate.has(userDateKey) &&
+        !occupiedByUserDate.has(userDateKey) &&
         names.has(link.user_id)
       ) {
         volunteers.push({
