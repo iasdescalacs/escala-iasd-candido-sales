@@ -4,7 +4,7 @@ Sistema web para organização de escalas da IASD Candido Sales.
 
 ## Etapa Atual
 
-### Etapa 5: Autenticação
+### Etapa 6: Cultos
 
 Entregue até esta etapa:
 
@@ -43,7 +43,13 @@ Entregue até esta etapa:
 - Cadastro público permite escolher tipo de usuário e igreja onde é membro.
 - Login usa apenas e-mail e senha.
 - Tipo de usuário/função é escolhido no cadastro público ou definido pelo administrador ao criar usuários.
+- Página administrativa de cultos em `/admin/cultos`.
+- Admin pode gerar cultos para todas as igrejas ativas por mês, ou por intervalo de até 3 meses no mesmo ano.
+- Cultos padrão gerados: quarta-feira das 19:45 às 21:00, sábado das 08:45 às 12:00 e domingo das 19:45 às 21:00.
+- Calendário mensal de cultos com navegação para mês anterior e próximo mês.
+- Cada culto exibe igreja, horário, pregador e cantor/grupo, mantendo pregador e música como `A definir` nesta etapa.
 - Testes de permissões em `tests/auth/access-rules.test.mjs`.
+- Testes de geração de cultos em `tests/cultos/schedule.test.mjs`.
 
 Pendente:
 
@@ -101,6 +107,7 @@ src/
   app/
     admin/usuarios/
     admin/igrejas/
+    admin/cultos/
     aguardando-aprovacao/
     alterar-senha/
     auth/callback/
@@ -157,6 +164,7 @@ Fluxo inicial:
 - Administrador acessa `/admin/usuarios` para aprovar, bloquear ou inativar usuários.
 - Administrador também pode criar usuários em `/admin/usuarios`, definindo função, igreja, status e senha inicial.
 - Administrador cadastra igrejas em `/admin/igrejas` antes de liberar cadastros públicos vinculados.
+- Administrador gera cultos mensais em `/admin/cultos` para todas as igrejas ativas.
 - O tipo de usuário é escolhido no cadastro público e validado pelo vínculo salvo no banco.
 - Usuários `blocked` ou `inactive` não acessam o sistema.
 - Rotas protegidas redirecionam usuário sem permissão para `/login`.
@@ -180,6 +188,7 @@ supabase/migrations/20260907162000_initial_schema.sql
 supabase/migrations/20260907173000_auth_access_policies.sql
 supabase/migrations/20260908013500_allow_manual_admin_recovery.sql
 supabase/migrations/20260908021500_seed_default_roles.sql
+supabase/migrations/20260908033000_create_worship_services.sql
 ```
 
 Tabelas iniciais:
@@ -192,6 +201,7 @@ Tabelas iniciais:
 - `history`
 - `settings`
 - `notifications`
+- `worship_services`
 
 O seed de teste fica em:
 
@@ -224,8 +234,8 @@ Nesta máquina, o Docker estava instalado, mas o daemon não estava em execuçã
 
 Resultado validado:
 
-- 8 tabelas com RLS e `force row level security`.
-- 11 políticas.
+- 9 tabelas com RLS e `force row level security`.
+- 13 políticas.
 - 1 trigger de proteção de campos sensíveis.
 - 4 usuários fictícios do seed.
 

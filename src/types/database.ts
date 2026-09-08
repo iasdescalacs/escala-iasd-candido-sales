@@ -284,6 +284,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      worship_services: {
+        Row: {
+          id: string;
+          church_id: string;
+          service_date: string;
+          service_type: Database["public"]["Enums"]["worship_service_type"];
+          start_time: string;
+          end_time: string;
+          preacher_user_id: Nullable<string>;
+          singer_user_id: Nullable<string>;
+          preacher_name: Nullable<string>;
+          singer_name: Nullable<string>;
+          notes: Nullable<string>;
+          created_at: string;
+          updated_at: string;
+          deleted_at: Nullable<string>;
+        };
+        Insert: {
+          id?: string;
+          church_id: string;
+          service_date: string;
+          service_type: Database["public"]["Enums"]["worship_service_type"];
+          start_time: string;
+          end_time: string;
+          preacher_user_id?: Nullable<string>;
+          singer_user_id?: Nullable<string>;
+          preacher_name?: Nullable<string>;
+          singer_name?: Nullable<string>;
+          notes?: Nullable<string>;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Update: {
+          id?: string;
+          church_id?: string;
+          service_date?: string;
+          service_type?: Database["public"]["Enums"]["worship_service_type"];
+          start_time?: string;
+          end_time?: string;
+          preacher_user_id?: Nullable<string>;
+          singer_user_id?: Nullable<string>;
+          preacher_name?: Nullable<string>;
+          singer_name?: Nullable<string>;
+          notes?: Nullable<string>;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -304,6 +355,7 @@ export type Database = {
       user_status: "pending" | "approved" | "blocked" | "inactive";
       role_key: "admin" | "anciao" | "lider_musica" | "pregador" | "cantor";
       notification_status: "unread" | "read" | "archived";
+      worship_service_type: "quarta" | "sabado" | "domingo";
     };
     CompositeTypes: Record<string, never>;
   };

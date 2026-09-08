@@ -40,6 +40,10 @@ export const adminNavigation = [
     label: "Igrejas",
     href: "/admin/igrejas",
   },
+  {
+    label: "Cultos",
+    href: "/admin/cultos",
+  },
 ];
 
 export const supportNavigation = [

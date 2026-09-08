@@ -37,6 +37,7 @@ $$;
 \i /supabase/migrations/20260907173000_auth_access_policies.sql
 \i /supabase/migrations/20260908013500_allow_manual_admin_recovery.sql
 \i /supabase/migrations/20260908021500_seed_default_roles.sql
+\i /supabase/migrations/20260908033000_create_worship_services.sql
 \i /supabase/seed.sql
 
 do $$
@@ -58,13 +59,14 @@ begin
       'user_church_links',
       'history',
       'settings',
-      'notifications'
+      'notifications',
+      'worship_services'
     )
     and c.relrowsecurity is true
     and c.relforcerowsecurity is true;
 
-  if rls_tables <> 8 then
-    raise exception 'RLS esperado em 8 tabelas, encontrado %.', rls_tables;
+  if rls_tables <> 9 then
+    raise exception 'RLS esperado em 9 tabelas, encontrado %.', rls_tables;
   end if;
 
   select count(*)
@@ -72,8 +74,8 @@ begin
   from pg_policies
   where schemaname = 'public';
 
-  if policy_count < 10 then
-    raise exception 'Politicas esperadas >= 10, encontrado %.', policy_count;
+  if policy_count < 12 then
+    raise exception 'Politicas esperadas >= 12, encontrado %.', policy_count;
   end if;
 
   select count(*)
