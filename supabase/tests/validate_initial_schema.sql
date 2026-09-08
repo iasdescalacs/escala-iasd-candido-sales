@@ -35,6 +35,7 @@ $$;
 
 \i /supabase/migrations/20260907162000_initial_schema.sql
 \i /supabase/migrations/20260907173000_auth_access_policies.sql
+\i /supabase/migrations/20260908013500_allow_manual_admin_recovery.sql
 \i /supabase/seed.sql
 
 do $$

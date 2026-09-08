@@ -170,6 +170,7 @@ Migrations:
 ```text
 supabase/migrations/20260907162000_initial_schema.sql
 supabase/migrations/20260907173000_auth_access_policies.sql
+supabase/migrations/20260908013500_allow_manual_admin_recovery.sql
 ```
 
 Tabelas iniciais:
