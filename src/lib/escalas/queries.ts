@@ -1,6 +1,7 @@
 import "server-only";
 
 import { requireApprovedUser } from "@/lib/auth/session";
+import type { CurrentUserProfile } from "@/lib/auth/session";
 import { getOccupiedVolunteerDateKeys } from "@/lib/escalas/rules";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database } from "@/types/database";
@@ -227,6 +228,64 @@ export async function getUserAgendaPageData({
     swapRequests: swaps ?? [],
     swapTargets: allServices,
   };
+}
+
+export async function getPanelPendingSwapRequests(
+  profile: CurrentUserProfile & {
+    appUser: NonNullable<CurrentUserProfile["appUser"]>;
+  },
+) {
+  const supabase = createAdminSupabaseClient();
+  const roleKeys = profile.roles.map((role) => role.key);
+  const isAdmin = roleKeys.includes("admin");
+  const requests: SwapRequestSummary[] = [];
+
+  if (isAdmin) {
+    const churchIds = await getAllChurchIds(supabase);
+
+    if (churchIds.length === 0) {
+      return [];
+    }
+
+    const [preachingRequests, musicRequests] = await Promise.all([
+      getPendingSwapRequests(supabase, { roleKey: "pregador", churchIds }),
+      getPendingSwapRequests(supabase, { roleKey: "cantor", churchIds }),
+    ]);
+
+    requests.push(...preachingRequests, ...musicRequests);
+  } else {
+    const { data: managerRoles } = await supabase
+      .from("roles")
+      .select("id,key")
+      .in("key", ["anciao", "lider_musica"])
+      .is("deleted_at", null);
+    const elderRoleId = managerRoles?.find((role) => role.key === "anciao")?.id;
+    const musicLeaderRoleId = managerRoles?.find((role) => role.key === "lider_musica")?.id;
+
+    if (roleKeys.includes("anciao") && elderRoleId) {
+      const churchIds = await getManagedChurchIds(supabase, {
+        roleId: elderRoleId,
+        userId: profile.appUser.id,
+      });
+      requests.push(
+        ...(await getPendingSwapRequests(supabase, { roleKey: "pregador", churchIds })),
+      );
+    }
+
+    if (roleKeys.includes("lider_musica") && musicLeaderRoleId) {
+      const churchIds = await getManagedChurchIds(supabase, {
+        roleId: musicLeaderRoleId,
+        userId: profile.appUser.id,
+      });
+      requests.push(
+        ...(await getPendingSwapRequests(supabase, { roleKey: "cantor", churchIds })),
+      );
+    }
+  }
+
+  return requests
+    .sort((first, second) => second.created_at.localeCompare(first.created_at))
+    .slice(0, 8);
 }
 
 async function getAllChurchIds(

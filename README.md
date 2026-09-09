@@ -74,6 +74,7 @@ Entregue até esta etapa:
 - Notificações aparecem abaixo de `Louvor` e iniciam recolhidas.
 - Páginas `/agenda`, `/escalas/pregacao` e `/escalas/louvor` têm botão para gerar e baixar PDF em formato de calendário, com versículo sobre serviço cristão.
 - Pedidos de permuta ficam pendentes para aprovação do ancião, líder de música ou admin e geram notificações no sistema.
+- Painel exibe `Permutas pendentes` para admin, ancião e líder de música quando houver permutas aguardando decisão.
 - Cadastro público permite selecionar mais de uma função para a mesma conta.
 - Admin pode criar e editar usuários com múltiplas funções.
 - Perfil do usuário permite adicionar ou remover funções de escala (`Pregador` e `Cantor`).

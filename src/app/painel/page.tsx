@@ -1,9 +1,22 @@
-import { CalendarDays, Church, ShieldCheck, UsersRound } from "lucide-react";
+import { CalendarDays, Church, Repeat2, ShieldCheck, UsersRound } from "lucide-react";
 import { requireApprovedUser } from "@/lib/auth/session";
+import { reviewSwapRequestAction } from "@/lib/escalas/actions";
+import {
+  getPanelPendingSwapRequests,
+  type SwapRequestSummary,
+} from "@/lib/escalas/queries";
 
 export default async function PainelPage() {
   const profile = await requireApprovedUser();
   const roles = profile.roles.map((role) => role.name).join(", ") || "Sem função";
+  const roleKeys = profile.roles.map((role) => role.key);
+  const canReviewSwaps =
+    roleKeys.includes("admin") ||
+    roleKeys.includes("anciao") ||
+    roleKeys.includes("lider_musica");
+  const pendingSwapRequests = canReviewSwaps
+    ? await getPanelPendingSwapRequests(profile)
+    : [];
 
   const cards = [
     {
@@ -21,14 +34,14 @@ export default async function PainelPage() {
     {
       icon: CalendarDays,
       title: "Agenda",
-      value: "Em breve",
-      description: "A disponibilidade e as escalas serão implementadas em etapa futura.",
+      value: "Disponível",
+      description: "Consulte suas escalas, disponibilidade e permutas.",
     },
     {
       icon: Church,
       title: "Igrejas",
-      value: "Em breve",
-      description: "Os vínculos com igrejas serão usados nas próximas etapas.",
+      value: "Vínculos",
+      description: "Os vínculos com igrejas definem as áreas liberadas.",
     },
   ];
 
@@ -42,10 +55,13 @@ export default async function PainelPage() {
           Olá, {profile.appUser.full_name}
         </h1>
         <p className="mt-3 max-w-3xl leading-7 text-muted">
-          Este painel já exige login e cadastro aprovado. As funções completas de
-          escala serão criadas nas próximas etapas autorizadas.
+          Acompanhe suas informações principais e as ações pendentes conforme suas funções.
         </p>
       </section>
+
+      {canReviewSwaps ? (
+        <PendingSwapRequests requests={pendingSwapRequests} />
+      ) : null}
 
       <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => {
@@ -73,5 +89,67 @@ export default async function PainelPage() {
         })}
       </section>
     </div>
+  );
+}
+
+function PendingSwapRequests({ requests }: { requests: SwapRequestSummary[] }) {
+  return (
+    <section className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm">
+      <div className="flex items-center gap-2">
+        <Repeat2 size={18} className="text-primary" aria-hidden="true" />
+        <h2 className="text-lg font-semibold text-foreground">Permutas pendentes</h2>
+      </div>
+      <div className="mt-4 grid gap-3">
+        {requests.map((request) => (
+          <article
+            className="grid gap-3 rounded-md border border-border bg-background p-3 text-sm md:grid-cols-[1fr_auto]"
+            key={request.id}
+          >
+            <div className="min-w-0 text-muted">
+              <p className="font-semibold text-foreground">
+                {request.requester_name} solicitou permuta com {request.target_name}
+              </p>
+              <p>
+                {request.role_key === "pregador" ? "Pregação" : "Louvor"} ·{" "}
+                {formatDate(request.source_date)} por {formatDate(request.target_date)}
+              </p>
+              {request.reason ? <p className="mt-1">{request.reason}</p> : null}
+            </div>
+            <div className="flex gap-2">
+              <form action={reviewSwapRequestAction}>
+                <input name="requestId" type="hidden" value={request.id} />
+                <input name="decision" type="hidden" value="approved" />
+                <button className="h-9 rounded-md bg-success px-3 text-sm font-semibold text-white transition hover:brightness-95" type="submit">
+                  Aprovar
+                </button>
+              </form>
+              <form action={reviewSwapRequestAction}>
+                <input name="requestId" type="hidden" value={request.id} />
+                <input name="decision" type="hidden" value="rejected" />
+                <button className="h-9 rounded-md border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-surface-muted" type="submit">
+                  Recusar
+                </button>
+              </form>
+            </div>
+          </article>
+        ))}
+
+        {requests.length === 0 ? (
+          <p className="rounded-md bg-surface-muted p-3 text-sm text-muted">
+            Nenhuma permuta pendente para sua função.
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function formatDate(value: string) {
+  if (!value) {
+    return "data não informada";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
+    new Date(`${value}T00:00:00.000Z`),
   );
 }
