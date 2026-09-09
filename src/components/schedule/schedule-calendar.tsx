@@ -131,7 +131,10 @@ export function ScheduleCalendar({
                           {churchesById.get(service.church_id) ?? "Igreja"} · {service.start_time.slice(0, 5)}
                         </p>
                         <p className="truncate text-[11px] text-foreground">
-                          {assignedName ?? "A definir"}
+                          Pregador: {service.preacher_name ?? "A definir"}
+                        </p>
+                        <p className="truncate text-[11px] text-foreground">
+                          Louvor: {service.singer_name ?? "A definir"}
                         </p>
                       </div>
 
@@ -195,7 +198,10 @@ export function ScheduleCalendar({
                       {churchesById.get(service.church_id) ?? "Igreja"} · {service.start_time.slice(0, 5)}
                     </p>
                     <p className="font-medium text-foreground">
-                      {assignedName ?? "A definir"}
+                      Pregador: {service.preacher_name ?? "A definir"}
+                    </p>
+                    <p className="font-medium text-foreground">
+                      Louvor: {service.singer_name ?? "A definir"}
                     </p>
                   </div>
 

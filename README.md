@@ -68,6 +68,7 @@ Entregue até esta etapa:
 - Calendários exibem lista legível no celular e grade mensal em telas maiores, evitando texto minúsculo ou cortado.
 - Página `/escalas/pregacao` permite ao ancião ou admin escalar, trocar e remover pregadores disponíveis por culto e igreja.
 - Página `/escalas/louvor` permite ao líder de música ou admin escalar, trocar e remover cantores disponíveis por culto e igreja.
+- Escala de louvor exibe pregador e louvor no mesmo culto e, para admin, gera PDF separado por igreja.
 - Botões de salvar e excluir nas escalas são pequenos, ficam lado a lado quando disponíveis, com ícones, usando verde para salvar e vermelho para excluir.
 - Pregadores e cantores já escalados em um dia não aparecem como disponíveis para outro culto no mesmo dia.
 - O servidor bloqueia conflito de agenda ao salvar escala, mesmo que alguém tente enviar a ação manualmente.

@@ -31,6 +31,7 @@ export default async function EscalaLouvorPage({
   ).padStart(2, "0")}`;
   const previous = getAdjacentMonth(year, month, -1);
   const next = getAdjacentMonth(year, month, 1);
+  const requestedChurchId = readStringParam(params.igreja);
   const data = await getSchedulePageData({
     managerRoleKey: "lider_musica",
     scheduleRoleKey: "cantor",
@@ -42,31 +43,69 @@ export default async function EscalaLouvorPage({
     return <AccessDenied />;
   }
 
+  const isAdmin = data.profile.roles.some((role) => role.key === "admin");
+  const selectedChurchId = data.churches.some((church) => church.id === requestedChurchId)
+    ? requestedChurchId
+    : "todas";
+  const filteredChurches =
+    selectedChurchId === "todas"
+      ? data.churches
+      : data.churches.filter((church) => church.id === selectedChurchId);
+  const filteredChurchIds = new Set(filteredChurches.map((church) => church.id));
+  const filteredServices = data.services.filter((service) =>
+    filteredChurchIds.has(service.church_id),
+  );
+  const filteredVolunteers = data.volunteers.filter((volunteer) =>
+    filteredChurchIds.has(volunteer.church_id),
+  );
+  const filteredSwapRequests = data.swapRequests.filter(
+    (request) =>
+      selectedChurchId === "todas" ||
+      request.source_church_id === selectedChurchId ||
+      request.target_church_id === selectedChurchId,
+  );
+  const selectedChurchSlug =
+    selectedChurchId === "todas"
+      ? "todas"
+      : slugify(filteredChurches[0]?.name ?? "igreja");
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <Header
         description="Escolha cantores, duplas, trios ou grupos disponíveis por culto e igreja. Ao salvar novamente no mesmo dia, a escala é trocada."
         month={month}
-        nextHref={`/escalas/louvor?mes=${next.month}&ano=${next.year}`}
-        previousHref={`/escalas/louvor?mes=${previous.month}&ano=${previous.year}`}
-        pdfCalendar={{
-          events: buildSchedulePdfEvents(data.services, data.churches),
+        nextHref={buildPageHref(next.month, next.year, selectedChurchId)}
+        pdfCalendars={buildChurchPdfCalendars({
+          churches: filteredChurches,
           month,
+          monthLabel: `${capitalize(getMonthName(month))} de ${year}`,
+          services: filteredServices,
           year,
-        }}
+        })}
+        previousHref={buildPageHref(previous.month, previous.year, selectedChurchId)}
+        selectedChurchSlug={selectedChurchSlug}
         title="Escala de louvor"
         year={year}
       />
 
+      {isAdmin ? (
+        <ChurchFilter
+          churches={data.churches}
+          month={month}
+          selectedChurchId={selectedChurchId}
+          year={year}
+        />
+      ) : null}
+
       <div className="mt-6">
         <ScheduleCalendar
           calendarDays={buildCalendarDays(year, month)}
-          churches={data.churches}
+          churches={filteredChurches}
           roleKey="cantor"
-          services={data.services}
-          swapRequests={data.swapRequests}
+          services={filteredServices}
+          swapRequests={filteredSwapRequests}
           title="Cultos do mês"
-          volunteers={data.volunteers}
+          volunteers={filteredVolunteers}
         />
       </div>
     </div>
@@ -77,16 +116,18 @@ function Header({
   description,
   month,
   nextHref,
-  pdfCalendar,
+  pdfCalendars,
   previousHref,
+  selectedChurchSlug,
   title,
   year,
 }: {
   description: string;
   month: number;
   nextHref: string;
-  pdfCalendar: Parameters<typeof PdfDownloadButton>[0]["calendar"];
+  pdfCalendars: NonNullable<Parameters<typeof PdfDownloadButton>[0]["calendars"]>;
   previousHref: string;
+  selectedChurchSlug: string;
   title: string;
   year: number;
 }) {
@@ -105,8 +146,8 @@ function Header({
         </div>
         <div className="flex flex-wrap gap-2">
           <PdfDownloadButton
-            calendar={pdfCalendar}
-            fileName={`escala-louvor-${year}-${String(month).padStart(2, "0")}.pdf`}
+            calendars={pdfCalendars}
+            fileName={`escala-louvor-${selectedChurchSlug}-${year}-${String(month).padStart(2, "0")}.pdf`}
             subtitle={`${capitalize(getMonthName(month))} de ${year}`}
             title={title}
             verse={serviceVerse}
@@ -115,6 +156,48 @@ function Header({
           <CalendarLink href={nextHref} label="Próximo mês" position="next" />
         </div>
       </div>
+    </section>
+  );
+}
+
+function ChurchFilter({
+  churches,
+  month,
+  selectedChurchId,
+  year,
+}: {
+  churches: ScheduleChurch[];
+  month: number;
+  selectedChurchId: string;
+  year: number;
+}) {
+  return (
+    <section className="mt-6 rounded-lg border border-border bg-surface p-4 shadow-sm">
+      <form className="flex flex-col gap-3 sm:flex-row sm:items-end" method="get">
+        <input name="mes" type="hidden" value={month} />
+        <input name="ano" type="hidden" value={year} />
+        <label className="grid gap-1 text-sm font-semibold text-foreground sm:min-w-72">
+          Filtrar igreja
+          <select
+            className="h-10 rounded-md border border-border bg-background px-3 text-sm font-normal text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            defaultValue={selectedChurchId}
+            name="igreja"
+          >
+            <option value="todas">Todas as igrejas</option>
+            {churches.map((church) => (
+              <option key={church.id} value={church.id}>
+                {church.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:brightness-95"
+          type="submit"
+        >
+          Aplicar filtro
+        </button>
+      </form>
     </section>
   );
 }
@@ -167,24 +250,63 @@ function capitalize(value: string) {
   return value.charAt(0).toLocaleUpperCase("pt-BR") + value.slice(1);
 }
 
-function buildSchedulePdfEvents(
-  services: ScheduleService[],
-  churches: ScheduleChurch[],
-) {
-  const churchMap = new Map(churches.map((church) => [church.id, church]));
+function buildChurchPdfCalendars({
+  churches,
+  month,
+  monthLabel,
+  services,
+  year,
+}: {
+  churches: ScheduleChurch[];
+  month: number;
+  monthLabel: string;
+  services: ScheduleService[];
+  year: number;
+}) {
+  return churches.map((church) => ({
+    calendar: {
+      events: services
+        .filter((service) => service.church_id === church.id)
+        .map((service) => ({
+          date: service.service_date,
+          title: `${service.start_time.slice(0, 5)} - Culto`,
+          lines: [
+            `Igreja: ${church.name} - ${church.city}/${church.state}`,
+            `Pregador: ${service.preacher_name ?? "A definir"}`,
+            `Louvor: ${service.singer_name ?? "A definir"}`,
+            service.title ?? getTemplateLabel(service.service_type),
+          ],
+        })),
+      month,
+      year,
+    },
+    subtitle: monthLabel,
+    title: `Escala de louvor - ${church.name}`,
+  }));
+}
 
-  return services.map((service) => {
-    const church = churchMap.get(service.church_id);
-
-    return {
-      date: service.service_date,
-      title: `${service.start_time.slice(0, 5)} - Culto`,
-      lines: [
-        `Igreja: ${church ? `${church.name} - ${church.city}/${church.state}` : "Igreja"}`,
-        `Pregador: ${service.preacher_name ?? "A definir"}`,
-        `Louvor: ${service.singer_name ?? "A definir"}`,
-        service.title ?? getTemplateLabel(service.service_type),
-      ],
-    };
+function buildPageHref(month: number, year: number, churchId: string) {
+  const searchParams = new URLSearchParams({
+    ano: String(year),
+    mes: String(month),
   });
+
+  if (churchId !== "todas") {
+    searchParams.set("igreja", churchId);
+  }
+
+  return `/escalas/louvor?${searchParams.toString()}`;
+}
+
+function readStringParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
