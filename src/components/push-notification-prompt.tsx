@@ -36,12 +36,12 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
         const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
         setStatus(subscription ? "subscribed" : Notification.permission);
-        setIsVisible(!subscription && Notification.permission !== "denied");
+        setIsVisible(!subscription);
       })
       .catch(() => setStatus("unsupported"));
   }, [enabled]);
 
-  if (!enabled || !isVisible || status === "subscribed" || status === "denied") {
+  if (!enabled || !isVisible || status === "subscribed") {
     return null;
   }
 
@@ -53,7 +53,15 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
       const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
       if (!publicKey) {
-        setMessage("Notificacoes indisponiveis: chave publica VAPID ausente.");
+        setMessage("Notificações indisponíveis: chave pública VAPID ausente.");
+        return;
+      }
+
+      if (Notification.permission === "denied") {
+        setStatus("denied");
+        setMessage(
+          "As notificações foram bloqueadas. Ative nas configurações do navegador para este site.",
+        );
         return;
       }
 
@@ -61,7 +69,12 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
 
       if (permission !== "granted") {
         setStatus(permission);
-        setMessage("Permissao de notificacao nao concedida.");
+        setIsVisible(true);
+        setMessage(
+          permission === "denied"
+            ? "As notificações foram recusadas. Ative nas configurações do navegador para este site."
+            : "Permissão de notificação não concedida.",
+        );
         return;
       }
 
@@ -85,30 +98,34 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
       }
 
       setStatus("subscribed");
-      setMessage("Notificacoes ativadas com sucesso.");
+      setMessage("Notificações ativadas com sucesso.");
       setIsVisible(false);
     } catch {
-      setMessage("Nao foi possivel ativar as notificacoes.");
+      setMessage("Não foi possível ativar as notificações.");
     } finally {
       setIsLoading(false);
     }
   }
 
   function dismiss() {
-    sessionStorage.setItem(SESSION_DISMISSED_KEY, "true");
+    if (status !== "denied") {
+      sessionStorage.setItem(SESSION_DISMISSED_KEY, "true");
+    }
     setIsVisible(false);
   }
 
   return (
-    <aside className="fixed bottom-4 right-4 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-md border border-border bg-surface p-4 text-sm shadow-lg">
+    <aside className="fixed bottom-44 right-4 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-md border border-border bg-surface p-4 text-sm shadow-lg sm:bottom-4">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 rounded-md bg-primary-soft p-2 text-primary">
           <Bell aria-hidden="true" className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-foreground">Ativar notificacoes</p>
+          <p className="font-semibold text-foreground">Ativar notificações</p>
           <p className="mt-1 text-muted">
-            Receba avisos sobre escalas, permutas e aprovacoes mesmo quando o sistema estiver fechado.
+            {status === "denied"
+              ? "As notificações estão bloqueadas neste navegador. Libere o site nas configurações para receber avisos."
+              : "Receba avisos sobre escalas, permutas e aprovações mesmo quando o sistema estiver fechado."}
           </p>
           {message ? <p className="mt-2 text-xs text-warning">{message}</p> : null}
           <div className="mt-3 flex flex-wrap gap-2">
@@ -119,7 +136,7 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
               type="button"
             >
               <Bell className="h-3.5 w-3.5" />
-              {isLoading ? "Ativando..." : "Ativar"}
+              {isLoading ? "Ativando..." : status === "denied" ? "Verificar novamente" : "Ativar"}
             </button>
             <button
               className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-surface-muted"
@@ -127,12 +144,12 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
               type="button"
             >
               <BellOff className="h-3.5 w-3.5" />
-              Agora nao
+              Agora não
             </button>
           </div>
         </div>
         <button
-          aria-label="Fechar aviso de notificacoes"
+          aria-label="Fechar aviso de notificações"
           className="rounded-md p-1 text-muted transition hover:bg-surface-muted hover:text-foreground"
           onClick={dismiss}
           type="button"

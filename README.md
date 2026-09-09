@@ -85,6 +85,9 @@ Entregue até esta etapa:
 - Pedidos de permuta ficam pendentes para aprovação do ancião, líder de música ou admin e geram notificações no sistema.
 - Notificações internas também disparam Web Push para dispositivos autorizados.
 - Usuários aprovados recebem um aviso fechável para ativar notificações push.
+- O sistema mostra um aviso de instalação do PWA quando o navegador permitir instalar o app.
+- O manifest possui ícones PNG 192x192 e 512x512 para melhorar a instalação no Android.
+- Se notificações estiverem bloqueadas, o aviso permanece orientando a liberar o site nas configurações do navegador.
 - Service worker recebe eventos `push`, exibe notificação nativa e abre `/agenda` ou `/painel` ao tocar no aviso.
 - Inscrições push são salvas em `push_subscriptions` com RLS, vinculadas ao usuário aprovado.
 - Assinaturas expiradas retornando HTTP 404 ou 410 são desativadas automaticamente no envio.
@@ -224,6 +227,7 @@ Fluxo implementado:
 Compatibilidade esperada:
 
 - Android Chrome/Edge: funciona como PWA ou site com permissão concedida.
+- Android Chrome/Edge: a instalação aparece pelo botão do sistema quando o navegador dispara `beforeinstallprompt`; se o botão nativo não estiver disponível, o aviso orienta instalar pelo menu do navegador.
 - Windows Chrome/Edge: funciona com navegador compatível e permissão concedida.
 - iPhone/iPad: requer iOS/iPadOS com suporte a Web Push e o app adicionado à Tela de Início pelo Safari.
 

@@ -11,6 +11,8 @@ const subscribeRoute = readFileSync("src/app/api/push/subscribe/route.ts", "utf8
 const unsubscribeRoute = readFileSync("src/app/api/push/unsubscribe/route.ts", "utf8");
 const envExample = readFileSync(".env.example", "utf8");
 const prompt = readFileSync("src/components/push-notification-prompt.tsx", "utf8");
+const installPrompt = readFileSync("src/components/pwa-install-prompt.tsx", "utf8");
+const manifest = readFileSync("public/manifest.json", "utf8");
 const pushServer = readFileSync("src/lib/push/server.ts", "utf8");
 
 test("migration de push cria tabela protegida por RLS", () => {
@@ -38,6 +40,14 @@ test("prompt usa Notification API, PushManager e chave publica VAPID", () => {
   assert.match(prompt, /Notification\.requestPermission/);
   assert.match(prompt, /pushManager\.subscribe/);
   assert.match(prompt, /NEXT_PUBLIC_VAPID_PUBLIC_KEY/);
+  assert.match(prompt, /Notification\.permission === "denied"/);
+});
+
+test("instalacao PWA usa beforeinstallprompt e manifest com pngs", () => {
+  assert.match(installPrompt, /beforeinstallprompt/);
+  assert.match(installPrompt, /appinstalled/);
+  assert.match(manifest, /icon-192\.png/);
+  assert.match(manifest, /icon-512\.png/);
 });
 
 test("env example documenta chaves VAPID sem valores reais", () => {

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { MainNav } from "@/components/main-nav";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { PushNotificationPrompt } from "@/components/push-notification-prompt";
 import { getCurrentUserProfile, toAccessProfile } from "@/lib/auth/session";
 
@@ -19,6 +20,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-background text-foreground">
       <MainNav viewer={viewer} />
       <main className="flex-1">{children}</main>
+      <PwaInstallPrompt />
       <PushNotificationPrompt enabled={viewer.isApproved} />
     </div>
   );
