@@ -37,7 +37,9 @@ export type VolunteerOption = {
 
 export type SwapRequestSummary = Database["public"]["Tables"]["swap_requests"]["Row"] & {
   requester_name: string;
+  source_church_id: string;
   target_name: string;
+  target_church_id: string;
   source_date: string;
   target_date: string;
 };
@@ -450,7 +452,9 @@ async function getPendingSwapRequests(
     .map((request) => ({
       ...request,
       requester_name: userMap.get(request.requester_user_id) ?? "Solicitante",
+      source_church_id: serviceMap.get(request.source_service_id)?.church_id ?? "",
       target_name: userMap.get(request.target_user_id) ?? "Outro usuário",
+      target_church_id: serviceMap.get(request.target_service_id)?.church_id ?? "",
       source_date: serviceMap.get(request.source_service_id)?.service_date ?? "",
       target_date: serviceMap.get(request.target_service_id)?.service_date ?? "",
     })) as SwapRequestSummary[];
@@ -480,7 +484,7 @@ async function getUserSwapRequests(
   const [{ data: services }, { data: users }] = await Promise.all([
     supabase
       .from("worship_services")
-      .select("id,service_date")
+      .select("id,church_id,service_date")
       .in("id", serviceIds)
       .is("deleted_at", null),
     supabase.from("users").select("id,full_name").in("id", userIds).is("deleted_at", null),
@@ -491,7 +495,9 @@ async function getUserSwapRequests(
   return requests.map((request) => ({
     ...request,
     requester_name: userMap.get(request.requester_user_id) ?? "Solicitante",
+    source_church_id: serviceMap.get(request.source_service_id)?.church_id ?? "",
     target_name: userMap.get(request.target_user_id) ?? "Outro usuário",
+    target_church_id: serviceMap.get(request.target_service_id)?.church_id ?? "",
     source_date: serviceMap.get(request.source_service_id)?.service_date ?? "",
     target_date: serviceMap.get(request.target_service_id)?.service_date ?? "",
   })) as SwapRequestSummary[];

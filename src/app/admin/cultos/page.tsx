@@ -60,6 +60,7 @@ export default async function AdminCultosPage({
   ).padStart(2, "0")}`;
   const previous = getAdjacentMonth(viewYear, viewMonth, -1);
   const next = getAdjacentMonth(viewYear, viewMonth, 1);
+  const requestedChurchId = readStringParam(params.igreja);
   const calendarDays = buildCalendarDays(viewYear, viewMonth);
   const supabase = createAdminSupabaseClient();
   const [{ data: churches }, { data: services }, churchOptions] = await Promise.all([
@@ -78,16 +79,30 @@ export default async function AdminCultosPage({
       .order("start_time", { ascending: true }),
     getChurchOptions(),
   ]);
-  const churchNames = new Map(
-    (churches ?? []).map((church) => [church.id, church.name]),
+  const allChurches = (churches ?? []) as ChurchRow[];
+  const selectedChurchId = allChurches.some((church) => church.id === requestedChurchId)
+    ? requestedChurchId
+    : "todas";
+  const filteredChurches =
+    selectedChurchId === "todas"
+      ? allChurches
+      : allChurches.filter((church) => church.id === selectedChurchId);
+  const filteredChurchIds = new Set(filteredChurches.map((church) => church.id));
+  const filteredServices = ((services ?? []) as WorshipServiceRow[]).filter((service) =>
+    filteredChurchIds.has(service.church_id),
   );
-  const servicesByDate = groupServicesByDate((services ?? []) as WorshipServiceRow[]);
+  const churchNames = new Map(filteredChurches.map((church) => [church.id, church.name]));
+  const servicesByDate = groupServicesByDate(filteredServices);
   const monthTitle = capitalize(getMonthName(viewMonth));
+  const selectedChurchSlug =
+    selectedChurchId === "todas"
+      ? "todas"
+      : slugify(filteredChurches[0]?.name ?? "igreja");
   const pdfCalendars = buildChurchPdfCalendars({
-    churches: (churches ?? []) as ChurchRow[],
+    churches: filteredChurches,
     month: viewMonth,
     monthLabel: `${monthTitle} de ${viewYear}`,
-    services: (services ?? []) as WorshipServiceRow[],
+    services: filteredServices,
     year: viewYear,
   });
 
@@ -130,21 +145,27 @@ export default async function AdminCultosPage({
               {monthTitle} de {viewYear}
             </h2>
           </div>
+          <ChurchFilter
+            churches={allChurches}
+            month={viewMonth}
+            selectedChurchId={selectedChurchId}
+            year={viewYear}
+          />
           <div className="flex flex-wrap gap-2">
             <PdfDownloadButton
               calendars={pdfCalendars}
-              fileName={`cultos-por-igreja-${viewYear}-${String(viewMonth).padStart(2, "0")}.pdf`}
+              fileName={`cultos-${selectedChurchSlug}-${viewYear}-${String(viewMonth).padStart(2, "0")}.pdf`}
               subtitle={`${monthTitle} de ${viewYear}`}
               title="Escala mensal por igreja"
               verse="Servi uns aos outros, cada um conforme o dom que recebeu. 1 Pedro 4:10"
             />
             <CalendarLink
-              href={`/admin/cultos?mes=${previous.month}&ano=${previous.year}`}
+              href={buildPageHref(previous.month, previous.year, selectedChurchId)}
               label="Mês anterior"
               position="previous"
             />
             <CalendarLink
-              href={`/admin/cultos?mes=${next.month}&ano=${next.year}`}
+              href={buildPageHref(next.month, next.year, selectedChurchId)}
               label="Próximo mês"
               position="next"
             />
@@ -215,7 +236,7 @@ export default async function AdminCultosPage({
           })}
         </div>
 
-        {(services ?? []).length === 0 ? (
+        {filteredServices.length === 0 ? (
           <div className="flex items-center gap-3 border-t border-border bg-surface-muted px-4 py-4 text-sm text-muted">
             <CalendarDays size={18} aria-hidden="true" />
             Nenhum culto gerado para este mês.
@@ -244,6 +265,46 @@ function CalendarLink({
       <span className="hidden sm:inline">{label}</span>
       {position === "next" ? <ChevronRight size={16} aria-hidden="true" /> : null}
     </Link>
+  );
+}
+
+function ChurchFilter({
+  churches,
+  month,
+  selectedChurchId,
+  year,
+}: {
+  churches: ChurchRow[];
+  month: number;
+  selectedChurchId: string;
+  year: number;
+}) {
+  return (
+    <form className="flex flex-col gap-2 sm:min-w-64" method="get">
+      <input name="mes" type="hidden" value={month} />
+      <input name="ano" type="hidden" value={year} />
+      <label className="grid gap-1 text-sm font-semibold text-foreground">
+        Igreja
+        <select
+          className="h-10 rounded-md border border-border bg-background px-3 text-sm font-normal text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+          defaultValue={selectedChurchId}
+          name="igreja"
+        >
+          <option value="todas">Todas as igrejas</option>
+          {churches.map((church) => (
+            <option key={church.id} value={church.id}>
+              {church.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground transition hover:brightness-95"
+        type="submit"
+      >
+        Aplicar
+      </button>
+    </form>
   );
 }
 
@@ -295,6 +356,32 @@ function buildChurchPdfCalendars({
     subtitle: monthLabel,
     title: `Escala - ${church.name}`,
   }));
+}
+
+function buildPageHref(month: number, year: number, churchId: string) {
+  const searchParams = new URLSearchParams({
+    ano: String(year),
+    mes: String(month),
+  });
+
+  if (churchId !== "todas") {
+    searchParams.set("igreja", churchId);
+  }
+
+  return `/admin/cultos?${searchParams.toString()}`;
+}
+
+function readStringParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
 
 function parseNumberParam(
