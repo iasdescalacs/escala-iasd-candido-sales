@@ -76,35 +76,14 @@ export default async function AgendaPage({
         </div>
       </section>
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.55fr]">
-        <div className="grid gap-4">
-          <SwapRequestsSummary requests={data.swapRequests} />
-          <AgendaCalendar
-            agenda={data.agenda}
-            calendarDays={calendarDays}
-            swapTargets={data.swapTargets}
-          />
-        </div>
-
-        <aside className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <Bell size={18} className="text-primary" aria-hidden="true" />
-            <h2 className="text-lg font-semibold text-foreground">Notificações</h2>
-          </div>
-          <div className="mt-3 grid gap-2">
-            {data.notifications.map((notification) => (
-              <article className="rounded-md border border-border bg-background p-3 text-sm" key={notification.id}>
-                <p className="font-semibold text-foreground">{notification.title}</p>
-                <p className="mt-1 text-muted">{notification.body}</p>
-              </article>
-            ))}
-            {data.notifications.length === 0 ? (
-              <p className="rounded-md bg-surface-muted p-3 text-sm text-muted">
-                Nenhuma notificação recente.
-              </p>
-            ) : null}
-          </div>
-        </aside>
+      <section className="mt-6 grid gap-4">
+        <SwapRequestsSummary requests={data.swapRequests} />
+        <AgendaCalendar
+          agenda={data.agenda}
+          calendarDays={calendarDays}
+          swapTargets={data.swapTargets}
+        />
+        <NotificationsPanel notifications={data.notifications} />
       </section>
 
       {data.agenda.length === 0 ? (
@@ -114,6 +93,37 @@ export default async function AgendaPage({
         </div>
       ) : null}
     </div>
+  );
+}
+
+function NotificationsPanel({
+  notifications,
+}: {
+  notifications: Awaited<ReturnType<typeof getUserAgendaPageData>>["notifications"];
+}) {
+  return (
+    <details className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-lg font-semibold text-foreground">
+        <Bell size={18} className="text-primary" aria-hidden="true" />
+        Notificações
+        <span className="ml-auto rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-strong">
+          {notifications.length}
+        </span>
+      </summary>
+      <div className="mt-3 grid gap-2">
+        {notifications.map((notification) => (
+          <article className="rounded-md border border-border bg-background p-3 text-sm" key={notification.id}>
+            <p className="font-semibold text-foreground">{notification.title}</p>
+            <p className="mt-1 text-muted">{notification.body}</p>
+          </article>
+        ))}
+        {notifications.length === 0 ? (
+          <p className="rounded-md bg-surface-muted p-3 text-sm text-muted">
+            Nenhuma notificação recente.
+          </p>
+        ) : null}
+      </div>
+    </details>
   );
 }
 

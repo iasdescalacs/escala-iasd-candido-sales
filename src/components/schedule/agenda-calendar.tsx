@@ -97,7 +97,7 @@ export function AgendaCalendar({
         </div>
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section className="grid gap-4">
         <AgendaRoleSection
           emptyText="Nenhuma pregação encontrada para este mês."
           item={selectedPreaching}
