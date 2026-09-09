@@ -162,7 +162,7 @@ export async function getUserAgendaPageData({
 }) {
   const profile = await requireApprovedUser();
   const supabase = createAdminSupabaseClient();
-  const [{ data: services }, { data: churches }, { data: notifications }, { data: swaps }] =
+  const [{ data: services }, { data: churches }, { data: notifications }] =
     await Promise.all([
       supabase
         .from("worship_services")
@@ -183,12 +183,6 @@ export async function getUserAgendaPageData({
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(10),
-      supabase
-        .from("swap_requests")
-        .select("*")
-        .or(`requester_user_id.eq.${profile.appUser.id},target_user_id.eq.${profile.appUser.id}`)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false }),
     ]);
   const churchMap = new Map((churches ?? []).map((church) => [church.id, church]));
   const agenda: UserAgendaItem[] = [];
@@ -220,12 +214,13 @@ export async function getUserAgendaPageData({
     monthStart,
     monthEnd,
   });
+  const userSwapRequests = await getUserSwapRequests(supabase, profile.appUser.id);
 
   return {
     profile,
     agenda,
     notifications: (notifications ?? []) as NotificationSummary[],
-    swapRequests: swaps ?? [],
+    swapRequests: userSwapRequests,
     swapTargets: allServices,
   };
 }
@@ -449,7 +444,7 @@ async function getPendingSwapRequests(
     .filter((request) => {
       const source = serviceMap.get(request.source_service_id);
       const target = serviceMap.get(request.target_service_id);
-      return source && target && churchSet.has(source.church_id) && churchSet.has(target.church_id);
+      return source && target && (churchSet.has(source.church_id) || churchSet.has(target.church_id));
     })
     .map((request) => ({
       ...request,
@@ -458,6 +453,47 @@ async function getPendingSwapRequests(
       source_date: serviceMap.get(request.source_service_id)?.service_date ?? "",
       target_date: serviceMap.get(request.target_service_id)?.service_date ?? "",
     })) as SwapRequestSummary[];
+}
+
+async function getUserSwapRequests(
+  supabase: ReturnType<typeof createAdminSupabaseClient>,
+  userId: string,
+) {
+  const { data: requests } = await supabase
+    .from("swap_requests")
+    .select("*")
+    .or(`requester_user_id.eq.${userId},target_user_id.eq.${userId}`)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (!requests || requests.length === 0) {
+    return [];
+  }
+
+  const serviceIds = Array.from(
+    new Set(requests.flatMap((request) => [request.source_service_id, request.target_service_id])),
+  );
+  const userIds = Array.from(
+    new Set(requests.flatMap((request) => [request.requester_user_id, request.target_user_id])),
+  );
+  const [{ data: services }, { data: users }] = await Promise.all([
+    supabase
+      .from("worship_services")
+      .select("id,service_date")
+      .in("id", serviceIds)
+      .is("deleted_at", null),
+    supabase.from("users").select("id,full_name").in("id", userIds).is("deleted_at", null),
+  ]);
+  const serviceMap = new Map((services ?? []).map((service) => [service.id, service]));
+  const userMap = new Map((users ?? []).map((user) => [user.id, user.full_name]));
+
+  return requests.map((request) => ({
+    ...request,
+    requester_name: userMap.get(request.requester_user_id) ?? "Solicitante",
+    target_name: userMap.get(request.target_user_id) ?? "Outro usuário",
+    source_date: serviceMap.get(request.source_service_id)?.service_date ?? "",
+    target_date: serviceMap.get(request.target_service_id)?.service_date ?? "",
+  })) as SwapRequestSummary[];
 }
 
 async function getSwapTargetServices(

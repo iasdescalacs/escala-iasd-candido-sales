@@ -145,6 +145,12 @@ function SwapRequestsSummary({
               {request.role_key === "pregador" ? "Pregação" : "Louvor"} · {statusLabel(request.status)}
             </p>
             <p className="mt-1 text-muted">
+              {request.requester_name} solicitou permuta com {request.target_name}
+            </p>
+            <p className="mt-1 text-muted">
+              {formatDate(request.source_date)} por {formatDate(request.target_date)}
+            </p>
+            <p className="mt-1 text-xs text-muted">
               Solicitada em {formatDateTime(request.created_at)}
             </p>
           </article>

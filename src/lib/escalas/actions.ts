@@ -246,15 +246,24 @@ export async function reviewSwapRequestAction(formData: FormData) {
     return;
   }
 
-  const context = await canManageService({
+  const sourceContext = await canManageService({
     admin,
     managerUserId: profile.appUser.id,
     managerRoles: profile.roles.map((role) => role.key),
     serviceId: request.source_service_id,
     roleKey: request.role_key,
   });
+  const targetContext = sourceContext.allowed
+    ? sourceContext
+    : await canManageService({
+        admin,
+        managerUserId: profile.appUser.id,
+        managerRoles: profile.roles.map((role) => role.key),
+        serviceId: request.target_service_id,
+        roleKey: request.role_key,
+      });
 
-  if (!context.allowed) {
+  if (!targetContext.allowed) {
     return;
   }
 
