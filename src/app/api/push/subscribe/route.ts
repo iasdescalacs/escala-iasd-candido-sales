@@ -26,24 +26,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Inscricao push invalida." }, { status: 400 });
   }
 
-  const admin = createAdminSupabaseClient();
-  const { error } = await admin.from("push_subscriptions").upsert(
-    {
-      auth: payload.keys.auth,
-      deleted_at: null,
-      enabled: true,
-      endpoint: payload.endpoint,
-      p256dh: payload.keys.p256dh,
-      platform: request.headers.get("sec-ch-ua-platform"),
-      user_agent: request.headers.get("user-agent"),
-      user_id: profile.appUser.id,
-    },
-    { onConflict: "endpoint" },
-  );
+  let admin: ReturnType<typeof createAdminSupabaseClient>;
+
+  try {
+    admin = createAdminSupabaseClient();
+  } catch {
+    return NextResponse.json(
+      { message: "Notificacoes indisponiveis: variaveis do servidor ausentes." },
+      { status: 500 },
+    );
+  }
+
+  const { error } = await admin
+    .from("push_subscriptions")
+    .upsert(
+      {
+        auth: payload.keys.auth,
+        deleted_at: null,
+        enabled: true,
+        endpoint: payload.endpoint,
+        p256dh: payload.keys.p256dh,
+        platform: request.headers.get("sec-ch-ua-platform"),
+        user_agent: request.headers.get("user-agent"),
+        user_id: profile.appUser.id,
+      },
+      { onConflict: "endpoint" },
+    );
 
   if (error) {
+    console.error("Falha ao salvar inscricao push.", {
+      code: error.code,
+      message: error.message,
+    });
+
     return NextResponse.json(
-      { message: "Nao foi possivel ativar as notificacoes." },
+      { message: "Nao foi possivel salvar este dispositivo para notificacoes." },
       { status: 500 },
     );
   }

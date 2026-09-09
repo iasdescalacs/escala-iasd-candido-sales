@@ -80,28 +80,34 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
 
       const registration = await navigator.serviceWorker.ready;
       const currentSubscription = await registration.pushManager.getSubscription();
+
+      if (currentSubscription) {
+        await currentSubscription.unsubscribe();
+      }
+
       const subscription =
-        currentSubscription ??
-        (await registration.pushManager.subscribe({
+        await registration.pushManager.subscribe({
           applicationServerKey: urlBase64ToUint8Array(publicKey),
           userVisibleOnly: true,
-        }));
+        });
 
       const response = await fetch("/api/push/subscribe", {
         body: JSON.stringify(subscription),
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
 
       if (!response.ok) {
-        throw new Error("Falha ao salvar inscricao push.");
+        const result = (await response.json().catch(() => null)) as { message?: string } | null;
+        throw new Error(result?.message ?? "Falha ao salvar inscrição push.");
       }
 
       setStatus("subscribed");
       setMessage("Notificações ativadas com sucesso.");
       setIsVisible(false);
-    } catch {
-      setMessage("Não foi possível ativar as notificações.");
+    } catch (error) {
+      setMessage(getPushActivationErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -172,4 +178,22 @@ function urlBase64ToUint8Array(value: string) {
   }
 
   return outputArray;
+}
+
+function getPushActivationErrorMessage(error: unknown) {
+  if (error instanceof DOMException) {
+    if (error.name === "NotAllowedError") {
+      return "O navegador bloqueou a inscrição. Verifique as permissões de notificação deste site.";
+    }
+
+    if (error.name === "InvalidAccessError") {
+      return "A chave de notificação do app mudou. Atualize a página e tente novamente.";
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "Não foi possível ativar as notificações.";
 }
