@@ -49,6 +49,34 @@ export async function downloadSimplePdf({
   verse,
 }: SimplePdfOptions) {
   const blob = await createSimplePdfBlob({ calendar, calendars, fileName, sections, subtitle, title, verse });
+  downloadPdfBlob(blob, fileName);
+}
+
+export async function openSimplePdf({
+  calendar,
+  calendars,
+  fileName,
+  sections = [],
+  subtitle,
+  title,
+  verse,
+}: SimplePdfOptions) {
+  const viewer = window.open("about:blank", "_blank");
+  const blob = await createSimplePdfBlob({ calendar, calendars, fileName, sections, subtitle, title, verse });
+  const url = URL.createObjectURL(blob);
+
+  if (viewer) {
+    viewer.opener = null;
+    viewer.location.href = url;
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return;
+  }
+
+  downloadPdfBlob(blob, fileName);
+  URL.revokeObjectURL(url);
+}
+
+function downloadPdfBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
 

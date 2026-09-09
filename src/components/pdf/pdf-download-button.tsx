@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   createSimplePdfBlob,
   downloadSimplePdf,
+  openSimplePdf,
   type PdfCalendar,
   type PdfCalendarPage,
   type PdfSection,
@@ -34,7 +35,7 @@ export function PdfDownloadButton({
     setIsGenerating(true);
 
     try {
-      await downloadSimplePdf({ calendar, calendars, fileName, sections, subtitle, title, verse });
+      await openSimplePdf({ calendar, calendars, fileName, sections, subtitle, title, verse });
     } finally {
       setIsGenerating(false);
     }

@@ -79,6 +79,7 @@ Entregue até esta etapa:
 - Notificações aparecem abaixo de `Louvor` e iniciam recolhidas.
 - Administrador pode limpar permutas e notificações exibidas em `/agenda`, com confirmação.
 - Páginas `/agenda`, `/escalas/pregacao` e `/escalas/louvor` têm botão para gerar e baixar PDF em formato de calendário, com versículo sobre serviço cristão.
+- Ao tocar em `Baixar PDF`, o sistema tenta abrir o arquivo em um visualizador/leitor de PDF do navegador ou do dispositivo, mantendo download como fallback.
 - Páginas `/agenda`, `/escalas/pregacao` e `/escalas/louvor` têm botão para compartilhar o PDF pelo recurso nativo do celular, WhatsApp instalado ou WhatsApp Web quando o navegador permitir.
 - Página `/admin/cultos` gera PDF administrativo separado por igreja, com uma página de calendário mensal para cada igreja.
 - Admin pode filtrar `/escalas/pregacao` e `/admin/cultos` por todas as igrejas ou por uma igreja específica; o PDF e o compartilhamento seguem o mesmo filtro.
