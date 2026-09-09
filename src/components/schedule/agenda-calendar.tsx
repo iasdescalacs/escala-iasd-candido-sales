@@ -47,14 +47,14 @@ export function AgendaCalendar({
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-lg font-semibold text-foreground">Calendário</h2>
         </div>
-        <div className="grid grid-cols-7 border-b border-border bg-surface-muted">
+        <div className="hidden grid-cols-7 border-b border-border bg-surface-muted sm:grid">
           {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
             <div className="px-2 py-2 text-center text-xs font-semibold uppercase text-muted" key={day}>
               {day}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7">
+        <div className="hidden grid-cols-7 sm:grid">
           {calendarDays.map((day) => (
             <div
               className={`min-h-32 min-w-0 border-b border-r border-border p-2 ${
@@ -94,6 +94,39 @@ export function AgendaCalendar({
               </div>
             </div>
           ))}
+        </div>
+        <div className="grid gap-2 p-3 sm:hidden">
+          {agenda.length > 0 ? (
+            agenda.map((item) => {
+              const active =
+                getAgendaKey(item) === selectedPreachingKey ||
+                getAgendaKey(item) === selectedMusicKey;
+
+              return (
+                <button
+                  className={`rounded-md border px-3 py-2 text-left text-sm transition ${
+                    active
+                      ? "border-primary bg-primary text-white"
+                      : "border-border bg-background text-foreground hover:bg-surface-muted"
+                  }`}
+                  key={getAgendaKey(item)}
+                  onClick={() => selectItem(item)}
+                  type="button"
+                >
+                  <p className="font-semibold">
+                    {formatDate(item.service_date)} · {item.roleKey === "pregador" ? "Pregação" : "Louvor"}
+                  </p>
+                  <p className={active ? "text-white/85" : "text-muted"}>
+                    {item.church_name} · {item.start_time.slice(0, 5)}
+                  </p>
+                </button>
+              );
+            })
+          ) : (
+            <p className="rounded-md bg-surface-muted p-3 text-sm text-muted">
+              Nenhuma escala encontrada para este mês.
+            </p>
+          )}
         </div>
       </div>
 

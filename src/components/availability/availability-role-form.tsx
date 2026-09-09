@@ -97,7 +97,7 @@ export function AvailabilityRoleForm({
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border">
-        <div className="grid grid-cols-7 border-b border-border bg-surface-muted">
+        <div className="hidden grid-cols-7 border-b border-border bg-surface-muted sm:grid">
           {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
             <div
               className="px-2 py-2 text-center text-xs font-semibold uppercase text-muted"
@@ -108,7 +108,7 @@ export function AvailabilityRoleForm({
           ))}
         </div>
 
-        <div className="grid grid-cols-7">
+        <div className="hidden grid-cols-7 sm:grid">
           {calendarDays.map((day) => {
             const services = servicesByDate[day.date] ?? [];
             const firstService = services[0];
@@ -158,9 +158,54 @@ export function AvailabilityRoleForm({
             );
           })}
         </div>
+        <div className="grid gap-2 p-3 sm:hidden">
+          {calendarDays.some((day) => (servicesByDate[day.date] ?? []).length > 0) ? (
+            calendarDays.map((day) => {
+              const services = servicesByDate[day.date] ?? [];
+              const firstService = services[0];
+
+              if (!firstService) {
+                return null;
+              }
+
+              return (
+                <label
+                  className="flex items-start gap-3 rounded-md border border-border bg-background p-3 text-sm"
+                  key={day.date}
+                >
+                  <input
+                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--primary)]"
+                    defaultChecked={availableDates.has(day.date)}
+                    name="availableDates"
+                    type="checkbox"
+                    value={day.date}
+                  />
+                  <span className="min-w-0">
+                    <span className="block font-semibold text-foreground">
+                      {formatDate(day.date)}
+                    </span>
+                    <span className="block text-muted">
+                      {firstService.title ?? getTemplateLabel(firstService.service_type)} · {firstService.start_time.slice(0, 5)}
+                    </span>
+                  </span>
+                </label>
+              );
+            })
+          ) : (
+            <p className="rounded-md bg-surface-muted p-3 text-sm text-muted">
+              Nenhum culto encontrado neste mês.
+            </p>
+          )}
+        </div>
       </div>
 
       <SubmitButton>{`Salvar disponibilidade de ${role.name}`}</SubmitButton>
     </form>
+  );
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
+    new Date(`${value}T00:00:00.000Z`),
   );
 }

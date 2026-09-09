@@ -93,14 +93,14 @@ export function ScheduleCalendar({
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-lg font-semibold text-foreground">{title}</h2>
         </div>
-        <div className="grid grid-cols-7 border-b border-border bg-surface-muted">
+        <div className="hidden grid-cols-7 border-b border-border bg-surface-muted sm:grid">
           {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((day) => (
             <div className="px-2 py-2 text-center text-xs font-semibold uppercase text-muted" key={day}>
               {day}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7">
+        <div className="hidden grid-cols-7 sm:grid">
           {calendarDays.map((day) => (
             <div
               className={`min-h-44 min-w-0 border-b border-r border-border p-2 ${
@@ -173,6 +173,72 @@ export function ScheduleCalendar({
               </div>
             </div>
           ))}
+        </div>
+        <div className="grid gap-3 p-3 sm:hidden">
+          {services.length > 0 ? (
+            services.map((service) => {
+              const assignedName =
+                roleKey === "pregador" ? service.preacher_name : service.singer_name;
+              const availableVolunteers = volunteers.filter(
+                (volunteer) =>
+                  volunteer.church_id === service.church_id &&
+                  volunteer.service_date === service.service_date,
+              );
+
+              return (
+                <article className="grid gap-3 rounded-md border border-border bg-background p-3 text-sm" key={service.id}>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-primary">
+                      {formatDate(service.service_date)} · {service.title ?? getTemplateLabel(service.service_type)}
+                    </p>
+                    <p className="text-muted">
+                      {churchesById.get(service.church_id) ?? "Igreja"} · {service.start_time.slice(0, 5)}
+                    </p>
+                    <p className="font-medium text-foreground">
+                      {assignedName ?? "A definir"}
+                    </p>
+                  </div>
+
+                  <form action={formAction} className="grid gap-2">
+                    <input name="serviceId" type="hidden" value={service.id} />
+                    <input name="roleKey" type="hidden" value={roleKey} />
+                    <select
+                      className="h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                      defaultValue=""
+                      name="userId"
+                      required
+                    >
+                      <option value="">Selecionar voluntário</option>
+                      {availableVolunteers.map((volunteer) => (
+                        <option key={volunteer.id} value={volunteer.id}>
+                          {volunteer.full_name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className={`grid gap-2 ${assignedName ? "grid-cols-2" : ""}`}>
+                      <ScheduleFormButton
+                        className="bg-success text-white hover:brightness-95"
+                        icon="save"
+                        label="Salvar"
+                      />
+                      {assignedName ? (
+                        <ScheduleFormButton
+                          className="bg-red-600 text-white hover:bg-red-700"
+                          formAction={clearScheduleAction}
+                          icon="delete"
+                          label="Excluir"
+                        />
+                      ) : null}
+                    </div>
+                  </form>
+                </article>
+              );
+            })
+          ) : (
+            <p className="rounded-md bg-surface-muted p-3 text-sm text-muted">
+              Nenhum culto encontrado para este mês.
+            </p>
+          )}
         </div>
       </section>
     </div>

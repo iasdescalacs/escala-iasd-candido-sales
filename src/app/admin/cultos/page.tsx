@@ -172,7 +172,7 @@ export default async function AdminCultosPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-7 border-b border-border bg-surface-muted">
+        <div className="hidden grid-cols-7 border-b border-border bg-surface-muted sm:grid">
           {weekDays.map((day) => (
             <div
               className="px-2 py-2 text-center text-xs font-semibold uppercase text-muted"
@@ -183,7 +183,7 @@ export default async function AdminCultosPage({
           ))}
         </div>
 
-        <div className="grid grid-cols-7">
+        <div className="hidden grid-cols-7 sm:grid">
           {calendarDays.map((day) => {
             const dayServices = servicesByDate.get(day.date) ?? [];
 
@@ -235,9 +235,44 @@ export default async function AdminCultosPage({
             );
           })}
         </div>
+        <div className="grid gap-3 p-3 sm:hidden">
+          {filteredServices.length > 0 ? (
+            filteredServices.map((service) => (
+              <article
+                className="rounded-md border border-primary/30 bg-primary-soft p-3 text-sm text-foreground"
+                key={service.id}
+              >
+                <p className="font-semibold text-primary-strong">
+                  {formatDate(service.service_date)} · {formatTime(service.start_time)}{" "}
+                  {service.is_special
+                    ? getSpecialWorshipLabel(service.special_type)
+                    : getTemplateLabel(service.service_type)}
+                </p>
+                {service.is_special ? (
+                  <p className="mt-1 font-semibold">
+                    {service.title ?? "Culto especial"}
+                  </p>
+                ) : null}
+                <p className="mt-1">
+                  {churchNames.get(service.church_id) ?? "Igreja"}
+                </p>
+                <p className="text-muted">
+                  Pregador: {service.preacher_name ?? "A definir"}
+                </p>
+                <p className="text-muted">
+                  Música: {service.singer_name ?? "A definir"}
+                </p>
+              </article>
+            ))
+          ) : (
+            <p className="rounded-md bg-surface-muted p-3 text-sm text-muted">
+              Nenhum culto gerado para este mês.
+            </p>
+          )}
+        </div>
 
         {filteredServices.length === 0 ? (
-          <div className="flex items-center gap-3 border-t border-border bg-surface-muted px-4 py-4 text-sm text-muted">
+          <div className="hidden items-center gap-3 border-t border-border bg-surface-muted px-4 py-4 text-sm text-muted sm:flex">
             <CalendarDays size={18} aria-hidden="true" />
             Nenhum culto gerado para este mês.
           </div>
@@ -408,6 +443,12 @@ function normalizeMonth(month: number) {
 
 function formatTime(value: string) {
   return value.slice(0, 5);
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
+    new Date(`${value}T00:00:00.000Z`),
+  );
 }
 
 function capitalize(value: string) {

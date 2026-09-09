@@ -65,6 +65,7 @@ Entregue até esta etapa:
 - Usuários com as duas funções veem seções separadas para Pregador e Cantor.
 - Pregadores e cantores podem escolher as igrejas onde aceitam ser escalados.
 - Calendário de disponibilidade mostra apenas um culto representativo por dia para não repetir a quantidade de igrejas.
+- Calendários exibem lista legível no celular e grade mensal em telas maiores, evitando texto minúsculo ou cortado.
 - Página `/escalas/pregacao` permite ao ancião ou admin escalar, trocar e remover pregadores disponíveis por culto e igreja.
 - Página `/escalas/louvor` permite ao líder de música ou admin escalar, trocar e remover cantores disponíveis por culto e igreja.
 - Botões de salvar e excluir nas escalas são pequenos, ficam lado a lado quando disponíveis, com ícones, usando verde para salvar e vermelho para excluir.
