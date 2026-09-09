@@ -21,6 +21,15 @@ type PdfLogo = {
   width: number;
 };
 
+type SimplePdfOptions = {
+  calendar?: PdfCalendar;
+  fileName: string;
+  sections?: PdfSection[];
+  subtitle?: string;
+  title: string;
+  verse?: string;
+};
+
 export async function downloadSimplePdf({
   calendar,
   fileName,
@@ -28,17 +37,8 @@ export async function downloadSimplePdf({
   subtitle,
   title,
   verse,
-}: {
-  calendar?: PdfCalendar;
-  fileName: string;
-  sections?: PdfSection[];
-  subtitle?: string;
-  title: string;
-  verse?: string;
-}) {
-  const logo = await loadLogoForPdf();
-  const pdf = createSimplePdfDocument({ calendar, logo, sections, subtitle, title, verse });
-  const blob = new Blob([pdf], { type: "application/pdf" });
+}: SimplePdfOptions) {
+  const blob = await createSimplePdfBlob({ calendar, fileName, sections, subtitle, title, verse });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
 
@@ -48,6 +48,19 @@ export async function downloadSimplePdf({
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+export async function createSimplePdfBlob({
+  calendar,
+  sections = [],
+  subtitle,
+  title,
+  verse,
+}: SimplePdfOptions) {
+  const logo = await loadLogoForPdf();
+  const pdf = createSimplePdfDocument({ calendar, logo, sections, subtitle, title, verse });
+
+  return new Blob([pdf], { type: "application/pdf" });
 }
 
 export function createSimplePdfDocument({
