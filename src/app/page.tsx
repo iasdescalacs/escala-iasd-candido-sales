@@ -25,7 +25,7 @@ const destaques = [
 export default function Home() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <section className="grid gap-8 py-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+      <section className="py-8">
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
             Sistema web
@@ -53,15 +53,6 @@ export default function Home() {
             </Link>
           </div>
         </div>
-
-        <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <StatusItem label="Projeto" value="Etapa 5" />
-            <StatusItem label="Tema" value="Claro e escuro" />
-            <StatusItem label="Menu" value="Responsivo" />
-            <StatusItem label="Acesso" value="Protegido" />
-          </div>
-        </div>
       </section>
 
       <section className="grid gap-4 py-8 md:grid-cols-3">
@@ -86,17 +77,6 @@ export default function Home() {
           );
         })}
       </section>
-    </div>
-  );
-}
-
-function StatusItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-md border border-border bg-surface-muted p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
-        {label}
-      </p>
-      <p className="mt-2 font-semibold text-foreground">{value}</p>
     </div>
   );
 }
