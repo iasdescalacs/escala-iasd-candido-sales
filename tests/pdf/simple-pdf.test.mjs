@@ -38,3 +38,23 @@ test("gera pdf de calendario com texto de igreja e pregador", () => {
   assert.match(pdf, / re S/);
   assert.ok(pdf.length > 1000);
 });
+
+test("gera pdf de calendario com uma pagina por igreja", () => {
+  const pdf = createSimplePdfDocument({
+    calendars: [
+      {
+        calendar: { events: [], month: 9, year: 2026 },
+        title: "Escala - Central",
+      },
+      {
+        calendar: { events: [], month: 9, year: 2026 },
+        title: "Escala - Bela Vista",
+      },
+    ],
+    title: "Escala mensal por igreja",
+  });
+
+  assert.match(pdf, /\/Count 2/);
+  assert.match(pdf, /Escala - Central/);
+  assert.match(pdf, /Escala - Bela Vista/);
+});

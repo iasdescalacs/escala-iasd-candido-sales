@@ -386,6 +386,47 @@ export async function reviewSwapRequestAction(formData: FormData) {
   revalidateSchedule(request.role_key);
 }
 
+export async function clearAgendaNotificationsAction() {
+  const profile = await requireApprovedUser();
+
+  if (!profile.roles.some((role) => role.key === "admin")) {
+    return;
+  }
+
+  const admin = createAdminSupabaseClient();
+  await admin
+    .from("notifications")
+    .update({
+      read_at: new Date().toISOString(),
+      status: "archived",
+    })
+    .eq("user_id", profile.appUser.id)
+    .neq("status", "archived")
+    .is("deleted_at", null);
+
+  revalidatePath("/agenda");
+}
+
+export async function clearAgendaSwapRequestsAction() {
+  const profile = await requireApprovedUser();
+
+  if (!profile.roles.some((role) => role.key === "admin")) {
+    return;
+  }
+
+  const admin = createAdminSupabaseClient();
+  await admin
+    .from("swap_requests")
+    .update({ deleted_at: new Date().toISOString() })
+    .or(`requester_user_id.eq.${profile.appUser.id},target_user_id.eq.${profile.appUser.id}`)
+    .is("deleted_at", null);
+
+  revalidatePath("/agenda");
+  revalidatePath("/painel");
+  revalidatePath("/escalas/pregacao");
+  revalidatePath("/escalas/louvor");
+}
+
 async function canManageService({
   admin,
   managerUserId,

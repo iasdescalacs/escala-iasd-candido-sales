@@ -180,6 +180,7 @@ export async function getUserAgendaPageData({
         .from("notifications")
         .select("id,title,body,status,created_at")
         .eq("user_id", profile.appUser.id)
+        .neq("status", "archived")
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(10),

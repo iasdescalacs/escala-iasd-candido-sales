@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Bell, CalendarDays, ChevronLeft, ChevronRight, Repeat2 } from "lucide-react";
+import { ConfirmSubmitButton } from "@/components/common/confirm-submit-button";
 import { PdfDownloadButton } from "@/components/pdf/pdf-download-button";
 import { AgendaCalendar } from "@/components/schedule/agenda-calendar";
 import {
@@ -8,6 +9,10 @@ import {
   getMonthName,
   getTemplateLabel,
 } from "@/lib/cultos/schedule";
+import {
+  clearAgendaNotificationsAction,
+  clearAgendaSwapRequestsAction,
+} from "@/lib/escalas/actions";
 import { getUserAgendaPageData } from "@/lib/escalas/queries";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -33,6 +38,7 @@ export default async function AgendaPage({
   const data = await getUserAgendaPageData({ monthStart, monthEnd });
   const monthLabel = `${capitalize(getMonthName(month))} de ${year}`;
   const calendarDays = buildCalendarDays(year, month);
+  const isAdmin = data.profile.roles.some((role) => role.key === "admin");
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -77,13 +83,13 @@ export default async function AgendaPage({
       </section>
 
       <section className="mt-6 grid gap-4">
-        <SwapRequestsSummary requests={data.swapRequests} />
+        <SwapRequestsSummary isAdmin={isAdmin} requests={data.swapRequests} />
         <AgendaCalendar
           agenda={data.agenda}
           calendarDays={calendarDays}
           swapTargets={data.swapTargets}
         />
-        <NotificationsPanel notifications={data.notifications} />
+        <NotificationsPanel isAdmin={isAdmin} notifications={data.notifications} />
       </section>
 
       {data.agenda.length === 0 ? (
@@ -97,8 +103,10 @@ export default async function AgendaPage({
 }
 
 function NotificationsPanel({
+  isAdmin,
   notifications,
 }: {
+  isAdmin: boolean;
   notifications: Awaited<ReturnType<typeof getUserAgendaPageData>>["notifications"];
 }) {
   return (
@@ -110,6 +118,13 @@ function NotificationsPanel({
           {notifications.length}
         </span>
       </summary>
+      {isAdmin && notifications.length > 0 ? (
+        <form action={clearAgendaNotificationsAction} className="mt-3">
+          <ConfirmSubmitButton confirmation="Deseja limpar as notificações exibidas na sua agenda?">
+            Limpar notificações
+          </ConfirmSubmitButton>
+        </form>
+      ) : null}
       <div className="mt-3 grid gap-2">
         {notifications.map((notification) => (
           <article className="rounded-md border border-border bg-background p-3 text-sm" key={notification.id}>
@@ -128,16 +143,28 @@ function NotificationsPanel({
 }
 
 function SwapRequestsSummary({
+  isAdmin,
   requests,
 }: {
+  isAdmin: boolean;
   requests: Awaited<ReturnType<typeof getUserAgendaPageData>>["swapRequests"];
 }) {
   return (
-    <section className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-      <div className="flex items-center gap-2">
+    <details className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-lg font-semibold text-foreground">
         <Repeat2 size={18} className="text-primary" aria-hidden="true" />
-        <h2 className="text-lg font-semibold text-foreground">Permutas</h2>
-      </div>
+        Permutas
+        <span className="ml-auto rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-strong">
+          {requests.length}
+        </span>
+      </summary>
+      {isAdmin && requests.length > 0 ? (
+        <form action={clearAgendaSwapRequestsAction} className="mt-3">
+          <ConfirmSubmitButton confirmation="Deseja limpar as permutas exibidas na sua agenda?">
+            Limpar permutas
+          </ConfirmSubmitButton>
+        </form>
+      ) : null}
       <div className="mt-3 grid gap-2">
         {requests.slice(0, 4).map((request) => (
           <article className="rounded-md border border-border bg-background p-3 text-sm" key={request.id}>
@@ -161,7 +188,7 @@ function SwapRequestsSummary({
           </p>
         ) : null}
       </div>
-    </section>
+    </details>
   );
 }
 

@@ -10,6 +10,14 @@ export type PdfCalendar = {
   year: number;
 };
 
+export type PdfCalendarPage = {
+  calendar: PdfCalendar;
+  sections?: PdfSection[];
+  subtitle?: string;
+  title?: string;
+  verse?: string;
+};
+
 export type PdfSection = {
   title?: string;
   rows: { label: string; value: string }[][];
@@ -23,6 +31,7 @@ type PdfLogo = {
 
 type SimplePdfOptions = {
   calendar?: PdfCalendar;
+  calendars?: PdfCalendarPage[];
   fileName: string;
   sections?: PdfSection[];
   subtitle?: string;
@@ -32,13 +41,14 @@ type SimplePdfOptions = {
 
 export async function downloadSimplePdf({
   calendar,
+  calendars,
   fileName,
   sections = [],
   subtitle,
   title,
   verse,
 }: SimplePdfOptions) {
-  const blob = await createSimplePdfBlob({ calendar, fileName, sections, subtitle, title, verse });
+  const blob = await createSimplePdfBlob({ calendar, calendars, fileName, sections, subtitle, title, verse });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
 
@@ -52,19 +62,21 @@ export async function downloadSimplePdf({
 
 export async function createSimplePdfBlob({
   calendar,
+  calendars,
   sections = [],
   subtitle,
   title,
   verse,
 }: SimplePdfOptions) {
   const logo = await loadLogoForPdf();
-  const pdf = createSimplePdfDocument({ calendar, logo, sections, subtitle, title, verse });
+  const pdf = createSimplePdfDocument({ calendar, calendars, logo, sections, subtitle, title, verse });
 
   return new Blob([pdf], { type: "application/pdf" });
 }
 
 export function createSimplePdfDocument({
   calendar,
+  calendars,
   logo,
   sections = [],
   subtitle,
@@ -72,12 +84,28 @@ export function createSimplePdfDocument({
   verse,
 }: {
   calendar?: PdfCalendar;
+  calendars?: PdfCalendarPage[];
   logo?: PdfLogo;
   sections?: PdfSection[];
   subtitle?: string;
   title: string;
   verse?: string;
 }) {
+  if (calendars?.length) {
+    const streams = calendars.map((page) =>
+      buildCalendarStream({
+        calendar: page.calendar,
+        logo,
+        sections: page.sections ?? [],
+        subtitle: page.subtitle ?? subtitle,
+        title: page.title ?? title,
+        verse: page.verse ?? verse,
+      }),
+    );
+
+    return assemblePagedPdf(streams, logo);
+  }
+
   const stream = calendar
     ? buildCalendarStream({ calendar, logo, sections, subtitle, title, verse })
     : buildTextStream({ sections, subtitle, title, verse });
@@ -89,6 +117,38 @@ export function createSimplePdfDocument({
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
     `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] ${pageResources} /Contents 4 0 R >>`,
     `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
+  ];
+
+  if (logo) {
+    objects.push(
+      `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter [/ASCIIHexDecode /DCTDecode] /Length ${
+        logo.imageHex.length + 1
+      } >>\nstream\n${logo.imageHex}>\nendstream`,
+    );
+  }
+
+  return assemblePdf(objects);
+}
+
+function assemblePagedPdf(streams: string[], logo?: PdfLogo) {
+  const pageCount = streams.length;
+  const pageIds = Array.from({ length: pageCount }, (_, index) => index + 3);
+  const contentStartId = 3 + pageCount;
+  const fontRegularId = 3 + pageCount * 2;
+  const fontBoldId = fontRegularId + 1;
+  const logoId = fontBoldId + 1;
+  const resources = logo
+    ? `/Resources << /Font << /F1 ${fontRegularId} 0 R /F2 ${fontBoldId} 0 R >> /XObject << /Im1 ${logoId} 0 R >> >>`
+    : `/Resources << /Font << /F1 ${fontRegularId} 0 R /F2 ${fontBoldId} 0 R >> >>`;
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageCount} >>`,
+    ...streams.map((_, index) =>
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] ${resources} /Contents ${contentStartId + index} 0 R >>`,
+    ),
+    ...streams.map((stream) => `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`),
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
   ];

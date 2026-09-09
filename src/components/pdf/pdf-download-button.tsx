@@ -6,11 +6,13 @@ import {
   createSimplePdfBlob,
   downloadSimplePdf,
   type PdfCalendar,
+  type PdfCalendarPage,
   type PdfSection,
 } from "@/lib/pdf/simple-pdf";
 
 export function PdfDownloadButton({
   calendar,
+  calendars,
   fileName,
   sections,
   subtitle,
@@ -18,6 +20,7 @@ export function PdfDownloadButton({
   verse,
 }: {
   calendar?: PdfCalendar;
+  calendars?: PdfCalendarPage[];
   fileName: string;
   sections?: PdfSection[];
   subtitle?: string;
@@ -31,7 +34,7 @@ export function PdfDownloadButton({
     setIsGenerating(true);
 
     try {
-      await downloadSimplePdf({ calendar, fileName, sections, subtitle, title, verse });
+      await downloadSimplePdf({ calendar, calendars, fileName, sections, subtitle, title, verse });
     } finally {
       setIsGenerating(false);
     }
@@ -41,7 +44,7 @@ export function PdfDownloadButton({
     setIsSharing(true);
 
     try {
-      const blob = await createSimplePdfBlob({ calendar, fileName, sections, subtitle, title, verse });
+      const blob = await createSimplePdfBlob({ calendar, calendars, fileName, sections, subtitle, title, verse });
       const file = new File([blob], fileName, { type: "application/pdf" });
       const shareData = {
         files: [file],
@@ -54,7 +57,7 @@ export function PdfDownloadButton({
         return;
       }
 
-      await downloadSimplePdf({ calendar, fileName, sections, subtitle, title, verse });
+      await downloadSimplePdf({ calendar, calendars, fileName, sections, subtitle, title, verse });
       window.open(
         `https://wa.me/?text=${encodeURIComponent("Baixei a escala em PDF. Vou anexar o arquivo aqui no WhatsApp.")}`,
         "_blank",

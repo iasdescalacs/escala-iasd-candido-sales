@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { SpecialWorshipForm } from "@/components/admin/special-worship-form";
 import { WorshipGenerationForm } from "@/components/admin/worship-generation-form";
+import { PdfDownloadButton } from "@/components/pdf/pdf-download-button";
 import { getChurchOptions } from "@/lib/admin/lookups";
 import { requireAdminUser } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -31,6 +32,13 @@ type WorshipServiceRow = {
   title: string | null;
 };
 
+type ChurchRow = {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+};
+
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 export default async function AdminCultosPage({
@@ -57,7 +65,7 @@ export default async function AdminCultosPage({
   const [{ data: churches }, { data: services }, churchOptions] = await Promise.all([
     supabase
       .from("churches")
-      .select("id,name")
+      .select("id,name,city,state")
       .is("deleted_at", null)
       .order("name", { ascending: true }),
     supabase
@@ -75,6 +83,13 @@ export default async function AdminCultosPage({
   );
   const servicesByDate = groupServicesByDate((services ?? []) as WorshipServiceRow[]);
   const monthTitle = capitalize(getMonthName(viewMonth));
+  const pdfCalendars = buildChurchPdfCalendars({
+    churches: (churches ?? []) as ChurchRow[],
+    month: viewMonth,
+    monthLabel: `${monthTitle} de ${viewYear}`,
+    services: (services ?? []) as WorshipServiceRow[],
+    year: viewYear,
+  });
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -115,7 +130,14 @@ export default async function AdminCultosPage({
               {monthTitle} de {viewYear}
             </h2>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <PdfDownloadButton
+              calendars={pdfCalendars}
+              fileName={`cultos-por-igreja-${viewYear}-${String(viewMonth).padStart(2, "0")}.pdf`}
+              subtitle={`${monthTitle} de ${viewYear}`}
+              title="Escala mensal por igreja"
+              verse="Servi uns aos outros, cada um conforme o dom que recebeu. 1 Pedro 4:10"
+            />
             <CalendarLink
               href={`/admin/cultos?mes=${previous.month}&ano=${previous.year}`}
               label="Mês anterior"
@@ -235,6 +257,44 @@ function groupServicesByDate(services: WorshipServiceRow[]) {
   }
 
   return map;
+}
+
+function buildChurchPdfCalendars({
+  churches,
+  month,
+  monthLabel,
+  services,
+  year,
+}: {
+  churches: ChurchRow[];
+  month: number;
+  monthLabel: string;
+  services: WorshipServiceRow[];
+  year: number;
+}) {
+  return churches.map((church) => ({
+    calendar: {
+      events: services
+        .filter((service) => service.church_id === church.id)
+        .map((service) => ({
+          date: service.service_date,
+          title: `${formatTime(service.start_time)} - ${
+            service.is_special
+              ? getSpecialWorshipLabel(service.special_type)
+              : getTemplateLabel(service.service_type)
+          }`,
+          lines: [
+            `Igreja: ${church.name} - ${church.city}/${church.state}`,
+            `Pregador: ${service.preacher_name ?? "A definir"}`,
+            `Louvor: ${service.singer_name ?? "A definir"}`,
+          ],
+        })),
+      month,
+      year,
+    },
+    subtitle: monthLabel,
+    title: `Escala - ${church.name}`,
+  }));
 }
 
 function parseNumberParam(

@@ -71,10 +71,13 @@ Entregue até esta etapa:
 - Calendário de `/agenda` permite tocar ou clicar em uma escala para atualizar as seções fixas de `Pregação` e `Louvor`.
 - Seções `Pregação` e `Louvor` ficam uma abaixo da outra na página `/agenda`.
 - Permutas aparecem no início da página `/agenda`.
+- A seção `Permutas` em `/agenda` inicia recolhida.
 - Usuário permutado também vê a solicitação de permuta em `Minha agenda`, com nomes e datas envolvidas.
 - Notificações aparecem abaixo de `Louvor` e iniciam recolhidas.
+- Administrador pode limpar permutas e notificações exibidas em `/agenda`, com confirmação.
 - Páginas `/agenda`, `/escalas/pregacao` e `/escalas/louvor` têm botão para gerar e baixar PDF em formato de calendário, com versículo sobre serviço cristão.
 - Páginas `/agenda`, `/escalas/pregacao` e `/escalas/louvor` têm botão para compartilhar o PDF pelo recurso nativo do celular, WhatsApp instalado ou WhatsApp Web quando o navegador permitir.
+- Página `/admin/cultos` gera PDF administrativo separado por igreja, com uma página de calendário mensal para cada igreja.
 - PDF das escalas prioriza igreja e pregador dentro de cada dia, com linhas do calendário em cinza claro para não cobrir o texto.
 - PDF das escalas usa o logo da IASD, cores do tema do site e mostra a data com o dia da semana no cabeçalho de cada quadrado.
 - Pedidos de permuta ficam pendentes para aprovação do ancião, líder de música ou admin e geram notificações no sistema.
