@@ -74,6 +74,7 @@ Entregue até esta etapa:
 - Usuário permutado também vê a solicitação de permuta em `Minha agenda`, com nomes e datas envolvidas.
 - Notificações aparecem abaixo de `Louvor` e iniciam recolhidas.
 - Páginas `/agenda`, `/escalas/pregacao` e `/escalas/louvor` têm botão para gerar e baixar PDF em formato de calendário, com versículo sobre serviço cristão.
+- PDF das escalas prioriza igreja e pregador dentro de cada dia, com linhas do calendário em cinza claro para não cobrir o texto.
 - Pedidos de permuta ficam pendentes para aprovação do ancião, líder de música ou admin e geram notificações no sistema.
 - Painel exibe `Permutas pendentes` para admin, ancião e líder de música quando houver permutas aguardando decisão.
 - Ancião vê em `Escala de pregação` as permutas pendentes que envolvem qualquer igreja gerenciada por ele.

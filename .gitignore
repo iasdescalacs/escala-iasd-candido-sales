@@ -24,6 +24,7 @@
 .DS_Store
 *.pem
 recovery-codes*.txt
+tmp/
 
 # debug
 npm-debug.log*

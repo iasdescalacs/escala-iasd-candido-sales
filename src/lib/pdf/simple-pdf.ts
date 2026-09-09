@@ -30,6 +30,32 @@ export function downloadSimplePdf({
   title: string;
   verse?: string;
 }) {
+  const pdf = createSimplePdfDocument({ calendar, sections, subtitle, title, verse });
+  const blob = new Blob([pdf], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function createSimplePdfDocument({
+  calendar,
+  sections = [],
+  subtitle,
+  title,
+  verse,
+}: {
+  calendar?: PdfCalendar;
+  sections?: PdfSection[];
+  subtitle?: string;
+  title: string;
+  verse?: string;
+}) {
   const stream = calendar
     ? buildCalendarStream({ calendar, sections, subtitle, title, verse })
     : buildTextStream({ sections, subtitle, title, verse });
@@ -41,17 +67,8 @@ export function downloadSimplePdf({
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
   ];
-  const pdf = assemblePdf(objects);
-  const blob = new Blob([pdf], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
 
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  return assemblePdf(objects);
 }
 
 function buildCalendarStream({
@@ -71,9 +88,9 @@ function buildCalendarStream({
   const days = buildCalendarDays(calendar.year, calendar.month);
   const eventsByDate = groupEvents(calendar.events);
   const startX = 36;
-  const startY = 492;
+  const startY = 462;
   const cellWidth = 110;
-  const cellHeight = 58;
+  const cellHeight = 56;
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
   addText(commands, title, 36, 555, 16, true);
@@ -87,8 +104,21 @@ function buildCalendarStream({
   );
 
   weekDays.forEach((day, index) => {
-    addText(commands, day, startX + index * cellWidth + 4, startY + 13, 9, true);
+    addText(commands, day, startX + index * cellWidth + 4, startY + 14, 9, true);
   });
+
+  commands.push("0.84 G", "0.45 w");
+
+  for (let index = 0; index < days.length; index += 1) {
+    const column = index % 7;
+    const row = Math.floor(index / 7);
+    const x = startX + column * cellWidth;
+    const y = startY - 22 - row * cellHeight;
+
+    commands.push(`${x} ${y} ${cellWidth} ${cellHeight} re S`);
+  }
+
+  commands.push("0 G", "1 w");
 
   for (let index = 0; index < days.length; index += 1) {
     const day = days[index];
@@ -97,17 +127,20 @@ function buildCalendarStream({
     const x = startX + column * cellWidth;
     const y = startY - 22 - row * cellHeight;
 
-    commands.push(`${x} ${y} ${cellWidth} ${cellHeight} re S`);
-    addText(commands, String(day.day), x + 4, y + cellHeight - 12, 8, true);
-
+    addText(commands, String(day.day), x + 5, y + cellHeight - 14, 8, true);
     const events = eventsByDate.get(day.date) ?? [];
     events.slice(0, 2).forEach((event, eventIndex) => {
-      addText(commands, event.title, x + 4, y + cellHeight - 25 - eventIndex * 18, 7, true, 25);
-      addText(commands, event.lines.join(" | "), x + 4, y + cellHeight - 35 - eventIndex * 18, 6, false, 34);
+      const eventY = y + cellHeight - 26 - eventIndex * 22;
+      const eventLines = event.lines.slice(0, 3);
+
+      addText(commands, event.title, x + 5, eventY, 6.5, true, 28);
+      eventLines.forEach((line, lineIndex) => {
+        addText(commands, line, x + 5, eventY - 8 - lineIndex * 7, 5.5, false, 34);
+      });
     });
 
     if (events.length > 2) {
-      addText(commands, `+${events.length - 2} culto(s)`, x + 4, y + 5, 6);
+      addText(commands, `+${events.length - 2} culto(s)`, x + 5, y + 4, 5.5);
     }
   }
 

@@ -178,11 +178,11 @@ function buildSchedulePdfEvents(
 
     return {
       date: service.service_date,
-      title: service.start_time.slice(0, 5),
+      title: `${service.start_time.slice(0, 5)} - Culto`,
       lines: [
-        church ? `${church.name} - ${church.city}/${church.state}` : "Igreja",
-        `Louvor: ${service.singer_name ?? "A definir"}`,
+        `Igreja: ${church ? `${church.name} - ${church.city}/${church.state}` : "Igreja"}`,
         `Pregador: ${service.preacher_name ?? "A definir"}`,
+        `Louvor: ${service.singer_name ?? "A definir"}`,
         service.title ?? getTemplateLabel(service.service_type),
       ],
     };
