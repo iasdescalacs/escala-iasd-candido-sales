@@ -15,7 +15,13 @@ export type PdfSection = {
   rows: { label: string; value: string }[][];
 };
 
-export function downloadSimplePdf({
+type PdfLogo = {
+  height: number;
+  imageHex: string;
+  width: number;
+};
+
+export async function downloadSimplePdf({
   calendar,
   fileName,
   sections = [],
@@ -30,7 +36,8 @@ export function downloadSimplePdf({
   title: string;
   verse?: string;
 }) {
-  const pdf = createSimplePdfDocument({ calendar, sections, subtitle, title, verse });
+  const logo = await loadLogoForPdf();
+  const pdf = createSimplePdfDocument({ calendar, logo, sections, subtitle, title, verse });
   const blob = new Blob([pdf], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -45,40 +52,55 @@ export function downloadSimplePdf({
 
 export function createSimplePdfDocument({
   calendar,
+  logo,
   sections = [],
   subtitle,
   title,
   verse,
 }: {
   calendar?: PdfCalendar;
+  logo?: PdfLogo;
   sections?: PdfSection[];
   subtitle?: string;
   title: string;
   verse?: string;
 }) {
   const stream = calendar
-    ? buildCalendarStream({ calendar, sections, subtitle, title, verse })
+    ? buildCalendarStream({ calendar, logo, sections, subtitle, title, verse })
     : buildTextStream({ sections, subtitle, title, verse });
+  const pageResources = logo
+    ? "/Resources << /Font << /F1 5 0 R /F2 6 0 R >> /XObject << /Im1 7 0 R >> >>"
+    : "/Resources << /Font << /F1 5 0 R /F2 6 0 R >> >>";
   const objects = [
     "<< /Type /Catalog /Pages 2 0 R >>",
     "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>",
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] ${pageResources} /Contents 4 0 R >>`,
     `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
     "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
   ];
+
+  if (logo) {
+    objects.push(
+      `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter [/ASCIIHexDecode /DCTDecode] /Length ${
+        logo.imageHex.length + 1
+      } >>\nstream\n${logo.imageHex}>\nendstream`,
+    );
+  }
 
   return assemblePdf(objects);
 }
 
 function buildCalendarStream({
   calendar,
+  logo,
   sections,
   subtitle,
   title,
   verse,
 }: {
   calendar: PdfCalendar;
+  logo?: PdfLogo;
   sections: PdfSection[];
   subtitle?: string;
   title: string;
@@ -93,7 +115,14 @@ function buildCalendarStream({
   const cellHeight = 56;
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
+  commands.push("0.180 0.427 0.906 RG", "0.180 0.427 0.906 rg", "36 572 770 3 re f");
+  if (logo) {
+    commands.push("q", "54 0 0 54 748 504 cm", "/Im1 Do", "Q");
+  }
+
+  commands.push("0.015 0.239 0.443 rg");
   addText(commands, title, 36, 555, 16, true);
+  commands.push("0 G");
   addText(commands, subtitle ?? "", 36, 535, 10);
   addText(
     commands,
@@ -103,11 +132,7 @@ function buildCalendarStream({
     9,
   );
 
-  weekDays.forEach((day, index) => {
-    addText(commands, day, startX + index * cellWidth + 4, startY + 14, 9, true);
-  });
-
-  commands.push("0.84 G", "0.45 w");
+  commands.push("0.78 0.86 0.97 RG", "0.45 w");
 
   for (let index = 0; index < days.length; index += 1) {
     const column = index % 7;
@@ -127,10 +152,12 @@ function buildCalendarStream({
     const x = startX + column * cellWidth;
     const y = startY - 22 - row * cellHeight;
 
-    addText(commands, String(day.day), x + 5, y + cellHeight - 14, 8, true);
+    commands.push("0.015 0.239 0.443 rg");
+    addText(commands, `${day.day} ${weekDays[column]}`, x + 5, y + cellHeight - 14, 8, true);
+    commands.push("0 G");
     const events = eventsByDate.get(day.date) ?? [];
     events.slice(0, 2).forEach((event, eventIndex) => {
-      const eventY = y + cellHeight - 26 - eventIndex * 22;
+      const eventY = y + cellHeight - 29 - eventIndex * 21;
       const eventLines = event.lines.slice(0, 3);
 
       addText(commands, event.title, x + 5, eventY, 6.5, true, 28);
@@ -148,6 +175,64 @@ function buildCalendarStream({
   extraLines.forEach((line, index) => addText(commands, line, 36, 42 - index * 10, 7));
 
   return commands.join("\n");
+}
+
+async function loadLogoForPdf(): Promise<PdfLogo | undefined> {
+  if (typeof window === "undefined" || typeof Image === "undefined") {
+    return undefined;
+  }
+
+  try {
+    const image = await loadImage("/brand/iasd-logo.png");
+    const canvas = document.createElement("canvas");
+    const size = 96;
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      return undefined;
+    }
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, size, size);
+    context.drawImage(image, 0, 0, size, size);
+
+    const dataUri = canvas.toDataURL("image/jpeg", 0.88);
+    const base64 = dataUri.split(",")[1];
+
+    if (!base64) {
+      return undefined;
+    }
+
+    return {
+      height: size,
+      imageHex: base64ToHex(base64),
+      width: size,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Nao foi possivel carregar a imagem do PDF."));
+    image.src = src;
+  });
+}
+
+function base64ToHex(base64: string) {
+  const binary = atob(base64);
+  let hex = "";
+
+  for (let index = 0; index < binary.length; index += 1) {
+    hex += binary.charCodeAt(index).toString(16).padStart(2, "0");
+  }
+
+  return hex;
 }
 
 function buildTextStream({

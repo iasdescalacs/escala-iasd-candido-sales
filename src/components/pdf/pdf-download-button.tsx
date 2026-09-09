@@ -1,6 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
+import { useState } from "react";
 import {
   downloadSimplePdf,
   type PdfCalendar,
@@ -22,14 +23,27 @@ export function PdfDownloadButton({
   title: string;
   verse?: string;
 }) {
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  async function handleDownload() {
+    setIsGenerating(true);
+
+    try {
+      await downloadSimplePdf({ calendar, fileName, sections, subtitle, title, verse });
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
   return (
     <button
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-surface-muted"
-      onClick={() => downloadSimplePdf({ calendar, fileName, sections, subtitle, title, verse })}
+      className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-70"
+      disabled={isGenerating}
+      onClick={handleDownload}
       type="button"
     >
       <Download size={16} aria-hidden="true" />
-      <span>Baixar PDF</span>
+      <span>{isGenerating ? "Gerando..." : "Baixar PDF"}</span>
     </button>
   );
 }
