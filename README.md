@@ -4,7 +4,7 @@ Sistema web para organização de escalas da IASD Candido Sales.
 
 ## Etapa Atual
 
-### Etapa 6: Cultos
+### Etapa 7: Notificações Push
 
 Entregue até esta etapa:
 
@@ -17,6 +17,7 @@ Entregue até esta etapa:
 - Tema claro e escuro com base visual no azul `#2E6DE7`.
 - Página inicial.
 - PWA inicial com `manifest.json`, ícone e service worker.
+- PWA preparado para notificações reais em segundo plano com Web Push e VAPID.
 - Git configurado com `user.name=iasdescalacs`.
 - Git configurado com `user.email=iasdescalacs@gmail.com`.
 - Repositório GitHub conectado em `origin`.
@@ -82,6 +83,11 @@ Entregue até esta etapa:
 - PDF das escalas prioriza igreja e pregador dentro de cada dia, com linhas do calendário em cinza claro para não cobrir o texto.
 - PDF das escalas usa o logo da IASD, cores do tema do site e mostra a data com o dia da semana no cabeçalho de cada quadrado.
 - Pedidos de permuta ficam pendentes para aprovação do ancião, líder de música ou admin e geram notificações no sistema.
+- Notificações internas também disparam Web Push para dispositivos autorizados.
+- Usuários aprovados recebem um aviso fechável para ativar notificações push.
+- Service worker recebe eventos `push`, exibe notificação nativa e abre `/agenda` ou `/painel` ao tocar no aviso.
+- Inscrições push são salvas em `push_subscriptions` com RLS, vinculadas ao usuário aprovado.
+- Assinaturas expiradas retornando HTTP 404 ou 410 são desativadas automaticamente no envio.
 - Painel exibe `Permutas pendentes` para admin, ancião e líder de música quando houver permutas aguardando decisão.
 - Painel exibe `Solicitações de aprovação` para admin, ancião e líder de música conforme a igreja e a função que cada perfil pode aprovar.
 - Admin aprova solicitações de pregadores e cantores de qualquer igreja.
@@ -99,6 +105,7 @@ Entregue até esta etapa:
 - Testes de geração de cultos em `tests/cultos/schedule.test.mjs`.
 - Testes de regras de disponibilidade em `tests/disponibilidade/rules.test.mjs`.
 - Testes de regras de conflito de escala em `tests/escalas/rules.test.mjs`.
+- Testes de estrutura de notificações push em `tests/push/notification-push.test.mjs`.
 
 Pendente:
 
@@ -125,9 +132,13 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 NEXT_PUBLIC_SITE_URL=
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=
 ```
 
 Use somente a chave pública `anon`/`publishable` no front-end. A `SUPABASE_SERVICE_ROLE_KEY` deve existir apenas no servidor e na Vercel como variável secreta.
+A `NEXT_PUBLIC_VAPID_PUBLIC_KEY` pode ir para o navegador. `VAPID_PRIVATE_KEY` deve ficar somente no servidor e na Vercel como variável secreta. `VAPID_SUBJECT` deve usar um contato do responsável, por exemplo `mailto:email@dominio.com`.
 
 Instale as dependências:
 
@@ -177,6 +188,7 @@ src/
   config/
   lib/
     auth/
+    push/
     supabase/
   types/
   proxy.ts
@@ -192,7 +204,36 @@ supabase/
   seed.sql
 tests/
   auth/
+  push/
 ```
+
+## Notificações Push
+
+O sistema usa Web Push padrão com VAPID, sem Firebase/FCM no código da aplicação.
+
+Fluxo implementado:
+
+- Usuário aprovado entra no sistema.
+- O componente de notificações verifica suporte a `Service Worker`, `PushManager` e `Notification API`.
+- Ao tocar em `Ativar`, o navegador solicita permissão.
+- Com permissão concedida, o navegador cria uma `PushSubscription`.
+- A inscrição é enviada para `/api/push/subscribe` e salva em `push_subscriptions`.
+- Quando o servidor cria uma notificação interna, também envia Web Push aos dispositivos ativos do destinatário.
+- Se a assinatura do navegador expirar, o servidor desativa a inscrição ao receber HTTP 404 ou 410.
+
+Compatibilidade esperada:
+
+- Android Chrome/Edge: funciona como PWA ou site com permissão concedida.
+- Windows Chrome/Edge: funciona com navegador compatível e permissão concedida.
+- iPhone/iPad: requer iOS/iPadOS com suporte a Web Push e o app adicionado à Tela de Início pelo Safari.
+
+Para gerar chaves VAPID localmente:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Configure os valores em `.env.local` e nas variáveis de ambiente da Vercel. Nunca publique `VAPID_PRIVATE_KEY`.
 
 ## Scripts
 
@@ -248,6 +289,7 @@ supabase/migrations/20260908043100_adjust_special_worship_uniqueness.sql
 supabase/migrations/20260908120000_create_user_availability.sql
 supabase/migrations/20260908143000_create_swap_requests.sql
 supabase/migrations/20260909110000_add_user_approval_audit.sql
+supabase/migrations/20260909143000_create_push_subscriptions.sql
 ```
 
 Tabelas iniciais:
@@ -260,6 +302,7 @@ Tabelas iniciais:
 - `history`
 - `settings`
 - `notifications`
+- `push_subscriptions`
 - `worship_services`
 - `user_availability`
 

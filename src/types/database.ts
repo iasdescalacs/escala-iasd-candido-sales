@@ -323,6 +323,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent: Nullable<string>;
+          platform: Nullable<string>;
+          enabled: boolean;
+          last_used_at: Nullable<string>;
+          created_at: string;
+          updated_at: string;
+          deleted_at: Nullable<string>;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent?: Nullable<string>;
+          platform?: Nullable<string>;
+          enabled?: boolean;
+          last_used_at?: Nullable<string>;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          endpoint?: string;
+          p256dh?: string;
+          auth?: string;
+          user_agent?: Nullable<string>;
+          platform?: Nullable<string>;
+          enabled?: boolean;
+          last_used_at?: Nullable<string>;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Relationships: [];
+      };
       swap_requests: {
         Row: {
           id: string;

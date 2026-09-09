@@ -1,0 +1,53 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+const migration = readFileSync(
+  "supabase/migrations/20260909143000_create_push_subscriptions.sql",
+  "utf8",
+);
+const serviceWorker = readFileSync("public/sw.js", "utf8");
+const subscribeRoute = readFileSync("src/app/api/push/subscribe/route.ts", "utf8");
+const unsubscribeRoute = readFileSync("src/app/api/push/unsubscribe/route.ts", "utf8");
+const envExample = readFileSync(".env.example", "utf8");
+const prompt = readFileSync("src/components/push-notification-prompt.tsx", "utf8");
+const pushServer = readFileSync("src/lib/push/server.ts", "utf8");
+
+test("migration de push cria tabela protegida por RLS", () => {
+  assert.match(migration, /create table if not exists public\.push_subscriptions/);
+  assert.match(migration, /references public\.users\(id\) on delete cascade/);
+  assert.match(migration, /alter table public\.push_subscriptions enable row level security/);
+  assert.match(migration, /user_id = public\.current_app_user_id\(\)/);
+});
+
+test("service worker recebe push e abre rota ao clicar na notificacao", () => {
+  assert.match(serviceWorker, /addEventListener\("push"/);
+  assert.match(serviceWorker, /showNotification/);
+  assert.match(serviceWorker, /addEventListener\("notificationclick"/);
+  assert.match(serviceWorker, /openWindow/);
+});
+
+test("rotas de push exigem usuario aprovado", () => {
+  assert.match(subscribeRoute, /decideProtectedAccess/);
+  assert.match(subscribeRoute, /status: 401/);
+  assert.match(unsubscribeRoute, /decideProtectedAccess/);
+  assert.match(unsubscribeRoute, /status: 401/);
+});
+
+test("prompt usa Notification API, PushManager e chave publica VAPID", () => {
+  assert.match(prompt, /Notification\.requestPermission/);
+  assert.match(prompt, /pushManager\.subscribe/);
+  assert.match(prompt, /NEXT_PUBLIC_VAPID_PUBLIC_KEY/);
+});
+
+test("env example documenta chaves VAPID sem valores reais", () => {
+  assert.match(envExample, /^NEXT_PUBLIC_VAPID_PUBLIC_KEY=$/m);
+  assert.match(envExample, /^VAPID_PRIVATE_KEY=$/m);
+  assert.match(envExample, /^VAPID_SUBJECT=$/m);
+});
+
+test("envio server-side remove inscricoes expiradas", () => {
+  assert.match(pushServer, /webPush\.sendNotification/);
+  assert.match(pushServer, /statusCode === 404 \|\| statusCode === 410/);
+  assert.match(pushServer, /enabled: false/);
+});

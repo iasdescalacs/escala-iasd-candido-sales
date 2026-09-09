@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createNotificationsWithPush } from "@/lib/push/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getSiteUrl, hasSupabaseServerEnv } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -310,12 +311,12 @@ export async function updateUserStatusAction(formData: FormData) {
   await admin.from("users").update(payload).eq("id", userId);
 
   if (status === "approved") {
-    await admin.from("notifications").insert({
+    await createNotificationsWithPush(admin, [{
       body: "Seu cadastro foi aprovado. Você já pode acessar o sistema.",
       metadata: { approvedByUserId: adminProfile.appUser.id, userId },
       title: "Cadastro aprovado",
-      user_id: userId,
-    });
+      userId,
+    }]);
   }
 
   revalidatePath("/admin/usuarios");
@@ -382,12 +383,12 @@ export async function approvePendingUserAction(formData: FormData) {
       entity_id: userId,
       entity_table: "users",
     }),
-    admin.from("notifications").insert({
+    createNotificationsWithPush(admin, [{
       body: "Seu cadastro foi aprovado. Você já pode acessar o sistema.",
       metadata: { approvedByUserId: profile.appUser.id, userId },
       title: "Cadastro aprovado",
-      user_id: userId,
-    }),
+      userId,
+    }]),
   ]);
 
   revalidatePath("/painel");
@@ -677,12 +678,12 @@ export async function createUserByManagerAction(
       entity_id: createdUser.id,
       entity_table: "users",
     }),
-    admin.from("notifications").insert({
+    createNotificationsWithPush(admin, [{
       body: "Seu cadastro foi criado e aprovado por um responsável da igreja.",
       metadata: { createdByUserId: profile.appUser.id },
       title: "Cadastro aprovado",
-      user_id: createdUser.id,
-    }),
+      userId: createdUser.id,
+    }]),
   ]);
 
   revalidatePath("/painel");
@@ -945,12 +946,13 @@ async function notifyUserApprovalApprovers(
     return;
   }
 
-  await admin.from("notifications").insert(
+  await createNotificationsWithPush(
+    admin,
     approverIds.map((approverId) => ({
       body: `${userName} solicitou aprovação de cadastro.`,
       metadata: { churchId, requestedRoleKeys: roleKeys, userId },
       title: "Solicitação de aprovação",
-      user_id: approverId,
+      userId: approverId,
     })),
   );
 }

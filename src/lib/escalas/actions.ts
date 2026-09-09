@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { AuthActionState } from "@/lib/auth/actions";
 import { requireApprovedUser } from "@/lib/auth/session";
 import { hasVolunteerDateConflict } from "@/lib/escalas/rules";
+import { createNotificationsWithPush } from "@/lib/push/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database } from "@/types/database";
 
@@ -636,12 +637,13 @@ async function notifyUsers(
     return;
   }
 
-  await admin.from("notifications").insert(
+  await createNotificationsWithPush(
+    admin,
     uniqueUserIds.map((userId) => ({
-      user_id: userId,
       title,
       body,
       metadata,
+      userId,
     })),
   );
 }
