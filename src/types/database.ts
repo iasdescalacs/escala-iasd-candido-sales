@@ -19,6 +19,8 @@ export type Database = {
           email: string;
           phone: Nullable<string>;
           status: Database["public"]["Enums"]["user_status"];
+          approved_by_user_id: Nullable<string>;
+          approved_at: Nullable<string>;
           created_at: string;
           updated_at: string;
           deleted_at: Nullable<string>;
@@ -30,6 +32,8 @@ export type Database = {
           email: string;
           phone?: Nullable<string>;
           status?: Database["public"]["Enums"]["user_status"];
+          approved_by_user_id?: Nullable<string>;
+          approved_at?: Nullable<string>;
           created_at?: string;
           updated_at?: string;
           deleted_at?: Nullable<string>;
@@ -41,6 +45,8 @@ export type Database = {
           email?: string;
           phone?: Nullable<string>;
           status?: Database["public"]["Enums"]["user_status"];
+          approved_by_user_id?: Nullable<string>;
+          approved_at?: Nullable<string>;
           created_at?: string;
           updated_at?: string;
           deleted_at?: Nullable<string>;

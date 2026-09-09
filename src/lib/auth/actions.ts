@@ -6,6 +6,11 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getSiteUrl, hasSupabaseServerEnv } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
+  canApprovePendingUserRole,
+  getAllowedManagedCreationRoles,
+  type ApprovalRequestRole,
+} from "./approval-rules";
+import {
   isManagerRoleKey,
   isRoleKey,
   mergeSelfManagedRoles,
@@ -154,6 +159,13 @@ export async function signUpAction(
     return { message: rolesError };
   }
 
+  await notifyUserApprovalApprovers(admin, {
+    churchId,
+    roleKeys,
+    userId: profile.id,
+    userName: fullName,
+  });
+
   redirect("/aguardando-aprovacao");
 }
 
@@ -277,7 +289,7 @@ export async function updateProfileAction(
 }
 
 export async function updateUserStatusAction(formData: FormData) {
-  await requireAdminUser();
+  const adminProfile = await requireAdminUser();
 
   const userId = readString(formData, "userId");
   const status = readString(formData, "status");
@@ -287,8 +299,98 @@ export async function updateUserStatusAction(formData: FormData) {
   }
 
   const admin = createAdminSupabaseClient();
-  await admin.from("users").update({ status }).eq("id", userId);
+  const payload =
+    status === "approved"
+      ? {
+          approved_at: new Date().toISOString(),
+          approved_by_user_id: adminProfile.appUser.id,
+          status,
+        }
+      : { status };
+  await admin.from("users").update(payload).eq("id", userId);
 
+  if (status === "approved") {
+    await admin.from("notifications").insert({
+      body: "Seu cadastro foi aprovado. Você já pode acessar o sistema.",
+      metadata: { approvedByUserId: adminProfile.appUser.id, userId },
+      title: "Cadastro aprovado",
+      user_id: userId,
+    });
+  }
+
+  revalidatePath("/admin/usuarios");
+  revalidatePath("/painel");
+}
+
+export async function approvePendingUserAction(formData: FormData) {
+  const profile = await requireApprovedUser();
+  const userId = readString(formData, "userId");
+
+  if (!userId) {
+    return;
+  }
+
+  const admin = createAdminSupabaseClient();
+  const context = await getPendingUserApprovalContext(admin, userId);
+
+  if (!context) {
+    return;
+  }
+
+  const roleKeys = profile.roles.map((role) => role.key) as RoleKey[];
+  const managedChurchIds = roleKeys.includes("admin")
+    ? Array.from(new Set(context.requests.map((request) => request.churchId)))
+    : await getCurrentManagerChurchIds(admin, profile.appUser.id);
+  const canApproveAllRequests = context.requests.every((request) =>
+    canApprovePendingUserRole({
+      request,
+      viewer: { managedChurchIds, roleKeys },
+    }),
+  );
+
+  if (!canApproveAllRequests) {
+    return;
+  }
+
+  const approvedAt = new Date().toISOString();
+  const { data: updatedUser } = await admin
+    .from("users")
+    .update({
+      approved_at: approvedAt,
+      approved_by_user_id: profile.appUser.id,
+      status: "approved",
+    })
+    .eq("id", userId)
+    .eq("status", "pending")
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+
+  if (!updatedUser) {
+    return;
+  }
+
+  await Promise.all([
+    admin.from("history").insert({
+      action: "approve_user_registration",
+      actor_user_id: profile.appUser.id,
+      details: {
+        approvedAt,
+        churchIds: context.requests.map((request) => request.churchId),
+        roleKeys: context.requests.map((request) => request.roleKey),
+      },
+      entity_id: userId,
+      entity_table: "users",
+    }),
+    admin.from("notifications").insert({
+      body: "Seu cadastro foi aprovado. Você já pode acessar o sistema.",
+      metadata: { approvedByUserId: profile.appUser.id, userId },
+      title: "Cadastro aprovado",
+      user_id: userId,
+    }),
+  ]);
+
+  revalidatePath("/painel");
   revalidatePath("/admin/usuarios");
 }
 
@@ -482,6 +584,113 @@ export async function createUserByAdminAction(
   return { ok: true, message: "Usuário criado com sucesso." };
 }
 
+export async function createUserByManagerAction(
+  _state: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const profile = await requireApprovedUser();
+  const fullName = formatPersonName(readString(formData, "fullName"));
+  const email = readString(formData, "email").toLowerCase();
+  const phone = readString(formData, "phone");
+  const roleKeys = normalizeRoleKeys(readStringList(formData, "roleKeys"));
+  const churchId = readString(formData, "churchId");
+  const password = readString(formData, "password");
+  const currentRoleKeys = profile.roles.map((role) => role.key) as RoleKey[];
+  const allowedRoles = getAllowedManagedCreationRoles(currentRoleKeys);
+
+  if (!fullName || !email || !phone || roleKeys.length === 0 || !churchId || !password) {
+    return { message: "Preencha todos os campos obrigatórios." };
+  }
+
+  if (password.length < 8) {
+    return { message: "A senha precisa ter pelo menos 8 caracteres." };
+  }
+
+  if (
+    roleKeys.some((roleKey) => roleKey !== "pregador" && roleKey !== "cantor") ||
+    roleKeys.some((roleKey) => !allowedRoles.includes(roleKey as ApprovalRequestRole))
+  ) {
+    return { message: "Você não tem permissão para cadastrar essa função." };
+  }
+
+  const admin = createAdminSupabaseClient();
+  const allowedChurchIds = currentRoleKeys.includes("admin")
+    ? await getAllActiveChurchIds(admin)
+    : await getCurrentManagerChurchIds(admin, profile.appUser.id);
+
+  if (!allowedChurchIds.includes(churchId)) {
+    return { message: "Você não tem permissão para vincular usuário a essa igreja." };
+  }
+
+  const { data: authUser, error: authError } = await admin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+    password,
+    user_metadata: {
+      full_name: fullName,
+      phone,
+    },
+  });
+
+  if (authError || !authUser.user) {
+    return { message: authError?.message ?? "Não foi possível criar o usuário." };
+  }
+
+  const approvedAt = new Date().toISOString();
+  const { data: createdUser, error: profileError } = await admin
+    .from("users")
+    .upsert(
+      {
+        approved_at: approvedAt,
+        approved_by_user_id: profile.appUser.id,
+        auth_user_id: authUser.user.id,
+        deleted_at: null,
+        email,
+        full_name: fullName,
+        phone,
+        status: "approved",
+      },
+      { onConflict: "auth_user_id" },
+    )
+    .select("id")
+    .single();
+
+  if (profileError) {
+    return { message: "Usuário criado no Auth, mas o perfil falhou." };
+  }
+
+  const rolesError = await syncUserRolesAndPrimaryChurch(admin, {
+    churchId,
+    roleKeys,
+    userId: createdUser.id,
+  });
+
+  if (rolesError) {
+    return { message: rolesError };
+  }
+
+  await Promise.all([
+    admin.from("history").insert({
+      action: "create_managed_user",
+      actor_user_id: profile.appUser.id,
+      details: { churchId, roleKeys },
+      entity_id: createdUser.id,
+      entity_table: "users",
+    }),
+    admin.from("notifications").insert({
+      body: "Seu cadastro foi criado e aprovado por um responsável da igreja.",
+      metadata: { createdByUserId: profile.appUser.id },
+      title: "Cadastro aprovado",
+      user_id: createdUser.id,
+    }),
+  ]);
+
+  revalidatePath("/painel");
+  revalidatePath("/admin/usuarios");
+
+  return { ok: true, message: "Usuário criado e aprovado com sucesso." };
+}
+
 export async function logoutAction() {
   const supabase = await createServerSupabaseClient();
   await supabase.auth.signOut();
@@ -646,6 +855,152 @@ async function attachRoleAndChurch(
   }
 
   return null;
+}
+
+async function getPendingUserApprovalContext(
+  admin: ReturnType<typeof createAdminSupabaseClient>,
+  userId: string,
+) {
+  const { data: user } = await admin
+    .from("users")
+    .select("id,status")
+    .eq("id", userId)
+    .eq("status", "pending")
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!user) {
+    return null;
+  }
+
+  const [{ data: userRoles }, { data: roles }, { data: churchLinks }] = await Promise.all([
+    admin.from("user_roles").select("role_id").eq("user_id", userId).is("deleted_at", null),
+    admin.from("roles").select("id,key").is("deleted_at", null),
+    admin
+      .from("user_church_links")
+      .select("church_id,role_id")
+      .eq("user_id", userId)
+      .is("deleted_at", null),
+  ]);
+  const roleMap = new Map((roles ?? []).map((role) => [role.id, role.key]));
+  const requests = (userRoles ?? [])
+    .map((userRole) => {
+      const roleKey = roleMap.get(userRole.role_id);
+      const churchId =
+        churchLinks?.find((link) => link.role_id === userRole.role_id)?.church_id ??
+        churchLinks?.[0]?.church_id;
+
+      if ((roleKey !== "pregador" && roleKey !== "cantor") || !churchId) {
+        return null;
+      }
+
+      return { churchId, roleKey };
+    })
+    .filter((request): request is { churchId: string; roleKey: ApprovalRequestRole } => Boolean(request));
+
+  return requests.length > 0 ? { requests } : null;
+}
+
+async function getCurrentManagerChurchIds(
+  admin: ReturnType<typeof createAdminSupabaseClient>,
+  userId: string,
+) {
+  const { data } = await admin
+    .from("user_church_links")
+    .select("church_id")
+    .eq("user_id", userId)
+    .eq("is_manager", true)
+    .is("deleted_at", null);
+
+  return Array.from(new Set(data?.map((link) => link.church_id) ?? []));
+}
+
+async function getAllActiveChurchIds(admin: ReturnType<typeof createAdminSupabaseClient>) {
+  const { data } = await admin
+    .from("churches")
+    .select("id")
+    .eq("active", true)
+    .is("deleted_at", null);
+
+  return data?.map((church) => church.id) ?? [];
+}
+
+async function notifyUserApprovalApprovers(
+  admin: ReturnType<typeof createAdminSupabaseClient>,
+  {
+    churchId,
+    roleKeys,
+    userId,
+    userName,
+  }: {
+    churchId: string;
+    roleKeys: RoleKey[];
+    userId: string;
+    userName: string;
+  },
+) {
+  const approverIds = await getUserApprovalApproverIds(admin, { churchId, roleKeys });
+
+  if (approverIds.length === 0) {
+    return;
+  }
+
+  await admin.from("notifications").insert(
+    approverIds.map((approverId) => ({
+      body: `${userName} solicitou aprovação de cadastro.`,
+      metadata: { churchId, requestedRoleKeys: roleKeys, userId },
+      title: "Solicitação de aprovação",
+      user_id: approverId,
+    })),
+  );
+}
+
+async function getUserApprovalApproverIds(
+  admin: ReturnType<typeof createAdminSupabaseClient>,
+  { churchId, roleKeys }: { churchId: string; roleKeys: RoleKey[] },
+) {
+  const { data: roles } = await admin
+    .from("roles")
+    .select("id,key")
+    .in("key", ["admin", "anciao", "lider_musica"])
+    .is("deleted_at", null);
+  const adminRoleId = roles?.find((role) => role.key === "admin")?.id;
+  const elderRoleId = roles?.find((role) => role.key === "anciao")?.id;
+  const musicRoleId = roles?.find((role) => role.key === "lider_musica")?.id;
+  const approverIds = new Set<string>();
+
+  if (adminRoleId) {
+    const { data } = await admin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role_id", adminRoleId)
+      .is("deleted_at", null);
+    data?.forEach((item) => approverIds.add(item.user_id));
+  }
+
+  if (elderRoleId) {
+    const { data } = await admin
+      .from("user_church_links")
+      .select("user_id")
+      .eq("church_id", churchId)
+      .eq("role_id", elderRoleId)
+      .eq("is_manager", true)
+      .is("deleted_at", null);
+    data?.forEach((item) => approverIds.add(item.user_id));
+  }
+
+  if (roleKeys.includes("cantor") && musicRoleId) {
+    const { data } = await admin
+      .from("user_church_links")
+      .select("user_id")
+      .eq("church_id", churchId)
+      .eq("role_id", musicRoleId)
+      .eq("is_manager", true)
+      .is("deleted_at", null);
+    data?.forEach((item) => approverIds.add(item.user_id));
+  }
+
+  return Array.from(approverIds);
 }
 
 function formatPersonName(value: string) {

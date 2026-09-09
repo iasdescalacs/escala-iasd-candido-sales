@@ -83,6 +83,11 @@ Entregue até esta etapa:
 - PDF das escalas usa o logo da IASD, cores do tema do site e mostra a data com o dia da semana no cabeçalho de cada quadrado.
 - Pedidos de permuta ficam pendentes para aprovação do ancião, líder de música ou admin e geram notificações no sistema.
 - Painel exibe `Permutas pendentes` para admin, ancião e líder de música quando houver permutas aguardando decisão.
+- Painel exibe `Solicitações de aprovação` para admin, ancião e líder de música conforme a igreja e a função que cada perfil pode aprovar.
+- Admin aprova solicitações de pregadores e cantores de qualquer igreja.
+- Ancião aprova solicitações de pregadores e cantores das igrejas gerenciadas por ele.
+- Líder de Música aprova somente solicitações de cantores das igrejas gerenciadas por ele.
+- Painel permite que ancião cadastre pregador ou cantor nas igrejas gerenciadas, e que líder de música cadastre cantor na própria igreja.
 - Ancião vê em `Escala de pregação` as permutas pendentes que envolvem qualquer igreja gerenciada por ele.
 - Cadastro público permite selecionar mais de uma função para a mesma conta.
 - Admin pode criar e editar usuários com múltiplas funções.
@@ -242,6 +247,7 @@ supabase/migrations/20260908043000_add_special_worship_services.sql
 supabase/migrations/20260908043100_adjust_special_worship_uniqueness.sql
 supabase/migrations/20260908120000_create_user_availability.sql
 supabase/migrations/20260908143000_create_swap_requests.sql
+supabase/migrations/20260909110000_add_user_approval_audit.sql
 ```
 
 Tabelas iniciais:

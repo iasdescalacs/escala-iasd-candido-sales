@@ -1,4 +1,7 @@
 import { CalendarDays, Church, Repeat2, ShieldCheck, UsersRound } from "lucide-react";
+import { ApprovalRequestsPanel } from "@/components/dashboard/approval-requests-panel";
+import { ManagedUserCreateForm } from "@/components/dashboard/managed-user-create-form";
+import { getUserApprovalDashboardData } from "@/lib/auth/approval-queries";
 import { requireApprovedUser } from "@/lib/auth/session";
 import { reviewSwapRequestAction } from "@/lib/escalas/actions";
 import {
@@ -17,6 +20,16 @@ export default async function PainelPage() {
   const pendingSwapRequests = canReviewSwaps
     ? await getPanelPendingSwapRequests(profile)
     : [];
+  const canManageApprovals =
+    roleKeys.includes("admin") ||
+    roleKeys.includes("anciao") ||
+    roleKeys.includes("lider_musica");
+  const approvalData = canManageApprovals
+    ? await getUserApprovalDashboardData(profile)
+    : {
+        creationContext: { allowedChurches: [], allowedRoles: [] },
+        requests: [],
+      };
 
   const cards = [
     {
@@ -61,6 +74,13 @@ export default async function PainelPage() {
 
       {canReviewSwaps ? (
         <PendingSwapRequests requests={pendingSwapRequests} />
+      ) : null}
+
+      {canManageApprovals ? (
+        <>
+          <ApprovalRequestsPanel requests={approvalData.requests} />
+          <ManagedUserCreateForm context={approvalData.creationContext} />
+        </>
       ) : null}
 
       <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
