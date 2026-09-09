@@ -1,6 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
   <title>ESCALA IASD CANDIDO SALES</title>
-  <rect width="512" height="512" rx="96" fill="#2E6DE7"/>
-  <path d="M128 164h256v54H128zM128 246h256v54H128zM128 328h178v54H128z" fill="#F7F9FF"/>
-  <circle cx="366" cy="355" r="42" fill="#FFFFFF"/>
+  <rect width="512" height="512" fill="#F7F9FF"/>
+  <circle cx="256" cy="256" r="232" fill="#2E6DE7"/>
+  <path d="M116 260 256 150l140 110h-24v130H140V260h-24Z" fill="#FFFFFF"/>
+  <path d="M224 92h64v154h-64zM206 104l50-50 50 50zM248 34h16v54h-16zM226 54h60v14h-60z" fill="#FFFFFF"/>
+  <path d="M242 306a14 14 0 0 1 28 0v84h-28v-84Z" fill="#2E6DE7"/>
+  <circle cx="191" cy="303" r="21" fill="#DBE8FF"/>
+  <circle cx="321" cy="303" r="21" fill="#DBE8FF"/>
+  <path d="M191 282v42M170 303h42M321 282v42M300 303h42" stroke="#2E6DE7" stroke-width="9" stroke-linecap="round"/>
 </svg>

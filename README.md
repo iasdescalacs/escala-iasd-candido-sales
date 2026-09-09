@@ -19,6 +19,7 @@ Entregue até esta etapa:
 - Página inicial.
 - PWA inicial com `manifest.json`, ícone e service worker.
 - PWA preparado para notificações reais em segundo plano com Web Push e VAPID.
+- Ícone do site/PWA usa uma igreja em azul e branco nos favicons e no manifest.
 - Git configurado com `user.name=iasdescalacs`.
 - Git configurado com `user.email=iasdescalacs@gmail.com`.
 - Repositório GitHub conectado em `origin`.
