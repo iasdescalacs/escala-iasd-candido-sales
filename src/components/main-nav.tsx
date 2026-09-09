@@ -163,7 +163,7 @@ function DesktopNavigation({
       <div className="pointer-events-none fixed -left-[9999px] top-0 flex gap-1 opacity-0">
         {items.map((item, index) => (
           <Link
-            className="rounded-md px-3 py-2 text-sm font-medium"
+            className="shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium"
             href={item.href}
             key={item.href}
             ref={(element) => {
@@ -175,7 +175,7 @@ function DesktopNavigation({
           </Link>
         ))}
         <button
-          className="inline-flex rounded-md px-3 py-2 text-sm font-medium"
+          className="inline-flex shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium"
           ref={moreRef}
           tabIndex={-1}
           type="button"
@@ -198,7 +198,7 @@ function DesktopNavigation({
           <div className="relative">
             <button
               aria-expanded={isMoreOpen}
-              className={`inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium transition ${
+              className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition ${
                 hasActiveOverflowItem
                   ? "bg-primary-soft text-primary-strong"
                   : "text-muted hover:bg-surface-muted hover:text-foreground"
@@ -267,7 +267,7 @@ function NavLink({
 }) {
   return (
     <Link
-      className={`rounded-md px-3 py-2 text-sm font-medium transition ${
+      className={`shrink-0 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition ${
         active
           ? "bg-primary-soft text-primary-strong"
           : "text-muted hover:bg-surface-muted hover:text-foreground"
