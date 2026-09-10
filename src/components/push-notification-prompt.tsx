@@ -186,8 +186,9 @@ async function subscribeWithRecovery(publicKey: string) {
 }
 
 async function createPushSubscription(applicationServerKey: ArrayBuffer) {
-  const registration = await navigator.serviceWorker.ready;
+  const registration = await getActiveServiceWorkerRegistration();
   await registration.update().catch(() => undefined);
+  await waitForActiveServiceWorker(registration);
 
   const currentSubscription = await registration.pushManager.getSubscription();
 
@@ -209,14 +210,57 @@ async function resetServiceWorkerRegistration() {
       .map((registration) => registration.unregister().catch(() => false)),
   );
 
-  await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  await waitForActiveServiceWorker(registration);
   await navigator.serviceWorker.ready;
+}
+
+async function getActiveServiceWorkerRegistration() {
+  const registration =
+    (await navigator.serviceWorker.getRegistration("/")) ??
+    (await navigator.serviceWorker.register("/sw.js", { scope: "/" }));
+
+  await waitForActiveServiceWorker(registration);
+  return registration;
+}
+
+async function waitForActiveServiceWorker(registration: ServiceWorkerRegistration) {
+  if (registration.active) {
+    return;
+  }
+
+  const serviceWorker = registration.installing ?? registration.waiting;
+
+  if (!serviceWorker) {
+    await navigator.serviceWorker.ready;
+    return;
+  }
+
+  const activeWorker: ServiceWorker = serviceWorker;
+
+  await new Promise<void>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      activeWorker.removeEventListener("statechange", handleStateChange);
+      reject(new Error("Service worker ainda não ficou ativo. Feche e abra o app/site e tente novamente."));
+    }, 8000);
+
+    function handleStateChange() {
+      if (activeWorker.state === "activated") {
+        window.clearTimeout(timeout);
+        activeWorker.removeEventListener("statechange", handleStateChange);
+        resolve();
+      }
+    }
+
+    activeWorker.addEventListener("statechange", handleStateChange);
+    handleStateChange();
+  });
 }
 
 function isPushServiceRegistrationError(error: unknown) {
   return (
     error instanceof Error &&
-    /registration failed|push service|push service error/i.test(error.message)
+    /registration failed|push service|push service error|no active service worker/i.test(error.message)
   );
 }
 
