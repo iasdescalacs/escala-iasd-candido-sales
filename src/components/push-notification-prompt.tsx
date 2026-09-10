@@ -78,18 +78,7 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
         return;
       }
 
-      const registration = await navigator.serviceWorker.ready;
-      const currentSubscription = await registration.pushManager.getSubscription();
-
-      if (currentSubscription) {
-        await currentSubscription.unsubscribe();
-      }
-
-      const subscription =
-        await registration.pushManager.subscribe({
-          applicationServerKey: urlBase64ToUint8Array(publicKey),
-          userVisibleOnly: true,
-        });
+      const subscription = await subscribeWithRecovery(publicKey);
 
       const response = await fetch("/api/push/subscribe", {
         body: JSON.stringify(subscription),
@@ -167,17 +156,68 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
   );
 }
 
-function urlBase64ToUint8Array(value: string) {
+function urlBase64ToArrayBuffer(value: string): ArrayBuffer {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const base64 = `${value}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
+  const buffer = new ArrayBuffer(rawData.length);
+  const outputArray = new Uint8Array(buffer);
 
   for (let index = 0; index < rawData.length; index += 1) {
     outputArray[index] = rawData.charCodeAt(index);
   }
 
-  return outputArray;
+  return buffer;
+}
+
+async function subscribeWithRecovery(publicKey: string) {
+  const applicationServerKey = urlBase64ToArrayBuffer(publicKey);
+
+  try {
+    return await createPushSubscription(applicationServerKey);
+  } catch (error) {
+    if (!isPushServiceRegistrationError(error)) {
+      throw error;
+    }
+
+    await resetServiceWorkerRegistration();
+    return createPushSubscription(applicationServerKey);
+  }
+}
+
+async function createPushSubscription(applicationServerKey: ArrayBuffer) {
+  const registration = await navigator.serviceWorker.ready;
+  await registration.update().catch(() => undefined);
+
+  const currentSubscription = await registration.pushManager.getSubscription();
+
+  if (currentSubscription) {
+    await currentSubscription.unsubscribe().catch(() => undefined);
+  }
+
+  return registration.pushManager.subscribe({
+    applicationServerKey,
+    userVisibleOnly: true,
+  });
+}
+
+async function resetServiceWorkerRegistration() {
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(
+    registrations
+      .filter((registration) => registration.scope.startsWith(window.location.origin))
+      .map((registration) => registration.unregister().catch(() => false)),
+  );
+
+  await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  await navigator.serviceWorker.ready;
+}
+
+function isPushServiceRegistrationError(error: unknown) {
+  return (
+    error instanceof Error &&
+    /registration failed|push service|push service error/i.test(error.message)
+  );
 }
 
 function getPushActivationErrorMessage(error: unknown) {
@@ -192,6 +232,10 @@ function getPushActivationErrorMessage(error: unknown) {
   }
 
   if (error instanceof Error && error.message) {
+    if (isPushServiceRegistrationError(error)) {
+      return "O Android recusou a inscrição no serviço de push. Atualize o Chrome/Android System WebView, confira se a conta Google/Play Services está ativa e toque em Ativar novamente.";
+    }
+
     return error.message;
   }
 

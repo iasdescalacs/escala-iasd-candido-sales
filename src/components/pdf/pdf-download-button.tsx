@@ -70,24 +70,24 @@ export function PdfDownloadButton({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex min-w-0 flex-wrap items-center gap-2 max-sm:w-full">
       <button
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-70"
+        className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-70 max-sm:flex-1"
         disabled={isGenerating || isSharing}
         onClick={handleDownload}
         type="button"
       >
         <Download size={16} aria-hidden="true" />
-        <span>{isGenerating ? "Gerando..." : "Baixar PDF"}</span>
+        <span className="truncate">{isGenerating ? "Gerando..." : "Baixar PDF"}</span>
       </button>
       <button
-        className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70"
+        className="inline-flex h-10 min-w-0 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-70 max-sm:flex-1"
         disabled={isGenerating || isSharing}
         onClick={handleShare}
         type="button"
       >
         <Send size={16} aria-hidden="true" />
-        <span>{isSharing ? "Compartilhando..." : "Compartilhar"}</span>
+        <span className="truncate">{isSharing ? "Compartilhando..." : "Compartilhar"}</span>
       </button>
     </div>
   );

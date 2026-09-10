@@ -42,8 +42,8 @@ export function AgendaCalendar({
   }
 
   return (
-    <div className="grid gap-4">
-      <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
+    <div className="grid min-w-0 gap-4">
+      <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-lg font-semibold text-foreground">Calendário</h2>
         </div>
@@ -95,7 +95,7 @@ export function AgendaCalendar({
             </div>
           ))}
         </div>
-        <div className="grid gap-2 p-3 sm:hidden">
+        <div className="grid min-w-0 gap-2 p-3 sm:hidden">
           {agenda.length > 0 ? (
             agenda.map((item) => {
               const active =
@@ -104,7 +104,7 @@ export function AgendaCalendar({
 
               return (
                 <button
-                  className={`rounded-md border px-3 py-2 text-left text-sm transition ${
+                  className={`min-w-0 rounded-md border px-3 py-2 text-left text-sm transition ${
                     active
                       ? "border-primary bg-primary text-white"
                       : "border-border bg-background text-foreground hover:bg-surface-muted"
@@ -113,10 +113,10 @@ export function AgendaCalendar({
                   onClick={() => selectItem(item)}
                   type="button"
                 >
-                  <p className="font-semibold">
+                  <p className="truncate font-semibold">
                     {formatDate(item.service_date)} · {item.roleKey === "pregador" ? "Pregação" : "Louvor"}
                   </p>
-                  <p className={active ? "text-white/85" : "text-muted"}>
+                  <p className={`truncate ${active ? "text-white/85" : "text-muted"}`}>
                     {item.church_name} · {item.start_time.slice(0, 5)}
                   </p>
                 </button>
@@ -130,7 +130,7 @@ export function AgendaCalendar({
         </div>
       </div>
 
-      <section className="grid gap-4">
+      <section className="grid min-w-0 gap-4">
         <AgendaRoleSection
           emptyText="Nenhuma pregação encontrada para este mês."
           item={selectedPreaching}
@@ -160,17 +160,17 @@ function AgendaRoleSection({
   title: string;
 }) {
   return (
-    <article className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+    <article className="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4 shadow-sm">
       <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       {item ? (
-        <div className="mt-3 grid gap-4">
+        <div className="mt-3 grid min-w-0 gap-4">
           <AgendaDetails item={item} />
           <SwapRequestForm item={item} targets={targets} />
         </div>
       ) : (
-        <div className="mt-3 flex items-center gap-3 rounded-md bg-surface-muted p-3 text-sm text-muted">
+        <div className="mt-3 flex min-w-0 items-center gap-3 rounded-md bg-surface-muted p-3 text-sm text-muted">
           <CalendarDays size={18} aria-hidden="true" />
-          {emptyText}
+          <span className="min-w-0 break-words">{emptyText}</span>
         </div>
       )}
     </article>
@@ -179,14 +179,14 @@ function AgendaRoleSection({
 
 function AgendaDetails({ item }: { item: UserAgendaItem }) {
   return (
-    <div className="grid gap-3">
+    <div className="grid min-w-0 gap-3">
       <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">
         {formatDate(item.service_date)} · {item.start_time.slice(0, 5)}
       </p>
-      <p className="text-sm text-muted">
+      <p className="break-words text-sm text-muted">
         {item.title ?? getTemplateLabel(item.service_type)}
       </p>
-      <div className="grid gap-3 text-sm">
+      <div className="grid min-w-0 gap-3 text-sm">
         <DetailLine
           icon={<MapPin size={16} aria-hidden="true" />}
           label="Local"
@@ -221,7 +221,7 @@ function DetailLine({
       <span className="mt-0.5 shrink-0 text-primary">{icon}</span>
       <div className="min-w-0">
         <p className="text-xs font-semibold uppercase text-muted">{label}</p>
-        <p className="truncate font-semibold text-foreground">{value}</p>
+        <p className="break-words font-semibold text-foreground">{value}</p>
       </div>
     </div>
   );

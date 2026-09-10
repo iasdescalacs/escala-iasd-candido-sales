@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowRight, CalendarCheck, ShieldCheck, Smartphone } from "lucide-react";
+import { getCurrentUserProfile, toAccessProfile } from "@/lib/auth/session";
 
 const destaques = [
   {
@@ -22,7 +24,18 @@ const destaques = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const profile = await getCurrentUserProfile();
+  const accessProfile = toAccessProfile(profile);
+
+  if (accessProfile?.status === "approved") {
+    redirect("/painel");
+  }
+
+  if (accessProfile?.status === "pending") {
+    redirect("/aguardando-aprovacao");
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <section className="py-8">

@@ -19,6 +19,7 @@ Entregue até esta etapa:
 - Página inicial.
 - PWA inicial com `manifest.json`, ícone e service worker.
 - PWA preparado para notificações reais em segundo plano com Web Push e VAPID.
+- PWA abre em `/painel` e a página inicial redireciona usuários já logados, mantendo a sessão até o usuário tocar em `Sair`.
 - Ícone do site/PWA usa uma igreja em azul e branco nos favicons e no manifest.
 - Git configurado com `user.name=iasdescalacs`.
 - Git configurado com `user.email=iasdescalacs@gmail.com`.
@@ -67,6 +68,7 @@ Entregue até esta etapa:
 - Pregadores e cantores podem escolher as igrejas onde aceitam ser escalados.
 - Calendário de disponibilidade mostra apenas um culto representativo por dia para não repetir a quantidade de igrejas.
 - Calendários exibem lista legível no celular e grade mensal em telas maiores, evitando texto minúsculo ou cortado.
+- Página `/agenda` contém largura no celular para evitar corte lateral e rolagem horizontal.
 - Página `/escalas/pregacao` permite ao ancião ou admin escalar, trocar e remover pregadores disponíveis por culto e igreja.
 - Página `/escalas/louvor` permite ao líder de música ou admin escalar, trocar e remover cantores disponíveis por culto e igreja.
 - Escala de louvor exibe pregador e louvor no mesmo culto e, para admin, gera PDF separado por igreja.
@@ -94,6 +96,7 @@ Entregue até esta etapa:
 - O sistema mostra um aviso de instalação do PWA quando o navegador permitir instalar o app.
 - O manifest possui ícones PNG 192x192 e 512x512 para melhorar a instalação no Android.
 - Se notificações estiverem bloqueadas, o aviso permanece orientando a liberar o site nas configurações do navegador.
+- Ativação de notificações tenta recriar a inscrição e o service worker quando o Android retorna erro de serviço push.
 - Service worker recebe eventos `push`, exibe notificação nativa e abre `/agenda` ou `/painel` ao tocar no aviso.
 - Inscrições push são salvas em `push_subscriptions` com RLS, vinculadas ao usuário aprovado.
 - Assinaturas expiradas retornando HTTP 404 ou 410 são desativadas automaticamente no envio.

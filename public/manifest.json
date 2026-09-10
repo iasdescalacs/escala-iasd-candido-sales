@@ -3,7 +3,7 @@
   "short_name": "Escala IASD",
   "description": "Sistema web para organização de escalas da IASD Candido Sales.",
   "id": "/",
-  "start_url": "/",
+  "start_url": "/painel",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f7f9ff",

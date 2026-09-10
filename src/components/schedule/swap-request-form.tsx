@@ -31,15 +31,18 @@ export function SwapRequestForm({
   });
 
   return (
-    <form action={formAction} className="grid gap-3 rounded-md border border-border bg-background p-3">
+    <form
+      action={formAction}
+      className="grid min-w-0 gap-3 overflow-hidden rounded-md border border-border bg-background p-3"
+    >
       <ActionMessage state={state} />
       <input name="sourceServiceId" type="hidden" value={item.id} />
       <input name="roleKey" type="hidden" value={item.roleKey} />
 
-      <label className="grid gap-2 text-sm font-medium text-foreground">
+      <label className="grid min-w-0 gap-2 text-sm font-medium text-foreground">
         Solicitar permuta com
         <select
-          className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="h-10 min-w-0 max-w-full rounded-md border border-border bg-surface px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
           name="targetServiceId"
           required
         >
@@ -57,10 +60,10 @@ export function SwapRequestForm({
         </select>
       </label>
 
-      <label className="grid gap-2 text-sm font-medium text-foreground">
+      <label className="grid min-w-0 gap-2 text-sm font-medium text-foreground">
         Motivo
         <textarea
-          className="min-h-20 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
+          className="min-h-20 min-w-0 max-w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
           name="reason"
           placeholder="Explique rapidamente o motivo da permuta"
         />

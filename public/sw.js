@@ -1,5 +1,5 @@
-const CACHE_NAME = "escala-iasd-candido-sales-v1";
-const APP_SHELL = ["/", "/login", "/painel", "/manifest.json", "/icons/icon.svg"];
+const CACHE_NAME = "escala-iasd-candido-sales-v2";
+const APP_SHELL = ["/", "/login", "/painel", "/agenda", "/manifest.json", "/icons/icon.svg"];
 const DEFAULT_NOTIFICATION_URL = "/agenda";
 
 self.addEventListener("install", (event) => {

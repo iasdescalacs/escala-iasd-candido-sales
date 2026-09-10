@@ -41,13 +41,13 @@ export default async function AgendaPage({
   const isAdmin = data.profile.roles.some((role) => role.key === "admin");
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
+    <div className="mx-auto w-full max-w-7xl overflow-hidden px-3 py-8 sm:px-6 lg:px-8">
+      <section className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-sm sm:p-6">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
           Minha agenda
         </p>
-        <div className="mt-3 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
+        <div className="mt-3 flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0">
             <h1 className="text-3xl font-semibold text-foreground">
               Escalas e permutas
             </h1>
@@ -56,7 +56,7 @@ export default async function AgendaPage({
             </p>
             <p className="mt-2 text-sm font-semibold text-primary">{monthLabel}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex min-w-0 flex-wrap gap-2">
             <PdfDownloadButton
               calendar={{
                 events: buildAgendaPdfEvents(data.agenda),
@@ -82,7 +82,7 @@ export default async function AgendaPage({
         </div>
       </section>
 
-      <section className="mt-6 grid gap-4">
+      <section className="mt-6 grid min-w-0 gap-4">
         <SwapRequestsSummary isAdmin={isAdmin} requests={data.swapRequests} />
         <AgendaCalendar
           agenda={data.agenda}
@@ -110,10 +110,10 @@ function NotificationsPanel({
   notifications: Awaited<ReturnType<typeof getUserAgendaPageData>>["notifications"];
 }) {
   return (
-    <details className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-      <summary className="flex cursor-pointer list-none items-center gap-2 text-lg font-semibold text-foreground">
+    <details className="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4 shadow-sm">
+      <summary className="flex min-w-0 cursor-pointer list-none items-center gap-2 text-lg font-semibold text-foreground">
         <Bell size={18} className="text-primary" aria-hidden="true" />
-        Notificações
+        <span className="min-w-0 truncate">Notificações</span>
         <span className="ml-auto rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-strong">
           {notifications.length}
         </span>
@@ -127,9 +127,9 @@ function NotificationsPanel({
       ) : null}
       <div className="mt-3 grid gap-2">
         {notifications.map((notification) => (
-          <article className="rounded-md border border-border bg-background p-3 text-sm" key={notification.id}>
+          <article className="min-w-0 rounded-md border border-border bg-background p-3 text-sm" key={notification.id}>
             <p className="font-semibold text-foreground">{notification.title}</p>
-            <p className="mt-1 text-muted">{notification.body}</p>
+            <p className="mt-1 break-words text-muted">{notification.body}</p>
           </article>
         ))}
         {notifications.length === 0 ? (
@@ -150,10 +150,10 @@ function SwapRequestsSummary({
   requests: Awaited<ReturnType<typeof getUserAgendaPageData>>["swapRequests"];
 }) {
   return (
-    <details className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-      <summary className="flex cursor-pointer list-none items-center gap-2 text-lg font-semibold text-foreground">
+    <details className="min-w-0 overflow-hidden rounded-lg border border-border bg-surface p-4 shadow-sm">
+      <summary className="flex min-w-0 cursor-pointer list-none items-center gap-2 text-lg font-semibold text-foreground">
         <Repeat2 size={18} className="text-primary" aria-hidden="true" />
-        Permutas
+        <span className="min-w-0 truncate">Permutas</span>
         <span className="ml-auto rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-primary-strong">
           {requests.length}
         </span>
@@ -167,11 +167,11 @@ function SwapRequestsSummary({
       ) : null}
       <div className="mt-3 grid gap-2">
         {requests.slice(0, 4).map((request) => (
-          <article className="rounded-md border border-border bg-background p-3 text-sm" key={request.id}>
+          <article className="min-w-0 rounded-md border border-border bg-background p-3 text-sm" key={request.id}>
             <p className="font-semibold text-foreground">
               {request.role_key === "pregador" ? "Pregação" : "Louvor"} · {statusLabel(request.status)}
             </p>
-            <p className="mt-1 text-muted">
+            <p className="mt-1 break-words text-muted">
               {request.requester_name} solicitou permuta com {request.target_name}
             </p>
             <p className="mt-1 text-muted">
