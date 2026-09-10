@@ -98,7 +98,7 @@ Entregue até esta etapa:
 - Assinaturas expiradas retornando HTTP 404 ou 410 são desativadas automaticamente no envio.
 - Painel exibe `Permutas pendentes` para admin, ancião e líder de música quando houver permutas aguardando decisão.
 - Painel exibe `Solicitações de aprovação` para admin, ancião e líder de música conforme a igreja e a função que cada perfil pode aprovar.
-- Painel organiza `Permutas pendentes` e `Solicitações de aprovação` em coluna para facilitar a leitura.
+- Painel organiza `Permutas pendentes` e `Solicitações de aprovação` lado a lado em telas maiores, mantendo coluna no celular.
 - Admin aprova solicitações de pregadores e cantores de qualquer igreja.
 - Ancião aprova solicitações de pregadores e cantores das igrejas gerenciadas por ele.
 - Líder de Música aprova somente solicitações de cantores das igrejas gerenciadas por ele.

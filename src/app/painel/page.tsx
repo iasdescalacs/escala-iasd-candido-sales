@@ -73,7 +73,7 @@ export default async function PainelPage() {
       </section>
 
       {canReviewSwaps || canManageApprovals ? (
-        <div className="mt-6 grid gap-4">
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
           {canReviewSwaps ? (
             <PendingSwapRequests requests={pendingSwapRequests} />
           ) : null}
