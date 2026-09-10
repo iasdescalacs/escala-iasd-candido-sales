@@ -233,7 +233,7 @@ function getPushActivationErrorMessage(error: unknown) {
 
   if (error instanceof Error && error.message) {
     if (isPushServiceRegistrationError(error)) {
-      return "O Android recusou a inscrição no serviço de push. Atualize o Chrome/Android System WebView, confira se a conta Google/Play Services está ativa e toque em Ativar novamente.";
+      return "O Android recusou a inscrição no serviço de push. Feche e abra o app/site para atualizar o manifest e toque em Ativar novamente. Se persistir, atualize Chrome e Android System WebView.";
     }
 
     return error.message;

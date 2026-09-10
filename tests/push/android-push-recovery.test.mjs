@@ -4,6 +4,7 @@ import test from "node:test";
 
 const prompt = readFileSync("src/components/push-notification-prompt.tsx", "utf8");
 const serviceWorker = readFileSync("public/sw.js", "utf8");
+const manifest = readFileSync("public/manifest.json", "utf8");
 
 test("ativacao push tenta recuperar erro de servico no android", () => {
   assert.match(prompt, /subscribeWithRecovery/);
@@ -15,4 +16,8 @@ test("ativacao push tenta recuperar erro de servico no android", () => {
 test("service worker incrementa cache para atualizar pwa instalado", () => {
   assert.match(serviceWorker, /escala-iasd-candido-sales-v2/);
   assert.match(serviceWorker, /"\/agenda"/);
+});
+
+test("manifest inclui sender de compatibilidade para chrome android", () => {
+  assert.equal(JSON.parse(manifest).gcm_sender_id, "103953800507");
 });

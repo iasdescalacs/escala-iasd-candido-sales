@@ -48,6 +48,7 @@ test("instalacao PWA usa beforeinstallprompt e manifest com pngs", () => {
   assert.match(installPrompt, /appinstalled/);
   assert.match(manifest, /icon-192\.png/);
   assert.match(manifest, /icon-512\.png/);
+  assert.match(manifest, /gcm_sender_id/);
 });
 
 test("env example documenta chaves VAPID sem valores reais", () => {
