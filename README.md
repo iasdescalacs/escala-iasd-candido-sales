@@ -47,6 +47,7 @@ Entregue até esta etapa:
 - Admin pode editar nome, telefone, função e status em `/admin/usuarios/[id]/editar`.
 - Admin pode excluir usuários em `/admin/usuarios` com confirmação; a exclusão remove vínculos relacionados no banco.
 - Tela administrativa para criar igrejas.
+- Formulário de criação de igrejas mantém campos e botão dentro do card em telas pequenas e grandes.
 - Admin pode criar usuários já vinculados a uma função e igreja.
 - Cadastro público permite escolher tipo de usuário e igreja onde é membro.
 - Login usa apenas e-mail e senha.
