@@ -334,6 +334,8 @@ supabase/migrations/20260909110000_add_user_approval_audit.sql
 supabase/migrations/20260909143000_create_push_subscriptions.sql
 supabase/migrations/20260910123000_distinguish_special_service_availability.sql
 supabase/migrations/20260910150000_clear_all_worship_services.sql
+supabase/migrations/20260910163000_add_clear_worship_services_dry_run.sql
+supabase/migrations/20260910164500_fix_clear_worship_services_safe_delete.sql
 ```
 
 Tabelas iniciais:

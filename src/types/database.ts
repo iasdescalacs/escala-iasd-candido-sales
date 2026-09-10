@@ -483,7 +483,7 @@ export type Database = {
     Views: Record<string, never>;
     Functions: {
       clear_all_worship_services: {
-        Args: { actor_id: string };
+        Args: { actor_id: string; dry_run?: boolean };
         Returns: number;
       };
       current_app_user_id: {

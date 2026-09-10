@@ -5,6 +5,12 @@ import test from "node:test";
 const migration = readFileSync(
   "supabase/migrations/20260910150000_clear_all_worship_services.sql",
   "utf8",
+) + readFileSync(
+  "supabase/migrations/20260910163000_add_clear_worship_services_dry_run.sql",
+  "utf8",
+) + readFileSync(
+  "supabase/migrations/20260910164500_fix_clear_worship_services_safe_delete.sql",
+  "utf8",
 );
 const actions = readFileSync("src/lib/cultos/actions.ts", "utf8");
 const component = readFileSync(
@@ -19,8 +25,13 @@ test("limpeza de cultos ocorre em funcao transacional restrita ao servidor", () 
   assert.match(migration, /delete from public\.swap_requests/);
   assert.match(migration, /delete from public\.user_availability/);
   assert.match(migration, /delete from public\.worship_services/);
+  assert.match(migration, /delete from public\.swap_requests where true/);
+  assert.match(migration, /delete from public\.user_availability where true/);
+  assert.match(migration, /delete from public\.worship_services where true/);
   assert.match(migration, /revoke all[\s\S]+from public, anon, authenticated/);
   assert.match(migration, /grant execute[\s\S]+to service_role/);
+  assert.match(migration, /dry_run boolean default false/);
+  assert.match(migration, /raise sqlstate 'ZX001'/);
 });
 
 test("acao confirma administrador e atualiza todas as telas dependentes", () => {
@@ -28,6 +39,8 @@ test("acao confirma administrador e atualiza todas as telas dependentes", () => 
   assert.match(actions, /await requireAdminUser\(\)/);
   assert.match(actions, /readString\(formData, "confirmation"\) !== "delete-all"/);
   assert.match(actions, /\.rpc\([\s\S]*"clear_all_worship_services"/);
+  assert.match(actions, /dry_run: false/);
+  assert.match(actions, /console\.error\("Falha ao limpar cultos"/);
   assert.match(actions, /"\/admin\/cultos"/);
   assert.match(actions, /"\/agenda"/);
   assert.match(actions, /"\/disponibilidade"/);

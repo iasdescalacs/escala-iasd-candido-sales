@@ -242,12 +242,21 @@ export async function clearAllWorshipServicesAction(
   const supabase = createAdminSupabaseClient();
   const { data: deletedServices, error } = await supabase.rpc(
     "clear_all_worship_services",
-    { actor_id: adminProfile.appUser.id },
+    { actor_id: adminProfile.appUser.id, dry_run: false },
   );
 
   if (error) {
+    console.error("Falha ao limpar cultos", {
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      message: error.message,
+    });
+
     return {
-      message: "Não foi possível excluir os cultos e as escalas.",
+      message: error.message.startsWith("Falha ao limpar cultos na etapa")
+        ? error.message
+        : "Não foi possível excluir os cultos e as escalas.",
     };
   }
 
