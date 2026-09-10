@@ -288,6 +288,7 @@ function ScheduleFormButton({
       className={`inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-md px-1.5 text-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
       disabled={pending}
       formAction={formAction}
+      formNoValidate={icon === "delete"}
       title={label}
       type="submit"
     >

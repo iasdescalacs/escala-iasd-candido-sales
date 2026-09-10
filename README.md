@@ -74,6 +74,7 @@ Entregue até esta etapa:
 - Para o administrador, as telas de pregação e louvor agrupam os cultos por igreja e permitem filtrar pelo pregador, cantor ou grupo; anciãos e líderes de música mantêm a visão mensal por dia.
 - Escala de louvor exibe pregador e louvor no mesmo culto e, para admin, gera PDF separado por igreja.
 - Botões de salvar e excluir nas escalas são pequenos, ficam lado a lado quando disponíveis, com ícones, usando verde para salvar e vermelho para excluir.
+- O botão de excluir não exige selecionar outro voluntário e deixa o pregador ou louvor como `A definir`.
 - Pregadores e cantores já escalados em um dia não aparecem como disponíveis para outro culto no mesmo dia.
 - O servidor bloqueia conflito de agenda ao salvar escala, mesmo que alguém tente enviar a ação manualmente.
 - Página `/agenda` permite aos usuários aprovados consultar suas escalas, notificações e solicitar permuta com pessoa da mesma função.

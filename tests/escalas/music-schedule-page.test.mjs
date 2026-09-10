@@ -8,6 +8,7 @@ const adminChurchSchedule = readFileSync(
   "src/components/schedule/admin-church-schedule.tsx",
   "utf8",
 );
+const scheduleActions = readFileSync("src/lib/escalas/actions.ts", "utf8");
 const scheduleCalendar = readFileSync("src/components/schedule/schedule-calendar.tsx", "utf8");
 
 test("escala de louvor gera pdf separado por igreja para admin", () => {
@@ -31,4 +32,11 @@ test("admin visualiza escalas agrupadas por igreja com filtro de pessoa", () => 
   assert.match(adminChurchSchedule, /Filtrar \{personLabel\}/);
   assert.match(adminChurchSchedule, /Todos os pregadores/);
   assert.match(adminChurchSchedule, /Todos os cantores e grupos/);
+});
+
+test("exclusao de escala ignora seletor obrigatorio e volta para a definir", () => {
+  assert.match(scheduleCalendar, /formNoValidate=\{icon === "delete"\}/);
+  assert.match(adminChurchSchedule, /formNoValidate=\{icon === "delete"\}/);
+  assert.match(scheduleActions, /preacher_user_id: null, preacher_name: null/);
+  assert.match(scheduleActions, /singer_user_id: null, singer_name: null/);
 });
