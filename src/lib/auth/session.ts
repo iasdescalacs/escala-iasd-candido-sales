@@ -1,6 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { cache } from "react";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 import {
@@ -19,52 +20,54 @@ export type CurrentUserProfile = {
   roles: RoleRow[];
 };
 
-export async function getCurrentUserProfile(): Promise<CurrentUserProfile | null> {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const getCurrentUserProfile = cache(
+  async function getCurrentUserProfile(): Promise<CurrentUserProfile | null> {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return null;
-  }
+    if (!user) {
+      return null;
+    }
 
-  const { data: appUser } = await supabase
-    .from("users")
-    .select("*")
-    .eq("auth_user_id", user.id)
-    .is("deleted_at", null)
-    .maybeSingle();
+    const { data: appUser } = await supabase
+      .from("users")
+      .select("*")
+      .eq("auth_user_id", user.id)
+      .is("deleted_at", null)
+      .maybeSingle();
 
-  let roles: RoleRow[] = [];
+    let roles: RoleRow[] = [];
 
-  if (appUser) {
-    const { data: userRoles } = await supabase
-      .from("user_roles")
-      .select("role_id")
-      .eq("user_id", appUser.id)
-      .is("deleted_at", null);
-
-    const roleIds = userRoles?.map((item) => item.role_id) ?? [];
-
-    if (roleIds.length > 0) {
-      const { data: roleRows } = await supabase
-        .from("roles")
-        .select("key,name")
-        .in("id", roleIds)
+    if (appUser) {
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("role_id")
+        .eq("user_id", appUser.id)
         .is("deleted_at", null);
 
-      roles = roleRows ?? [];
-    }
-  }
+      const roleIds = userRoles?.map((item) => item.role_id) ?? [];
 
-  return {
-    authUserId: user.id,
-    email: user.email ?? appUser?.email ?? "",
-    appUser,
-    roles,
-  };
-}
+      if (roleIds.length > 0) {
+        const { data: roleRows } = await supabase
+          .from("roles")
+          .select("key,name")
+          .in("id", roleIds)
+          .is("deleted_at", null);
+
+        roles = roleRows ?? [];
+      }
+    }
+
+    return {
+      authUserId: user.id,
+      email: user.email ?? appUser?.email ?? "",
+      appUser,
+      roles,
+    };
+  },
+);
 
 export function toAccessProfile(
   profile: CurrentUserProfile | null,

@@ -23,7 +23,7 @@ test("ativacao reutiliza assinatura valida e envia chave no formato esperado", (
 });
 
 test("service worker incrementa cache para atualizar pwa instalado", () => {
-  assert.match(serviceWorker, /escala-iasd-candido-sales-v6/);
+  assert.match(serviceWorker, /escala-iasd-candido-sales-v7/);
   assert.match(serviceWorker, /"\/agenda"/);
 });
 

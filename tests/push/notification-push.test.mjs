@@ -35,6 +35,19 @@ test("service worker recebe push e abre rota ao clicar na notificacao", () => {
   assert.match(serviceWorker, /openWindow/);
 });
 
+test("service worker armazena apenas recursos publicos estaticos", () => {
+  const staticAssetsBlock = serviceWorker.match(
+    /const STATIC_ASSETS = \[(.*?)\];/s,
+  );
+
+  assert.ok(staticAssetsBlock);
+  assert.match(serviceWorker, /const STATIC_ASSETS/);
+  assert.match(serviceWorker, /STATIC_ASSET_PATHS\.has\(requestUrl\.pathname\)/);
+  assert.doesNotMatch(staticAssetsBlock[1], /["']\/painel["']/);
+  assert.doesNotMatch(staticAssetsBlock[1], /["']\/agenda["']/);
+  assert.doesNotMatch(staticAssetsBlock[1], /["']\/login["']/);
+});
+
 test("rotas de push exigem usuario aprovado", () => {
   assert.match(subscribeRoute, /export const runtime = "nodejs"/);
   assert.match(subscribeRoute, /decideProtectedAccess/);

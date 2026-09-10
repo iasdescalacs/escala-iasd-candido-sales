@@ -112,11 +112,14 @@ Entregue até esta etapa:
 - Manifest inclui `gcm_sender_id` de compatibilidade para Chrome Android aceitar inscrição Web Push em dispositivos mais sensíveis.
 - Notificações Web Push usam ícone PNG, `badge`, URL de destino e TTL de 24 horas para entrega posterior quando o dispositivo voltar a ficar online.
 - Service worker recebe eventos `push`, exibe notificação nativa e abre `/agenda` ou `/painel` ao tocar no aviso.
+- Service worker armazena somente manifesto e ícones públicos; páginas autenticadas, respostas RSC e dados pessoais não entram no cache offline.
 - Inscrições push são salvas em `push_subscriptions` com RLS, vinculadas ao usuário aprovado.
 - Assinaturas expiradas retornando HTTP 404 ou 410 são desativadas automaticamente no envio.
 - Painel exibe `Permutas pendentes` para admin, ancião e líder de música quando houver permutas aguardando decisão.
 - Painel exibe `Solicitações de aprovação` para admin, ancião e líder de música conforme a igreja e a função que cada perfil pode aprovar.
 - Painel organiza `Permutas pendentes` e `Solicitações de aprovação` lado a lado em telas maiores, mantendo coluna no celular.
+- Painel carrega permutas e solicitações de aprovação em paralelo e resume os cards informativos em uma grade compacta no celular.
+- Perfil da sessão é deduplicado durante cada renderização; o proxy faz somente a verificação otimista da sessão e as permissões continuam validadas no servidor e no banco.
 - Botões de permutas pendentes e solicitações de aprovação no painel mostram carregamento e removem o item concluído sem recarregar a página inteira.
 - Admin aprova solicitações de pregadores e cantores de qualquer igreja.
 - Ancião aprova solicitações de pregadores e cantores das igrejas gerenciadas por ele.
@@ -402,6 +405,8 @@ Não aplique `supabase/seed.sql` em produção sem revisar os dados fictícios.
 ## Deploy
 
 O deploy de cada etapa deve ser feito na Vercel e confirmado como `Ready`.
+
+As funções da Vercel estão fixadas em São Paulo (`gru1`) pelo arquivo `vercel.json`, próximas ao banco Supabase em `sa-east-1`.
 
 Domínio futuro planejado:
 

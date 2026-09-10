@@ -1,10 +1,16 @@
-const CACHE_NAME = "escala-iasd-candido-sales-v6";
-const APP_SHELL = ["/", "/login", "/painel", "/agenda", "/manifest.json", "/icons/icon.svg"];
+const CACHE_NAME = "escala-iasd-candido-sales-v7";
+const STATIC_ASSETS = [
+  "/manifest.json",
+  "/icons/icon.svg",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+];
+const STATIC_ASSET_PATHS = new Set(STATIC_ASSETS);
 const DEFAULT_NOTIFICATION_URL = "/agenda";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)),
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
   );
   self.skipWaiting();
 });
@@ -29,7 +35,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (!event.request.url.startsWith(self.location.origin)) {
+  const requestUrl = new URL(event.request.url);
+
+  if (
+    requestUrl.origin !== self.location.origin ||
+    !STATIC_ASSET_PATHS.has(requestUrl.pathname)
+  ) {
     return;
   }
 

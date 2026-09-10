@@ -14,19 +14,19 @@ export default async function PainelPage() {
     roleKeys.includes("admin") ||
     roleKeys.includes("anciao") ||
     roleKeys.includes("lider_musica");
-  const pendingSwapRequests = canReviewSwaps
-    ? await getPanelPendingSwapRequests(profile)
-    : [];
   const canManageApprovals =
     roleKeys.includes("admin") ||
     roleKeys.includes("anciao") ||
     roleKeys.includes("lider_musica");
-  const approvalData = canManageApprovals
-    ? await getUserApprovalDashboardData(profile)
-    : {
-        creationContext: { allowedChurches: [], allowedRoles: [] },
-        requests: [],
-      };
+  const [pendingSwapRequests, approvalData] = await Promise.all([
+    canReviewSwaps ? getPanelPendingSwapRequests(profile) : Promise.resolve([]),
+    canManageApprovals
+      ? getUserApprovalDashboardData(profile)
+      : Promise.resolve({
+          creationContext: { allowedChurches: [], allowedRoles: [] },
+          requests: [],
+        }),
+  ]);
 
   const cards = [
     {
@@ -56,15 +56,15 @@ export default async function PainelPage() {
   ];
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
+    <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
+      <section className="rounded-lg border border-border bg-surface p-4 shadow-sm sm:p-6">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
           Painel
         </p>
-        <h1 className="mt-3 text-3xl font-semibold text-foreground">
+        <h1 className="mt-2 text-2xl font-semibold text-foreground sm:mt-3 sm:text-3xl">
           Olá, {profile.appUser.full_name}
         </h1>
-        <p className="mt-3 max-w-3xl leading-7 text-muted">
+        <p className="mt-3 hidden max-w-3xl leading-7 text-muted sm:block">
           Acompanhe suas informações principais e as ações pendentes conforme suas funções.
         </p>
       </section>
@@ -85,25 +85,29 @@ export default async function PainelPage() {
         <ManagedUserCreateForm context={approvalData.creationContext} />
       ) : null}
 
-      <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="mt-4 grid grid-cols-2 gap-2 sm:mt-6 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
         {cards.map((card) => {
           const Icon = card.icon;
 
           return (
             <article
-              className="rounded-lg border border-border bg-surface p-5 shadow-sm"
+              className="min-w-0 rounded-lg border border-border bg-surface p-3 shadow-sm sm:p-5"
               key={card.title}
             >
-              <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
-                  <Icon size={20} aria-hidden="true" />
+              <div className="flex items-start gap-2 sm:gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary sm:h-10 sm:w-10">
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
-                  <h2 className="font-semibold text-foreground">{card.title}</h2>
-                  <p className="break-words text-sm text-primary">{card.value}</p>
+                  <h2 className="text-sm font-semibold text-foreground sm:text-base">
+                    {card.title}
+                  </h2>
+                  <p className="break-words text-xs text-primary sm:text-sm">
+                    {card.value}
+                  </p>
                 </div>
               </div>
-              <p className="mt-4 text-sm leading-6 text-muted">
+              <p className="mt-4 hidden text-sm leading-6 text-muted sm:block">
                 {card.description}
               </p>
             </article>
