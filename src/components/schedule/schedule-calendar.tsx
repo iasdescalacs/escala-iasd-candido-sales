@@ -128,9 +128,7 @@ export function ScheduleCalendar({
                   const assignedName =
                     roleKey === "pregador" ? service.preacher_name : service.singer_name;
                   const availableVolunteers = volunteers.filter(
-                    (volunteer) =>
-                      volunteer.church_id === service.church_id &&
-                      volunteer.service_date === service.service_date,
+                    (volunteer) => volunteer.service_id === service.id,
                   );
 
                   return (
@@ -205,9 +203,7 @@ export function ScheduleCalendar({
               const assignedName =
                 roleKey === "pregador" ? service.preacher_name : service.singer_name;
               const availableVolunteers = volunteers.filter(
-                (volunteer) =>
-                  volunteer.church_id === service.church_id &&
-                  volunteer.service_date === service.service_date,
+                (volunteer) => volunteer.service_id === service.id,
               );
 
               return (

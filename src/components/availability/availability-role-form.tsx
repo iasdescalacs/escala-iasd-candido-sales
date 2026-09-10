@@ -1,11 +1,16 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { ActionMessage } from "@/components/auth/action-message";
 import { SubmitButton } from "@/components/auth/submit-button";
 import type { AuthActionState } from "@/lib/auth/actions";
 import { saveAvailabilityAction } from "@/lib/disponibilidade/actions";
-import type { AvailabilityRoleKey } from "@/lib/disponibilidade/rules";
+import {
+  buildAvailabilitySlots,
+  getRegularAvailabilitySlotKey,
+  getSpecialAvailabilitySlotKey,
+  type AvailabilityRoleKey,
+} from "@/lib/disponibilidade/rules";
 import type { CalendarDay, WorshipServiceType } from "@/lib/cultos/schedule";
 import { getTemplateLabel } from "@/lib/cultos/schedule";
 
@@ -16,10 +21,19 @@ type ChurchOption = {
 
 type ServiceSummary = {
   id: string;
+  church_id: string;
   service_date: string;
   service_type: WorshipServiceType;
   start_time: string;
   title: string | null;
+  is_special: boolean;
+};
+
+type DisplaySlot = {
+  detail: string;
+  isSpecial: boolean;
+  key: string;
+  label: string;
 };
 
 type AvailabilityRoleFormProps = {
@@ -32,7 +46,7 @@ type AvailabilityRoleFormProps = {
   calendarDays: CalendarDay[];
   servicesByDate: Record<string, ServiceSummary[]>;
   selectedChurchIds: string[];
-  selectedDates: string[];
+  selectedSlotKeys: string[];
   monthStart: string;
   monthEnd: string;
 };
@@ -45,13 +59,61 @@ export function AvailabilityRoleForm({
   calendarDays,
   servicesByDate,
   selectedChurchIds,
-  selectedDates,
+  selectedSlotKeys,
   monthStart,
   monthEnd,
 }: AvailabilityRoleFormProps) {
   const [state, formAction] = useActionState(saveAvailabilityAction, initialState);
-  const selectedChurches = new Set(selectedChurchIds);
-  const availableDates = new Set(selectedDates);
+  const [selectedChurches, setSelectedChurches] = useState(
+    () => new Set(selectedChurchIds),
+  );
+  const [availableSlots, setAvailableSlots] = useState(
+    () => new Set(selectedSlotKeys),
+  );
+  const churchNames = new Map(churches.map((church) => [church.id, church.name]));
+  const displaySlotsByDate = buildDisplaySlotsByDate({
+    churchNames,
+    selectedChurchIds: Array.from(selectedChurches),
+    servicesByDate,
+  });
+  const hasVisibleSlots = Object.values(displaySlotsByDate).some(
+    (slots) => slots.length > 0,
+  );
+
+  function handleChurchChange(churchId: string, checked: boolean) {
+    const nextChurches = new Set(selectedChurches);
+
+    if (checked) {
+      nextChurches.add(churchId);
+    } else {
+      nextChurches.delete(churchId);
+    }
+
+    const allowedSlots = buildAvailabilitySlots({
+      services: Object.values(servicesByDate).flat(),
+      selectedChurchIds: Array.from(nextChurches),
+    });
+    const allowedKeys = new Set(allowedSlots.map((slot) => slot.key));
+
+    setSelectedChurches(nextChurches);
+    setAvailableSlots(
+      (current) => new Set(Array.from(current).filter((slot) => allowedKeys.has(slot))),
+    );
+  }
+
+  function handleSlotChange(slotKey: string, checked: boolean) {
+    setAvailableSlots((current) => {
+      const next = new Set(current);
+
+      if (checked) {
+        next.add(slotKey);
+      } else {
+        next.delete(slotKey);
+      }
+
+      return next;
+    });
+  }
 
   return (
     <form action={formAction} className="grid gap-5 rounded-lg border border-border bg-surface p-5 shadow-sm">
@@ -75,8 +137,9 @@ export function AvailabilityRoleForm({
             >
               <input
                 className="h-4 w-4 accent-[var(--primary)]"
-                defaultChecked={selectedChurches.has(church.id)}
+                checked={selectedChurches.has(church.id)}
                 name="churchIds"
+                onChange={(event) => handleChurchChange(church.id, event.target.checked)}
                 type="checkbox"
                 value={church.id}
               />
@@ -88,12 +151,16 @@ export function AvailabilityRoleForm({
 
       <div>
         <h3 className="text-lg font-semibold text-foreground">
-          Dias disponíveis para {role.name.toLocaleLowerCase("pt-BR")}
+          Cultos disponíveis para {role.name.toLocaleLowerCase("pt-BR")}
         </h3>
         <p className="mt-1 text-sm leading-6 text-muted">
-          Marque somente os dias em que você pode participar dos cultos gerados
-          neste mês.
+          O culto regular e cada culto especial podem ser marcados separadamente.
         </p>
+        {selectedChurches.size === 0 ? (
+          <p className="mt-3 rounded-md bg-surface-muted p-3 text-sm text-muted">
+            Selecione ao menos uma igreja para ver os cultos disponíveis.
+          </p>
+        ) : null}
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border">
@@ -110,90 +177,91 @@ export function AvailabilityRoleForm({
 
         <div className="hidden grid-cols-7 sm:grid">
           {calendarDays.map((day) => {
-            const services = servicesByDate[day.date] ?? [];
-            const firstService = services[0];
-            const hasServices = services.length > 0;
+            const slots = displaySlotsByDate[day.date] ?? [];
 
             return (
-              <label
+              <div
                 className={`min-h-28 min-w-0 border-b border-r border-border p-2 ${
                   day.currentMonth ? "bg-background" : "bg-surface-muted/60"
-                } ${hasServices ? "cursor-pointer hover:bg-primary-soft/50" : ""}`}
+                }`}
                 key={day.date}
               >
-                <div className="flex items-start justify-between gap-1">
-                  <span
-                    className={`text-xs font-semibold ${
-                      day.currentMonth ? "text-foreground" : "text-muted"
-                    }`}
-                  >
-                    {day.day}
-                  </span>
-                  {hasServices ? (
-                    <input
-                      className="h-4 w-4 accent-[var(--primary)]"
-                      defaultChecked={availableDates.has(day.date)}
-                      name="availableDates"
-                      type="checkbox"
-                      value={day.date}
-                    />
-                  ) : null}
-                </div>
+                <span
+                  className={`text-xs font-semibold ${
+                    day.currentMonth ? "text-foreground" : "text-muted"
+                  }`}
+                >
+                  {day.day}
+                </span>
 
-                <div className="mt-2 grid gap-1">
-                  {firstService ? (
-                    <div
-                      className="min-w-0 rounded-md bg-primary-soft px-2 py-1 text-[11px] leading-4 text-primary-strong"
+                <div className="mt-2 grid gap-1.5">
+                  {slots.map((slot) => (
+                    <label
+                      className={`flex min-w-0 cursor-pointer items-start gap-1.5 rounded-md border px-1.5 py-1 text-[10px] leading-4 transition ${
+                        slot.isSpecial
+                          ? "border-warning/40 bg-warning/10 text-foreground hover:bg-warning/15"
+                          : "border-primary/20 bg-primary-soft text-primary-strong hover:brightness-95"
+                      }`}
+                      key={slot.key}
                     >
-                      <p className="truncate font-semibold">
-                        {firstService.title ?? getTemplateLabel(firstService.service_type)}
-                      </p>
-                      <p className="truncate text-muted">
-                        {firstService.start_time.slice(0, 5)}
-                      </p>
-                    </div>
-                  ) : null}
+                      <input
+                        checked={availableSlots.has(slot.key)}
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-[var(--primary)]"
+                        name="availableSlots"
+                        onChange={(event) => handleSlotChange(slot.key, event.target.checked)}
+                        type="checkbox"
+                        value={slot.key}
+                      />
+                      <span className="min-w-0 break-words">
+                        <span className={`block font-semibold ${slot.isSpecial ? "text-warning" : ""}`}>
+                          {slot.label}
+                        </span>
+                        <span className="block text-muted">{slot.detail}</span>
+                      </span>
+                    </label>
+                  ))}
                 </div>
-              </label>
+              </div>
             );
           })}
         </div>
         <div className="grid gap-2 p-3 sm:hidden">
-          {calendarDays.some((day) => (servicesByDate[day.date] ?? []).length > 0) ? (
-            calendarDays.map((day) => {
-              const services = servicesByDate[day.date] ?? [];
-              const firstService = services[0];
-
-              if (!firstService) {
-                return null;
-              }
-
-              return (
+          {hasVisibleSlots ? (
+            calendarDays.flatMap((day) =>
+              (displaySlotsByDate[day.date] ?? []).map((slot) => (
                 <label
-                  className="flex items-start gap-3 rounded-md border border-border bg-background p-3 text-sm"
-                  key={day.date}
+                  className={`flex min-w-0 items-start gap-3 rounded-md border p-3 text-sm ${
+                    slot.isSpecial
+                      ? "border-warning/40 bg-warning/10"
+                      : "border-primary/20 bg-primary-soft/60"
+                  }`}
+                  key={`${day.date}:${slot.key}`}
                 >
                   <input
+                    checked={availableSlots.has(slot.key)}
                     className="mt-1 h-4 w-4 shrink-0 accent-[var(--primary)]"
-                    defaultChecked={availableDates.has(day.date)}
-                    name="availableDates"
+                    name="availableSlots"
+                    onChange={(event) => handleSlotChange(slot.key, event.target.checked)}
                     type="checkbox"
-                    value={day.date}
+                    value={slot.key}
                   />
                   <span className="min-w-0">
                     <span className="block font-semibold text-foreground">
                       {formatDate(day.date)}
                     </span>
-                    <span className="block text-muted">
-                      {firstService.title ?? getTemplateLabel(firstService.service_type)} · {firstService.start_time.slice(0, 5)}
+                    <span className={`block break-words font-semibold ${slot.isSpecial ? "text-warning" : "text-primary-strong"}`}>
+                      {slot.label}
                     </span>
+                    <span className="block break-words text-muted">{slot.detail}</span>
                   </span>
                 </label>
-              );
-            })
+              )),
+            )
           ) : (
             <p className="rounded-md bg-surface-muted p-3 text-sm text-muted">
-              Nenhum culto encontrado neste mês.
+              {selectedChurches.size === 0
+                ? "Selecione ao menos uma igreja para ver os cultos."
+                : "Nenhum culto encontrado neste mês para as igrejas selecionadas."}
             </p>
           )}
         </div>
@@ -208,4 +276,49 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
     new Date(`${value}T00:00:00.000Z`),
   );
+}
+
+function buildDisplaySlotsByDate({
+  churchNames,
+  selectedChurchIds,
+  servicesByDate,
+}: {
+  churchNames: Map<string, string>;
+  selectedChurchIds: string[];
+  servicesByDate: Record<string, ServiceSummary[]>;
+}) {
+  const selectedChurches = new Set(selectedChurchIds);
+  const result: Record<string, DisplaySlot[]> = {};
+
+  for (const [serviceDate, services] of Object.entries(servicesByDate)) {
+    const visibleServices = services.filter((service) =>
+      selectedChurches.has(service.church_id),
+    );
+    const regularServices = visibleServices.filter((service) => !service.is_special);
+    const specialServices = visibleServices.filter((service) => service.is_special);
+    const slots: DisplaySlot[] = [];
+
+    if (regularServices.length > 0) {
+      const representative = regularServices[0];
+      slots.push({
+        detail: `${getTemplateLabel(representative.service_type)} · ${representative.start_time.slice(0, 5)}`,
+        isSpecial: false,
+        key: getRegularAvailabilitySlotKey(serviceDate),
+        label: "Culto regular",
+      });
+    }
+
+    for (const service of specialServices) {
+      slots.push({
+        detail: `${churchNames.get(service.church_id) ?? "Igreja"} · ${service.start_time.slice(0, 5)}`,
+        isSpecial: true,
+        key: getSpecialAvailabilitySlotKey(service.id),
+        label: `Culto especial: ${service.title ?? "Especial"}`,
+      });
+    }
+
+    result[serviceDate] = slots;
+  }
+
+  return result;
 }

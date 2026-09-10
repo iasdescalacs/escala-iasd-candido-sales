@@ -43,6 +43,8 @@ export async function assignScheduleAction(
     roleId: context.roleId,
     churchId: context.service.church_id,
     serviceDate: context.service.service_date,
+    serviceId: context.service.id,
+    isSpecial: context.service.is_special,
   });
 
   if (!volunteer) {
@@ -461,7 +463,7 @@ async function canManageService({
   const [{ data: service }, { data: role }] = await Promise.all([
     admin
       .from("worship_services")
-      .select("id,church_id,service_date,preacher_user_id,singer_user_id")
+      .select("id,church_id,service_date,is_special,preacher_user_id,singer_user_id")
       .eq("id", serviceId)
       .is("deleted_at", null)
       .maybeSingle(),
@@ -510,13 +512,29 @@ async function getAvailableVolunteer({
   roleId,
   churchId,
   serviceDate,
+  serviceId,
+  isSpecial,
 }: {
   admin: ReturnType<typeof createAdminSupabaseClient>;
   userId: string;
   roleId: string;
   churchId: string;
   serviceDate: string;
+  serviceId: string;
+  isSpecial: boolean;
 }) {
+  const availabilityQuery = admin
+    .from("user_availability")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("role_id", roleId)
+    .eq("service_date", serviceDate)
+    .eq("available", true)
+    .is("deleted_at", null);
+  const matchingAvailabilityQuery = isSpecial
+    ? availabilityQuery.eq("worship_service_id", serviceId)
+    : availabilityQuery.is("worship_service_id", null);
+
   const [{ data: user }, { data: availability }, { data: churchLink }] = await Promise.all([
     admin
       .from("users")
@@ -525,15 +543,7 @@ async function getAvailableVolunteer({
       .eq("status", "approved")
       .is("deleted_at", null)
       .maybeSingle(),
-    admin
-      .from("user_availability")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("role_id", roleId)
-      .eq("service_date", serviceDate)
-      .eq("available", true)
-      .is("deleted_at", null)
-      .maybeSingle(),
+    matchingAvailabilityQuery.maybeSingle(),
     admin
       .from("user_church_links")
       .select("id")
@@ -680,5 +690,10 @@ function formatDate(value: string) {
 
 type ServiceContext = Pick<
   Database["public"]["Tables"]["worship_services"]["Row"],
-  "id" | "church_id" | "service_date" | "preacher_user_id" | "singer_user_id"
+  | "id"
+  | "church_id"
+  | "service_date"
+  | "is_special"
+  | "preacher_user_id"
+  | "singer_user_id"
 >;

@@ -191,6 +191,7 @@ export type Database = {
           user_id: string;
           role_id: string;
           service_date: string;
+          worship_service_id: Nullable<string>;
           available: boolean;
           created_at: string;
           updated_at: string;
@@ -201,6 +202,7 @@ export type Database = {
           user_id: string;
           role_id: string;
           service_date: string;
+          worship_service_id?: Nullable<string>;
           available?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -211,6 +213,7 @@ export type Database = {
           user_id?: string;
           role_id?: string;
           service_date?: string;
+          worship_service_id?: Nullable<string>;
           available?: boolean;
           created_at?: string;
           updated_at?: string;

@@ -41,6 +41,7 @@ $$;
 \i /supabase/migrations/20260908043000_add_special_worship_services.sql
 \i /supabase/migrations/20260908043100_adjust_special_worship_uniqueness.sql
 \i /supabase/migrations/20260908120000_create_user_availability.sql
+\i /supabase/migrations/20260910123000_distinguish_special_service_availability.sql
 \i /supabase/seed.sql
 
 do $$

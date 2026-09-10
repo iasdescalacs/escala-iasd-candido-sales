@@ -6,8 +6,9 @@ import { requireApprovedUser } from "@/lib/auth/session";
 import type { AuthActionState } from "@/lib/auth/actions";
 import type { Database } from "@/types/database";
 import {
+  buildAvailabilitySlots,
   isAvailabilityRoleKey,
-  normalizeSelectedDates,
+  normalizeSelectedSlots,
   validateAvailabilityMonth,
 } from "./rules";
 
@@ -23,7 +24,7 @@ export async function saveAvailabilityAction(
   const monthStart = readString(formData, "monthStart");
   const monthEnd = readString(formData, "monthEnd");
   const selectedChurchIds = readStringList(formData, "churchIds");
-  const selectedDates = readStringList(formData, "availableDates");
+  const selectedSlots = readStringList(formData, "availableSlots");
   const validationError = validateAvailabilityMonth({ monthStart, monthEnd });
 
   if (validationError) {
@@ -50,24 +51,44 @@ export async function saveAvailabilityAction(
     return { message: "Função não localizada." };
   }
 
-  const { data: serviceRows, error: serviceError } = await admin
-    .from("worship_services")
-    .select("service_date")
-    .gte("service_date", monthStart)
-    .lte("service_date", monthEnd)
-    .is("deleted_at", null);
+  const [
+    { data: serviceRows, error: serviceError },
+    { data: activeChurches, error: churchesError },
+  ] = await Promise.all([
+    admin
+      .from("worship_services")
+      .select("id,church_id,service_date,is_special")
+      .gte("service_date", monthStart)
+      .lte("service_date", monthEnd)
+      .is("deleted_at", null),
+    admin
+      .from("churches")
+      .select("id")
+      .eq("active", true)
+      .is("deleted_at", null),
+  ]);
 
   if (serviceError) {
     return { message: "Não foi possível buscar os cultos do mês." };
   }
 
-  const allowedDates = Array.from(
-    new Set((serviceRows ?? []).map((service) => service.service_date)),
+  if (churchesError) {
+    return { message: "Não foi possível buscar as igrejas." };
+  }
+
+  const activeChurchIds = new Set((activeChurches ?? []).map((church) => church.id));
+  const validChurchIds = Array.from(
+    new Set(selectedChurchIds.filter((churchId) => activeChurchIds.has(churchId))),
   );
-  const availableDates = normalizeSelectedDates({
-    selectedDates,
-    allowedDates,
+  const allowedSlots = buildAvailabilitySlots({
+    services: serviceRows ?? [],
+    selectedChurchIds: validChurchIds,
   });
+  const availableSlots = normalizeSelectedSlots({
+    selectedSlots,
+    allowedSlots,
+  });
+  const allowedSlotsByKey = new Map(allowedSlots.map((slot) => [slot.key, slot]));
   const { error: deleteAvailabilityError } = await admin
     .from("user_availability")
     .delete()
@@ -80,19 +101,26 @@ export async function saveAvailabilityAction(
     return { message: "Não foi possível limpar a disponibilidade anterior." };
   }
 
-  if (availableDates.length > 0) {
-    const rows: AvailabilityInsert[] = availableDates.map((date) => ({
-      user_id: profile.appUser.id,
-      role_id: role.id,
-      service_date: date,
-      available: true,
-    }));
+  if (availableSlots.length > 0) {
+    const rows: AvailabilityInsert[] = availableSlots.flatMap((slotKey) => {
+      const slot = allowedSlotsByKey.get(slotKey);
+
+      return slot
+        ? [{
+            user_id: profile.appUser.id,
+            role_id: role.id,
+            service_date: slot.serviceDate,
+            worship_service_id: slot.worshipServiceId,
+            available: true,
+          }]
+        : [];
+    });
     const { error: insertAvailabilityError } = await admin
       .from("user_availability")
       .insert(rows);
 
     if (insertAvailabilityError) {
-      return { message: "Não foi possível salvar os dias disponíveis." };
+      return { message: "Não foi possível salvar os cultos disponíveis." };
     }
   }
 
@@ -101,7 +129,7 @@ export async function saveAvailabilityAction(
     userId: profile.appUser.id,
     roleId: role.id,
     roleKey,
-    selectedChurchIds,
+    selectedChurchIds: validChurchIds,
   });
 
   if (churchError) {
@@ -126,20 +154,7 @@ async function updateChurchAvailability({
   roleKey: "pregador" | "cantor";
   selectedChurchIds: string[];
 }) {
-  const { data: churches, error: churchesError } = await admin
-    .from("churches")
-    .select("id")
-    .eq("active", true)
-    .is("deleted_at", null);
-
-  if (churchesError) {
-    return "Não foi possível buscar as igrejas.";
-  }
-
-  const activeChurchIds = new Set((churches ?? []).map((church) => church.id));
-  const selected = new Set(
-    selectedChurchIds.filter((churchId) => activeChurchIds.has(churchId)),
-  );
+  const selected = new Set(selectedChurchIds);
   const { data: existingLinks, error: linksError } = await admin
     .from("user_church_links")
     .select("id,church_id")

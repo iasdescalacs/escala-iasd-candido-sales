@@ -63,10 +63,11 @@ Entregue até esta etapa:
 - Admin pode criar cultos especiais para uma igreja selecionada, como Semana de Oração, Mini Semana de Oração, Culto de Gratidão e Culto da Virada.
 - Cultos especiais podem ter uma data única ou um período de vários dias.
 - Página de disponibilidade em `/disponibilidade` para usuários aprovados.
-- Pregadores e cantores podem marcar dias disponíveis no calendário de cultos do mês.
+- Pregadores e cantores podem marcar cultos disponíveis no calendário do mês.
 - Usuários com as duas funções veem seções separadas para Pregador e Cantor.
 - Pregadores e cantores podem escolher as igrejas onde aceitam ser escalados.
-- Calendário de disponibilidade mostra apenas um culto representativo por dia para não repetir a quantidade de igrejas.
+- Calendário de disponibilidade mostra um único `Culto regular` por data e cada culto especial como uma opção separada, com nome, igreja e horário.
+- Ao desmarcar uma igreja, os cultos especiais exclusivos dela desaparecem; o culto regular da data permanece quando existir em outra igreja selecionada.
 - Calendários exibem lista legível no celular e grade mensal em telas maiores, evitando texto minúsculo ou cortado.
 - Página `/agenda` contém largura no celular para evitar corte lateral e rolagem horizontal.
 - Página `/escalas/pregacao` permite ao ancião ou admin escalar, trocar e remover pregadores disponíveis por culto e igreja.
@@ -330,6 +331,7 @@ supabase/migrations/20260908120000_create_user_availability.sql
 supabase/migrations/20260908143000_create_swap_requests.sql
 supabase/migrations/20260909110000_add_user_approval_audit.sql
 supabase/migrations/20260909143000_create_push_subscriptions.sql
+supabase/migrations/20260910123000_distinguish_special_service_availability.sql
 ```
 
 Tabelas iniciais:

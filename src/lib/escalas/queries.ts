@@ -33,6 +33,7 @@ export type VolunteerOption = {
   full_name: string;
   church_id: string;
   service_date: string;
+  service_id: string;
 };
 
 export type SwapRequestSummary = Database["public"]["Tables"]["swap_requests"]["Row"] & {
@@ -338,7 +339,12 @@ async function getVolunteerOptions(
   },
 ) {
   const assignmentColumn = roleKey === "pregador" ? "preacher_user_id" : "singer_user_id";
-  const [{ data: links }, { data: availability }, { data: assignments }] = await Promise.all([
+  const [
+    { data: links },
+    { data: availability },
+    { data: assignments },
+    { data: services },
+  ] = await Promise.all([
     supabase
       .from("user_church_links")
       .select("user_id,church_id")
@@ -348,7 +354,7 @@ async function getVolunteerOptions(
       .is("deleted_at", null),
     supabase
       .from("user_availability")
-      .select("user_id,service_date")
+      .select("user_id,service_date,worship_service_id")
       .eq("role_id", roleId)
       .eq("available", true)
       .gte("service_date", monthStart)
@@ -360,6 +366,13 @@ async function getVolunteerOptions(
       .gte("service_date", monthStart)
       .lte("service_date", monthEnd)
       .not(assignmentColumn, "is", null)
+      .is("deleted_at", null),
+    supabase
+      .from("worship_services")
+      .select("id,church_id,service_date,is_special")
+      .in("church_id", churchIds)
+      .gte("service_date", monthStart)
+      .lte("service_date", monthEnd)
       .is("deleted_at", null),
   ]);
   const userIds = Array.from(
@@ -380,8 +393,15 @@ async function getVolunteerOptions(
     .eq("status", "approved")
     .is("deleted_at", null);
   const names = new Map((users ?? []).map((user) => [user.id, user.full_name]));
-  const availabilityByUserDate = new Set(
-    (availability ?? []).map((item) => `${item.user_id}:${item.service_date}`),
+  const regularAvailabilityByUserDate = new Set(
+    (availability ?? [])
+      .filter((item) => !item.worship_service_id)
+      .map((item) => `${item.user_id}:${item.service_date}`),
+  );
+  const specialAvailabilityByUserService = new Set(
+    (availability ?? [])
+      .filter((item) => item.worship_service_id)
+      .map((item) => `${item.user_id}:${item.worship_service_id}`),
   );
   const occupiedByUserDate = getOccupiedVolunteerDateKeys(
     (assignments ?? []).map((assignment) => ({
@@ -395,12 +415,16 @@ async function getVolunteerOptions(
   );
   const volunteers: VolunteerOption[] = [];
 
-  for (const link of links ?? []) {
-    for (const available of availability ?? []) {
-      const userDateKey = `${link.user_id}:${available.service_date}`;
+  for (const service of services ?? []) {
+    for (const link of links ?? []) {
+      const userDateKey = `${link.user_id}:${service.service_date}`;
+      const isAvailable = service.is_special
+        ? specialAvailabilityByUserService.has(`${link.user_id}:${service.id}`)
+        : regularAvailabilityByUserDate.has(userDateKey);
+
       if (
-        available.user_id === link.user_id &&
-        availabilityByUserDate.has(userDateKey) &&
+        link.church_id === service.church_id &&
+        isAvailable &&
         !occupiedByUserDate.has(userDateKey) &&
         names.has(link.user_id)
       ) {
@@ -408,7 +432,8 @@ async function getVolunteerOptions(
           id: link.user_id,
           full_name: names.get(link.user_id) ?? "Voluntário",
           church_id: link.church_id,
-          service_date: available.service_date,
+          service_date: service.service_date,
+          service_id: service.id,
         });
       }
     }

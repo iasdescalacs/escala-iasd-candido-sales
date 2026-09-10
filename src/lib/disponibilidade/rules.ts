@@ -1,5 +1,18 @@
 export type AvailabilityRoleKey = "pregador" | "cantor";
 
+export type AvailabilityServiceSource = {
+  id: string;
+  church_id: string;
+  service_date: string;
+  is_special: boolean;
+};
+
+export type AvailabilitySlot = {
+  key: string;
+  serviceDate: string;
+  worshipServiceId: string | null;
+};
+
 export function isAvailabilityRoleKey(value: string): value is AvailabilityRoleKey {
   return value === "pregador" || value === "cantor";
 }
@@ -15,6 +28,66 @@ export function normalizeSelectedDates({
 
   return Array.from(new Set(selectedDates))
     .filter((date) => allowed.has(date))
+    .sort();
+}
+
+export function getRegularAvailabilitySlotKey(serviceDate: string) {
+  return `regular:${serviceDate}`;
+}
+
+export function getSpecialAvailabilitySlotKey(worshipServiceId: string) {
+  return `special:${worshipServiceId}`;
+}
+
+export function buildAvailabilitySlots({
+  services,
+  selectedChurchIds,
+}: {
+  services: AvailabilityServiceSource[];
+  selectedChurchIds: string[];
+}) {
+  const selectedChurches = new Set(selectedChurchIds);
+  const slots = new Map<string, AvailabilitySlot>();
+
+  for (const service of services) {
+    if (!selectedChurches.has(service.church_id)) {
+      continue;
+    }
+
+    const slot: AvailabilitySlot = service.is_special
+      ? {
+          key: getSpecialAvailabilitySlotKey(service.id),
+          serviceDate: service.service_date,
+          worshipServiceId: service.id,
+        }
+      : {
+          key: getRegularAvailabilitySlotKey(service.service_date),
+          serviceDate: service.service_date,
+          worshipServiceId: null,
+        };
+
+    slots.set(slot.key, slot);
+  }
+
+  return Array.from(slots.values()).sort(
+    (first, second) =>
+      first.serviceDate.localeCompare(second.serviceDate) ||
+      Number(Boolean(first.worshipServiceId)) - Number(Boolean(second.worshipServiceId)) ||
+      first.key.localeCompare(second.key),
+  );
+}
+
+export function normalizeSelectedSlots({
+  selectedSlots,
+  allowedSlots,
+}: {
+  selectedSlots: string[];
+  allowedSlots: AvailabilitySlot[];
+}) {
+  const allowed = new Set(allowedSlots.map((slot) => slot.key));
+
+  return Array.from(new Set(selectedSlots))
+    .filter((slot) => allowed.has(slot))
     .sort();
 }
 

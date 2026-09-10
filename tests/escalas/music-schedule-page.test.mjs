@@ -9,6 +9,7 @@ const adminChurchSchedule = readFileSync(
   "utf8",
 );
 const scheduleActions = readFileSync("src/lib/escalas/actions.ts", "utf8");
+const scheduleQueries = readFileSync("src/lib/escalas/queries.ts", "utf8");
 const scheduleCalendar = readFileSync("src/components/schedule/schedule-calendar.tsx", "utf8");
 
 test("escala de louvor gera pdf separado por igreja para admin", () => {
@@ -57,4 +58,13 @@ test("botoes da escala informam a acao em andamento", () => {
 
   assert.match(scheduleCalendar, /Aprovando\.\.\./);
   assert.match(scheduleCalendar, /Recusando\.\.\./);
+});
+
+test("escala respeita disponibilidade distinta para culto regular e especial", () => {
+  assert.match(scheduleQueries, /regularAvailabilityByUserDate/);
+  assert.match(scheduleQueries, /specialAvailabilityByUserService/);
+  assert.match(scheduleCalendar, /volunteer\.service_id === service\.id/);
+  assert.match(adminChurchSchedule, /volunteer\.service_id === service\.id/);
+  assert.match(scheduleActions, /availabilityQuery\.eq\("worship_service_id", serviceId\)/);
+  assert.match(scheduleActions, /availabilityQuery\.is\("worship_service_id", null\)/);
 });

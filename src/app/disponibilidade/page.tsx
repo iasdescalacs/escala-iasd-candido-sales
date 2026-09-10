@@ -9,7 +9,11 @@ import {
   getMonthName,
   type WorshipServiceType,
 } from "@/lib/cultos/schedule";
-import type { AvailabilityRoleKey } from "@/lib/disponibilidade/rules";
+import {
+  getRegularAvailabilitySlotKey,
+  getSpecialAvailabilitySlotKey,
+  type AvailabilityRoleKey,
+} from "@/lib/disponibilidade/rules";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -22,10 +26,12 @@ type AvailabilityRole = {
 
 type ServiceSummary = {
   id: string;
+  church_id: string;
   service_date: string;
   service_type: WorshipServiceType;
   start_time: string;
   title: string | null;
+  is_special: boolean;
 };
 
 export default async function DisponibilidadePage({
@@ -58,7 +64,7 @@ export default async function DisponibilidadePage({
     getChurchOptions(),
     supabase
       .from("worship_services")
-      .select("id,service_date,service_type,start_time,title")
+      .select("id,church_id,service_date,service_type,start_time,title,is_special")
       .gte("service_date", monthStart)
       .lte("service_date", monthEnd)
       .is("deleted_at", null)
@@ -74,7 +80,7 @@ export default async function DisponibilidadePage({
       ? await Promise.all([
           supabase
             .from("user_availability")
-            .select("role_id,service_date")
+            .select("role_id,service_date,worship_service_id")
             .eq("user_id", profile.appUser.id)
             .in("role_id", roleIds)
             .eq("available", true)
@@ -90,7 +96,7 @@ export default async function DisponibilidadePage({
         ])
       : [{ data: [] }, { data: [] }];
   const servicesByDate = groupServicesByDate((services ?? []) as ServiceSummary[]);
-  const availabilityByRole = groupDatesByRole(availabilityRows ?? []);
+  const availabilityByRole = groupAvailabilitySlotsByRole(availabilityRows ?? []);
   const churchesByRole = groupChurchesByRole(churchLinks ?? []);
   const monthTitle = capitalize(getMonthName(viewMonth));
 
@@ -153,12 +159,12 @@ export default async function DisponibilidadePage({
           <AvailabilityRoleForm
             calendarDays={calendarDays}
             churches={churches}
-            key={role.id}
+            key={`${role.id}:${monthStart}`}
             monthEnd={monthEnd}
             monthStart={monthStart}
             role={role}
             selectedChurchIds={churchesByRole[role.id] ?? []}
-            selectedDates={availabilityByRole[role.id] ?? []}
+            selectedSlotKeys={availabilityByRole[role.id] ?? []}
             servicesByDate={servicesByDate}
           />
         ))}
@@ -199,12 +205,22 @@ function groupServicesByDate(services: ServiceSummary[]) {
   return grouped;
 }
 
-function groupDatesByRole(rows: Array<{ role_id: string; service_date: string }>) {
+function groupAvailabilitySlotsByRole(
+  rows: Array<{
+    role_id: string;
+    service_date: string;
+    worship_service_id: string | null;
+  }>,
+) {
   const grouped: Record<string, string[]> = {};
 
   for (const row of rows) {
     grouped[row.role_id] = grouped[row.role_id] ?? [];
-    grouped[row.role_id].push(row.service_date);
+    grouped[row.role_id].push(
+      row.worship_service_id
+        ? getSpecialAvailabilitySlotKey(row.worship_service_id)
+        : getRegularAvailabilitySlotKey(row.service_date),
+    );
   }
 
   return grouped;
