@@ -1,4 +1,4 @@
-const CACHE_NAME = "escala-iasd-candido-sales-v5";
+const CACHE_NAME = "escala-iasd-candido-sales-v6";
 const APP_SHELL = ["/", "/login", "/painel", "/agenda", "/manifest.json", "/icons/icon.svg"];
 const DEFAULT_NOTIFICATION_URL = "/agenda";
 
@@ -51,7 +51,11 @@ self.addEventListener("push", (event) => {
         url: payload.data?.url || payload.url || DEFAULT_NOTIFICATION_URL,
       },
       icon: payload.icon || "/icons/icon-192.png",
+      lang: "pt-BR",
+      renotify: true,
+      silent: false,
       tag: payload.tag || payload.data?.notificationId || "escala-iasd",
+      vibrate: [200, 100, 200],
     }),
   );
 });

@@ -8,19 +8,30 @@ const manifest = readFileSync("public/manifest.json", "utf8");
 
 test("ativacao push tenta recuperar erro de servico no android", () => {
   assert.match(prompt, /subscribeWithRecovery/);
-  assert.match(prompt, /repairPushRegistration/);
-  assert.match(prompt, /resetServiceWorkerRegistration/);
-  assert.match(prompt, /removeCurrentPushSubscription/);
-  assert.match(prompt, /waitForServiceWorkerController/);
+  assert.match(prompt, /refreshPushRegistration/);
   assert.match(prompt, /waitForActiveServiceWorker/);
   assert.match(prompt, /registration\.active/);
   assert.match(prompt, /registration failed\|push service\|push service error/i);
-  assert.match(prompt, /navigator\.serviceWorker\.register\("\/sw\.js", \{ scope: "\/" \}\)/);
+  assert.match(prompt, /updateViaCache: "none"/);
+});
+
+test("ativacao reutiliza assinatura valida e envia chave no formato esperado", () => {
+  assert.match(prompt, /urlBase64ToUint8Array/);
+  assert.match(prompt, /outputArray\.length !== 65/);
+  assert.match(prompt, /subscriptionUsesApplicationServerKey/);
+  assert.match(prompt, /return currentSubscription/);
 });
 
 test("service worker incrementa cache para atualizar pwa instalado", () => {
-  assert.match(serviceWorker, /escala-iasd-candido-sales-v5/);
+  assert.match(serviceWorker, /escala-iasd-candido-sales-v6/);
   assert.match(serviceWorker, /"\/agenda"/);
+});
+
+test("notificacao solicita alerta sonoro e vibracao ao android", () => {
+  assert.match(serviceWorker, /silent: false/);
+  assert.match(serviceWorker, /renotify: true/);
+  assert.match(serviceWorker, /vibrate: \[200, 100, 200\]/);
+  assert.match(prompt, /showActivationConfirmation/);
 });
 
 test("manifest inclui sender de compatibilidade para chrome android", () => {

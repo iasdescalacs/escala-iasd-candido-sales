@@ -6,6 +6,10 @@ import { useEffect, useState } from "react";
 const SESSION_DISMISSED_KEY = "escala-iasd-push-dismissed";
 
 type PushStatus = "checking" | "unsupported" | "default" | "granted" | "denied" | "subscribed";
+type AndroidNotificationOptions = NotificationOptions & {
+  renotify: boolean;
+  vibrate: number[];
+};
 
 export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
   const [status, setStatus] = useState<PushStatus>("checking");
@@ -92,6 +96,7 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
         throw new Error(result?.message ?? "Falha ao salvar inscrição push.");
       }
 
+      await showActivationConfirmation();
       setStatus("subscribed");
       setMessage("Notificações ativadas com sucesso.");
       setIsVisible(false);
@@ -156,22 +161,25 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
   );
 }
 
-function urlBase64ToArrayBuffer(value: string): ArrayBuffer {
+function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const base64 = `${value}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
-  const buffer = new ArrayBuffer(rawData.length);
-  const outputArray = new Uint8Array(buffer);
+  const outputArray = new Uint8Array(rawData.length);
 
   for (let index = 0; index < rawData.length; index += 1) {
     outputArray[index] = rawData.charCodeAt(index);
   }
 
-  return buffer;
+  if (outputArray.length !== 65 || outputArray[0] !== 4) {
+    throw new Error("A chave pública de notificação é inválida.");
+  }
+
+  return outputArray;
 }
 
 async function subscribeWithRecovery(publicKey: string) {
-  const applicationServerKey = urlBase64ToArrayBuffer(publicKey);
+  const applicationServerKey = urlBase64ToUint8Array(publicKey);
 
   try {
     return await createPushSubscription(applicationServerKey);
@@ -180,18 +188,24 @@ async function subscribeWithRecovery(publicKey: string) {
       throw error;
     }
 
-    await repairPushRegistration();
+    await refreshPushRegistration();
     return createPushSubscription(applicationServerKey);
   }
 }
 
-async function createPushSubscription(applicationServerKey: ArrayBuffer) {
+async function createPushSubscription(applicationServerKey: Uint8Array<ArrayBuffer>) {
   const registration = await getActiveServiceWorkerRegistration();
   await registration.update().catch(() => undefined);
   await waitForActiveServiceWorker(registration);
-  await waitForServiceWorkerController();
 
   const currentSubscription = await registration.pushManager.getSubscription();
+
+  if (
+    currentSubscription &&
+    subscriptionUsesApplicationServerKey(currentSubscription, applicationServerKey)
+  ) {
+    return currentSubscription;
+  }
 
   if (currentSubscription) {
     await removeSavedSubscription(currentSubscription);
@@ -204,22 +218,21 @@ async function createPushSubscription(applicationServerKey: ArrayBuffer) {
   });
 }
 
-async function repairPushRegistration() {
-  await removeCurrentPushSubscription();
-  await resetServiceWorkerRegistration();
-  await waitForServiceWorkerController();
-}
+function subscriptionUsesApplicationServerKey(
+  subscription: PushSubscription,
+  expectedKey: Uint8Array<ArrayBuffer>,
+) {
+  const currentKey = subscription.options.applicationServerKey;
 
-async function removeCurrentPushSubscription() {
-  const registration = await navigator.serviceWorker.getRegistration("/");
-  const subscription = await registration?.pushManager.getSubscription();
-
-  if (!subscription) {
-    return;
+  if (!currentKey) {
+    return false;
   }
 
-  await removeSavedSubscription(subscription);
-  await subscription.unsubscribe().catch(() => undefined);
+  const currentBytes = new Uint8Array(currentKey);
+  return (
+    currentBytes.length === expectedKey.length &&
+    currentBytes.every((value, index) => value === expectedKey[index])
+  );
 }
 
 async function removeSavedSubscription(subscription: PushSubscription) {
@@ -231,15 +244,12 @@ async function removeSavedSubscription(subscription: PushSubscription) {
   }).catch(() => undefined);
 }
 
-async function resetServiceWorkerRegistration() {
-  const registrations = await navigator.serviceWorker.getRegistrations();
-  await Promise.all(
-    registrations
-      .filter((registration) => registration.scope.startsWith(window.location.origin))
-      .map((registration) => registration.unregister().catch(() => false)),
-  );
-
-  const registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+async function refreshPushRegistration() {
+  const registration = await navigator.serviceWorker.register("/sw.js", {
+    scope: "/",
+    updateViaCache: "none",
+  });
+  await registration.update().catch(() => undefined);
   await waitForActiveServiceWorker(registration);
   await navigator.serviceWorker.ready;
 }
@@ -247,29 +257,31 @@ async function resetServiceWorkerRegistration() {
 async function getActiveServiceWorkerRegistration() {
   const registration =
     (await navigator.serviceWorker.getRegistration("/")) ??
-    (await navigator.serviceWorker.register("/sw.js", { scope: "/" }));
+    (await navigator.serviceWorker.register("/sw.js", {
+      scope: "/",
+      updateViaCache: "none",
+    }));
 
   await waitForActiveServiceWorker(registration);
   return registration;
 }
 
-async function waitForServiceWorkerController() {
-  if (navigator.serviceWorker.controller) {
-    return;
-  }
+async function showActivationConfirmation() {
+  const registration = await getActiveServiceWorkerRegistration();
+  const options: AndroidNotificationOptions = {
+    badge: "/icons/icon-192.png",
+    body: "Este aparelho receberá avisos de escalas, permutas e aprovações.",
+    icon: "/icons/icon-192.png",
+    lang: "pt-BR",
+    renotify: true,
+    silent: false,
+    tag: `push-ativado-${Date.now()}`,
+    vibrate: [200, 100, 200],
+  };
 
-  await new Promise<void>((resolve) => {
-    const timeout = window.setTimeout(resolve, 3000);
-
-    navigator.serviceWorker.addEventListener(
-      "controllerchange",
-      () => {
-        window.clearTimeout(timeout);
-        resolve();
-      },
-      { once: true },
-    );
-  });
+  await registration
+    .showNotification("Notificações ativadas", options)
+    .catch(() => undefined);
 }
 
 async function waitForActiveServiceWorker(registration: ServiceWorkerRegistration) {

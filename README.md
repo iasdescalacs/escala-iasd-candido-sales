@@ -97,7 +97,10 @@ Entregue até esta etapa:
 - O manifest possui ícones PNG 192x192 e 512x512 para melhorar a instalação no Android.
 - Se notificações estiverem bloqueadas, o aviso permanece orientando a liberar o site nas configurações do navegador.
 - Ativação de notificações tenta recriar a inscrição e o service worker quando o Android retorna erro de serviço push.
-- Ativação de notificações também remove assinatura antiga do navegador/servidor antes de tentar reinscrever o Android.
+- Ativação de notificações remove a assinatura antiga do navegador/servidor somente quando ela usa outra chave VAPID.
+- Ativação reutiliza a assinatura existente quando ela usa a chave VAPID atual, evitando reinscrições desnecessárias em versões novas do Chrome Android.
+- A chave VAPID é validada e enviada ao `PushManager` como `Uint8Array`; o service worker é atualizado sem cache antes de uma nova tentativa.
+- Ao concluir a ativação, o aparelho recebe uma notificação nativa de confirmação com som e vibração solicitados ao Android.
 - Manifest inclui `gcm_sender_id` de compatibilidade para Chrome Android aceitar inscrição Web Push em dispositivos mais sensíveis.
 - Notificações Web Push usam ícone PNG, `badge`, URL de destino e TTL de 24 horas para entrega posterior quando o dispositivo voltar a ficar online.
 - Service worker recebe eventos `push`, exibe notificação nativa e abre `/agenda` ou `/painel` ao tocar no aviso.
@@ -244,6 +247,12 @@ Compatibilidade esperada:
 - Android Chrome/Edge: a instalação aparece pelo botão do sistema quando o navegador dispara `beforeinstallprompt`; se o botão nativo não estiver disponível, o aviso orienta instalar pelo menu do navegador.
 - Windows Chrome/Edge: funciona com navegador compatível e permissão concedida.
 - iPhone/iPad: requer iOS/iPadOS com suporte a Web Push e o app adicionado à Tela de Início pelo Safari.
+
+Som no Android:
+
+- O service worker solicita notificação não silenciosa e vibração.
+- O Android ainda aplica o volume, o modo `Não perturbe` e o som configurado no canal de notificações do Chrome ou do PWA instalado.
+- Se o aviso aparecer sem som, abra as informações do aplicativo no Android, entre em `Notificações` e habilite som no canal usado pelo site.
 
 Para gerar chaves VAPID localmente:
 

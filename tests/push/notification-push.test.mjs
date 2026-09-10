@@ -26,6 +26,8 @@ test("service worker recebe push e abre rota ao clicar na notificacao", () => {
   assert.match(serviceWorker, /addEventListener\("push"/);
   assert.match(serviceWorker, /showNotification/);
   assert.match(serviceWorker, /badge: payload\.badge \|\| "\/icons\/icon-192\.png"/);
+  assert.match(serviceWorker, /silent: false/);
+  assert.match(serviceWorker, /vibrate: \[200, 100, 200\]/);
   assert.match(serviceWorker, /payload\.url/);
   assert.match(serviceWorker, /addEventListener\("notificationclick"/);
   assert.match(serviceWorker, /openWindow/);

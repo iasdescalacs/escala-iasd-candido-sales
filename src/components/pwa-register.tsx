@@ -8,9 +8,12 @@ export function PwaRegister() {
       return;
     }
 
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      // A instalação do PWA não deve bloquear o carregamento do sistema.
-    });
+    navigator.serviceWorker
+      .register("/sw.js", { scope: "/", updateViaCache: "none" })
+      .then((registration) => registration.update())
+      .catch(() => {
+        // A instalação do PWA não deve bloquear o carregamento do sistema.
+      });
   }, []);
 
   return null;
