@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Loader2, Save, Trash2 } from "lucide-react";
 import { useFormStatus } from "react-dom";
+import { AdminChurchSchedule } from "@/components/schedule/admin-church-schedule";
 import { ActionMessage } from "@/components/auth/action-message";
 import {
   assignScheduleAction,
@@ -25,6 +26,7 @@ const initialState: AuthActionState = { message: "" };
 export function ScheduleCalendar({
   calendarDays,
   churches,
+  groupByChurch = false,
   roleKey,
   services,
   swapRequests,
@@ -33,6 +35,7 @@ export function ScheduleCalendar({
 }: {
   calendarDays: CalendarDay[];
   churches: ScheduleChurch[];
+  groupByChurch?: boolean;
   roleKey: ScheduleRoleKey;
   services: ScheduleService[];
   swapRequests: SwapRequestSummary[];
@@ -92,6 +95,16 @@ export function ScheduleCalendar({
         </section>
       ) : null}
 
+      {groupByChurch ? (
+        <AdminChurchSchedule
+          churches={churches}
+          formAction={formAction}
+          roleKey={roleKey}
+          services={services}
+          title={title}
+          volunteers={volunteers}
+        />
+      ) : (
       <section className="overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
         <div className="border-b border-border px-4 py-3">
           <h2 className="text-lg font-semibold text-foreground">{title}</h2>
@@ -250,6 +263,7 @@ export function ScheduleCalendar({
           )}
         </div>
       </section>
+      )}
     </div>
   );
 }

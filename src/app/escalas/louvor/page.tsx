@@ -101,6 +101,7 @@ export default async function EscalaLouvorPage({
         <ScheduleCalendar
           calendarDays={buildCalendarDays(year, month)}
           churches={filteredChurches}
+          groupByChurch={isAdmin}
           roleKey="cantor"
           services={filteredServices}
           swapRequests={filteredSwapRequests}

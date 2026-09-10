@@ -71,6 +71,7 @@ Entregue até esta etapa:
 - Página `/agenda` contém largura no celular para evitar corte lateral e rolagem horizontal.
 - Página `/escalas/pregacao` permite ao ancião ou admin escalar, trocar e remover pregadores disponíveis por culto e igreja.
 - Página `/escalas/louvor` permite ao líder de música ou admin escalar, trocar e remover cantores disponíveis por culto e igreja.
+- Para o administrador, as telas de pregação e louvor agrupam os cultos por igreja e permitem filtrar pelo pregador, cantor ou grupo; anciãos e líderes de música mantêm a visão mensal por dia.
 - Escala de louvor exibe pregador e louvor no mesmo culto e, para admin, gera PDF separado por igreja.
 - Botões de salvar e excluir nas escalas são pequenos, ficam lado a lado quando disponíveis, com ícones, usando verde para salvar e vermelho para excluir.
 - Pregadores e cantores já escalados em um dia não aparecem como disponíveis para outro culto no mesmo dia.

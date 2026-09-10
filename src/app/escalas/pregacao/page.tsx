@@ -100,6 +100,7 @@ export default async function EscalaPregacaoPage({
         <ScheduleCalendar
           calendarDays={buildCalendarDays(year, month)}
           churches={filteredChurches}
+          groupByChurch={isAdmin}
           roleKey="pregador"
           services={filteredServices}
           swapRequests={filteredSwapRequests}
