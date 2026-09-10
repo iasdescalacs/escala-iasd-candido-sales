@@ -35,8 +35,26 @@ test("admin visualiza escalas agrupadas por igreja com filtro de pessoa", () => 
 });
 
 test("exclusao de escala ignora seletor obrigatorio e volta para a definir", () => {
-  assert.match(scheduleCalendar, /formNoValidate=\{icon === "delete"\}/);
-  assert.match(adminChurchSchedule, /formNoValidate=\{icon === "delete"\}/);
+  for (const source of [scheduleCalendar, adminChurchSchedule]) {
+    assert.match(source, /formNoValidate=\{icon === "delete"\}/);
+    assert.match(source, /Icon = icon === "save" \? Save : X/);
+    assert.match(source, /window\.confirm\(confirmation\)/);
+    assert.match(source, /A escala ficará como A definir/);
+  }
+
   assert.match(scheduleActions, /preacher_user_id: null, preacher_name: null/);
   assert.match(scheduleActions, /singer_user_id: null, singer_name: null/);
+});
+
+test("botoes da escala informam a acao em andamento", () => {
+  for (const source of [scheduleCalendar, adminChurchSchedule]) {
+    assert.match(source, /Salvando\.\.\./);
+    assert.match(source, /Excluindo\.\.\./);
+    assert.match(source, /aria-busy=\{isCurrentAction\}/);
+    assert.match(source, /data\?\.get\("intent"\) === icon/);
+    assert.match(source, /name="intent"/);
+  }
+
+  assert.match(scheduleCalendar, /Aprovando\.\.\./);
+  assert.match(scheduleCalendar, /Recusando\.\.\./);
 });

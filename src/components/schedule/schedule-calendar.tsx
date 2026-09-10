@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Loader2, Save, Trash2 } from "lucide-react";
+import { Loader2, Save, X } from "lucide-react";
 import { useFormStatus } from "react-dom";
 import { AdminChurchSchedule } from "@/components/schedule/admin-church-schedule";
 import { ActionMessage } from "@/components/auth/action-message";
@@ -77,16 +77,12 @@ export function ScheduleCalendar({
                   <form action={reviewSwapFormAction}>
                     <input name="requestId" type="hidden" value={request.id} />
                     <input name="decision" type="hidden" value="approved" />
-                    <button className="h-10 rounded-md bg-success px-3 text-sm font-semibold text-white transition hover:brightness-95" type="submit">
-                      Aprovar
-                    </button>
+                    <SwapReviewButton decision="approved" />
                   </form>
                   <form action={reviewSwapFormAction}>
                     <input name="requestId" type="hidden" value={request.id} />
                     <input name="decision" type="hidden" value="rejected" />
-                    <button className="h-10 rounded-md border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-surface-muted" type="submit">
-                      Recusar
-                    </button>
+                    <SwapReviewButton decision="rejected" />
                   </form>
                 </div>
               </article>
@@ -170,18 +166,28 @@ export function ScheduleCalendar({
                             </option>
                           ))}
                         </select>
-                        <div className={`grid gap-1.5 ${assignedName ? "grid-cols-2" : ""}`}>
+                        <div
+                          className={`grid gap-1.5 ${
+                            assignedName ? "grid-cols-[minmax(0,1fr)_1.75rem]" : ""
+                          }`}
+                        >
                           <ScheduleFormButton
                             className="bg-success text-white hover:brightness-95"
+                            formAction={formAction}
                             icon="save"
                             label="Salvar"
                           />
                           {assignedName ? (
                             <ScheduleFormButton
                               className="bg-red-600 text-white hover:bg-red-700"
+                              confirmation={`Deseja excluir ${
+                                roleKey === "pregador" ? "o pregador" : "o cantor ou grupo"
+                              } deste culto? A escala ficará como A definir.`}
                               formAction={clearScheduleAction}
                               icon="delete"
-                              label="Excluir"
+                              label={`Excluir ${
+                                roleKey === "pregador" ? "pregador" : "cantor ou grupo"
+                              }`}
                             />
                           ) : null}
                         </div>
@@ -237,18 +243,28 @@ export function ScheduleCalendar({
                         </option>
                       ))}
                     </select>
-                    <div className={`grid gap-2 ${assignedName ? "grid-cols-2" : ""}`}>
+                    <div
+                      className={`grid gap-2 ${
+                        assignedName ? "grid-cols-[minmax(0,1fr)_1.75rem]" : ""
+                      }`}
+                    >
                       <ScheduleFormButton
                         className="bg-success text-white hover:brightness-95"
+                        formAction={formAction}
                         icon="save"
                         label="Salvar"
                       />
                       {assignedName ? (
                         <ScheduleFormButton
                           className="bg-red-600 text-white hover:bg-red-700"
+                          confirmation={`Deseja excluir ${
+                            roleKey === "pregador" ? "o pregador" : "o cantor ou grupo"
+                          } deste culto? A escala ficará como A definir.`}
                           formAction={clearScheduleAction}
                           icon="delete"
-                          label="Excluir"
+                          label={`Excluir ${
+                            roleKey === "pregador" ? "pregador" : "cantor ou grupo"
+                          }`}
                         />
                       ) : null}
                     </div>
@@ -270,30 +286,77 @@ export function ScheduleCalendar({
 
 function ScheduleFormButton({
   className,
+  confirmation,
   formAction,
   icon,
   label,
 }: {
   className: string;
+  confirmation?: string;
   formAction?: (formData: FormData) => void | Promise<void>;
   icon: "delete" | "save";
   label: string;
 }) {
-  const { pending } = useFormStatus();
-  const Icon = icon === "save" ? Save : Trash2;
+  const { data, pending } = useFormStatus();
+  const Icon = icon === "save" ? Save : X;
+  const isCurrentAction = pending && data?.get("intent") === icon;
+  const loadingLabel = icon === "save" ? "Salvando..." : "Excluindo...";
 
   return (
     <button
       aria-label={label}
-      className={`inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-md px-1.5 text-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
+      aria-busy={isCurrentAction}
+      className={`inline-flex h-7 items-center justify-center gap-1 rounded-md text-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+        icon === "delete" ? "w-7 px-0" : "min-w-0 px-1.5"
+      } ${className}`}
       disabled={pending}
       formAction={formAction}
       formNoValidate={icon === "delete"}
+      name="intent"
+      onClick={(event) => {
+        if (icon === "delete" && confirmation && !window.confirm(confirmation)) {
+          event.preventDefault();
+        }
+      }}
       title={label}
       type="submit"
+      value={icon}
     >
-      {pending ? <Loader2 className="shrink-0 animate-spin" size={12} /> : <Icon className="shrink-0" size={12} />}
-      <span className="truncate">{pending ? "..." : label}</span>
+      {isCurrentAction ? (
+        <Loader2 className="shrink-0 animate-spin" size={12} />
+      ) : (
+        <Icon className="shrink-0" size={12} />
+      )}
+      <span className={icon === "delete" ? "sr-only" : "truncate"}>
+        {isCurrentAction ? loadingLabel : label}
+      </span>
+    </button>
+  );
+}
+
+function SwapReviewButton({
+  decision,
+}: {
+  decision: "approved" | "rejected";
+}) {
+  const { pending } = useFormStatus();
+  const approved = decision === "approved";
+  const label = approved ? "Aprovar" : "Recusar";
+  const loadingLabel = approved ? "Aprovando..." : "Recusando...";
+
+  return (
+    <button
+      aria-busy={pending}
+      className={`inline-flex h-10 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+        approved
+          ? "bg-success text-white hover:brightness-95"
+          : "border border-border bg-background text-foreground hover:bg-surface-muted"
+      }`}
+      disabled={pending}
+      type="submit"
+    >
+      {pending ? <Loader2 className="animate-spin" size={15} /> : null}
+      {pending ? loadingLabel : label}
     </button>
   );
 }

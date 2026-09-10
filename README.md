@@ -73,8 +73,9 @@ Entregue até esta etapa:
 - Página `/escalas/louvor` permite ao líder de música ou admin escalar, trocar e remover cantores disponíveis por culto e igreja.
 - Para o administrador, as telas de pregação e louvor agrupam os cultos por igreja e permitem filtrar pelo pregador, cantor ou grupo; anciãos e líderes de música mantêm a visão mensal por dia.
 - Escala de louvor exibe pregador e louvor no mesmo culto e, para admin, gera PDF separado por igreja.
-- Botões de salvar e excluir nas escalas são pequenos, ficam lado a lado quando disponíveis, com ícones, usando verde para salvar e vermelho para excluir.
-- O botão de excluir não exige selecionar outro voluntário e deixa o pregador ou louvor como `A definir`.
+- Botões de salvar e excluir nas escalas são pequenos e ficam lado a lado; salvar usa verde e a exclusão usa um botão vermelho compacto com ícone `X`.
+- O botão `X` pede confirmação, não exige selecionar outro voluntário e, quando confirmado, deixa o pregador ou louvor como `A definir`.
+- Botões de salvar, excluir, aprovar e recusar exibem um indicador de carregamento com o nome da ação até o servidor concluir.
 - Pregadores e cantores já escalados em um dia não aparecem como disponíveis para outro culto no mesmo dia.
 - O servidor bloqueia conflito de agenda ao salvar escala, mesmo que alguém tente enviar a ação manualmente.
 - Página `/agenda` permite aos usuários aprovados consultar suas escalas, notificações e solicitar permuta com pessoa da mesma função.
@@ -98,6 +99,8 @@ Entregue até esta etapa:
 - Usuários aprovados recebem um aviso fechável para ativar notificações push.
 - O sistema mostra um aviso de instalação do PWA quando o navegador permitir instalar o app.
 - O manifest possui ícones PNG 192x192 e 512x512 para melhorar a instalação no Android.
+- No iPhone/iPad, o aviso mostra as etapas de instalação pelo Safari e o site fornece um `apple-touch-icon` dedicado.
+- No iOS, o aviso de notificações orienta instalar e abrir o app pela Tela de Início; somente então oferece a ativação do Web Push, conforme a exigência da plataforma.
 - Se notificações estiverem bloqueadas, o aviso permanece orientando a liberar o site nas configurações do navegador.
 - Ativação de notificações tenta recriar a inscrição e o service worker quando o Android retorna erro de serviço push.
 - Ativação de notificações remove a assinatura antiga do navegador/servidor somente quando ela usa outra chave VAPID.
@@ -250,6 +253,13 @@ Compatibilidade esperada:
 - Android Chrome/Edge: a instalação aparece pelo botão do sistema quando o navegador dispara `beforeinstallprompt`; se o botão nativo não estiver disponível, o aviso orienta instalar pelo menu do navegador.
 - Windows Chrome/Edge: funciona com navegador compatível e permissão concedida.
 - iPhone/iPad: requer iOS/iPadOS com suporte a Web Push e o app adicionado à Tela de Início pelo Safari.
+
+Instalação no iPhone/iPad:
+
+1. Abra o sistema no Safari e toque em `Compartilhar`.
+2. Escolha `Adicionar à Tela de Início`.
+3. Mantenha `Abrir como App` ativado, toque em `Adicionar` e depois abra o sistema pelo novo ícone.
+4. Já dentro do app instalado, toque em `Ativar` no aviso de notificações. Web Push requer iOS/iPadOS 16.4 ou superior.
 
 Som no Android:
 

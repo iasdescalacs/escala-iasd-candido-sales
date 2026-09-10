@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Loader2, Save, Trash2 } from "lucide-react";
+import { Building2, Loader2, Save, X } from "lucide-react";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { clearScheduleAction } from "@/lib/escalas/actions";
@@ -130,18 +130,28 @@ export function AdminChurchSchedule({
                             </option>
                           ))}
                         </select>
-                        <div className={`grid gap-2 ${assignedName ? "grid-cols-2" : ""}`}>
+                        <div
+                          className={`grid gap-2 ${
+                            assignedName ? "grid-cols-[minmax(0,1fr)_1.75rem]" : ""
+                          }`}
+                        >
                           <AdminScheduleFormButton
                             className="bg-success text-white hover:brightness-95"
+                            formAction={formAction}
                             icon="save"
                             label="Salvar"
                           />
                           {assignedName ? (
                             <AdminScheduleFormButton
                               className="bg-red-600 text-white hover:bg-red-700"
+                              confirmation={`Deseja excluir ${
+                                roleKey === "pregador" ? "o pregador" : "o cantor ou grupo"
+                              } deste culto? A escala ficará como A definir.`}
                               formAction={clearScheduleAction}
                               icon="delete"
-                              label="Excluir"
+                              label={`Excluir ${
+                                roleKey === "pregador" ? "pregador" : "cantor ou grupo"
+                              }`}
                             />
                           ) : null}
                         </div>
@@ -166,34 +176,50 @@ export function AdminChurchSchedule({
 
 function AdminScheduleFormButton({
   className,
+  confirmation,
   formAction,
   icon,
   label,
 }: {
   className: string;
+  confirmation?: string;
   formAction?: (formData: FormData) => void | Promise<void>;
   icon: "delete" | "save";
   label: string;
 }) {
-  const { pending } = useFormStatus();
-  const Icon = icon === "save" ? Save : Trash2;
+  const { data, pending } = useFormStatus();
+  const Icon = icon === "save" ? Save : X;
+  const isCurrentAction = pending && data?.get("intent") === icon;
+  const loadingLabel = icon === "save" ? "Salvando..." : "Excluindo...";
 
   return (
     <button
       aria-label={label}
-      className={`inline-flex h-7 min-w-0 items-center justify-center gap-1 rounded-md px-1.5 text-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
+      aria-busy={isCurrentAction}
+      className={`inline-flex h-7 items-center justify-center gap-1 rounded-md text-[10px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
+        icon === "delete" ? "w-7 px-0" : "min-w-0 px-1.5"
+      } ${className}`}
       disabled={pending}
       formAction={formAction}
       formNoValidate={icon === "delete"}
+      name="intent"
+      onClick={(event) => {
+        if (icon === "delete" && confirmation && !window.confirm(confirmation)) {
+          event.preventDefault();
+        }
+      }}
       title={label}
       type="submit"
+      value={icon}
     >
-      {pending ? (
+      {isCurrentAction ? (
         <Loader2 className="shrink-0 animate-spin" size={12} />
       ) : (
         <Icon className="shrink-0" size={12} />
       )}
-      <span className="truncate">{pending ? "..." : label}</span>
+      <span className={icon === "delete" ? "sr-only" : "truncate"}>
+        {isCurrentAction ? loadingLabel : label}
+      </span>
     </button>
   );
 }

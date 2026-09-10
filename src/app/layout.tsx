@@ -24,6 +24,9 @@ export const metadata: Metadata = {
   description:
     "Sistema web para organizar escalas e apoio operacional da IASD Candido Sales.",
   applicationName: "ESCALA IASD CANDIDO SALES",
+  icons: {
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

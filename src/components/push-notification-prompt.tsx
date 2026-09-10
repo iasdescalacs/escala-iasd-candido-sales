@@ -1,11 +1,23 @@
 "use client";
 
-import { Bell, BellOff, X } from "lucide-react";
+import { Bell, BellOff, Download, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  isIosDevice,
+  isStandaloneMode,
+  SHOW_PWA_INSTALL_HELP_EVENT,
+} from "@/lib/pwa/client";
 
 const SESSION_DISMISSED_KEY = "escala-iasd-push-dismissed";
 
-type PushStatus = "checking" | "unsupported" | "default" | "granted" | "denied" | "subscribed";
+type PushStatus =
+  | "checking"
+  | "unsupported"
+  | "ios-install-required"
+  | "default"
+  | "granted"
+  | "denied"
+  | "subscribed";
 type AndroidNotificationOptions = NotificationOptions & {
   renotify: boolean;
   vibrate: number[];
@@ -28,12 +40,19 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
 
     Promise.resolve()
       .then(async () => {
+        if (isIosDevice() && !isStandaloneMode()) {
+          setStatus("ios-install-required");
+          setIsVisible(true);
+          return;
+        }
+
         if (
           !("serviceWorker" in navigator) ||
           !("PushManager" in window) ||
           !("Notification" in window)
         ) {
           setStatus("unsupported");
+          setIsVisible(true);
           return;
         }
 
@@ -107,6 +126,11 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
     }
   }
 
+  function showInstallHelp() {
+    window.dispatchEvent(new Event(SHOW_PWA_INSTALL_HELP_EVENT));
+    setMessage("Instale o aplicativo e abra pelo ícone criado na Tela de Início.");
+  }
+
   function dismiss() {
     if (status !== "denied") {
       sessionStorage.setItem(SESSION_DISMISSED_KEY, "true");
@@ -121,23 +145,47 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
           <Bell aria-hidden="true" className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-foreground">Ativar notificações</p>
+          <p className="font-semibold text-foreground">
+            {status === "ios-install-required"
+              ? "Instale para ativar notificações"
+              : "Ativar notificações"}
+          </p>
           <p className="mt-1 text-muted">
-            {status === "denied"
-              ? "As notificações estão bloqueadas neste navegador. Libere o site nas configurações para receber avisos."
-              : "Receba avisos sobre escalas, permutas e aprovações mesmo quando o sistema estiver fechado."}
+            {status === "ios-install-required"
+              ? "No iPhone, as notificações ficam disponíveis depois que o sistema é adicionado à Tela de Início e aberto pelo novo ícone."
+              : status === "unsupported"
+                ? "Este navegador não oferece notificações para o aplicativo. No iPhone, use iOS 16.4 ou superior e abra o app pela Tela de Início."
+                : status === "denied"
+                  ? "As notificações estão bloqueadas neste navegador. Libere o site nas configurações para receber avisos."
+                  : "Receba avisos sobre escalas, permutas e aprovações mesmo quando o sistema estiver fechado."}
           </p>
           {message ? <p className="mt-2 text-xs text-warning">{message}</p> : null}
           <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-70"
-              disabled={isLoading}
-              onClick={subscribeToPush}
-              type="button"
-            >
-              <Bell className="h-3.5 w-3.5" />
-              {isLoading ? "Ativando..." : status === "denied" ? "Verificar novamente" : "Ativar"}
-            </button>
+            {status === "ios-install-required" ? (
+              <button
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-strong"
+                onClick={showInstallHelp}
+                type="button"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Como instalar
+              </button>
+            ) : status !== "unsupported" ? (
+              <button
+                aria-busy={isLoading}
+                className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-70"
+                disabled={isLoading}
+                onClick={subscribeToPush}
+                type="button"
+              >
+                <Bell className="h-3.5 w-3.5" />
+                {isLoading
+                  ? "Ativando..."
+                  : status === "denied"
+                    ? "Verificar novamente"
+                    : "Ativar"}
+              </button>
+            ) : null}
             <button
               className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-xs font-semibold text-foreground transition hover:bg-surface-muted"
               onClick={dismiss}

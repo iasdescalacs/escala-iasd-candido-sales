@@ -12,6 +12,8 @@ const unsubscribeRoute = readFileSync("src/app/api/push/unsubscribe/route.ts", "
 const envExample = readFileSync(".env.example", "utf8");
 const prompt = readFileSync("src/components/push-notification-prompt.tsx", "utf8");
 const installPrompt = readFileSync("src/components/pwa-install-prompt.tsx", "utf8");
+const pwaClient = readFileSync("src/lib/pwa/client.ts", "utf8");
+const layout = readFileSync("src/app/layout.tsx", "utf8");
 const manifest = readFileSync("public/manifest.json", "utf8");
 const pushServer = readFileSync("src/lib/push/server.ts", "utf8");
 
@@ -55,6 +57,18 @@ test("instalacao PWA usa beforeinstallprompt e manifest com pngs", () => {
   assert.match(manifest, /icon-192\.png/);
   assert.match(manifest, /icon-512\.png/);
   assert.match(manifest, /gcm_sender_id/);
+});
+
+test("iOS recebe instrucoes de instalacao e push somente no app instalado", () => {
+  assert.match(pwaClient, /iPad\|iPhone\|iPod/);
+  assert.match(pwaClient, /navigatorWithStandalone\.standalone === true/);
+  assert.match(installPrompt, /Adicionar à Tela de Início/);
+  assert.match(installPrompt, /Abrir como App/);
+  assert.match(installPrompt, /SHOW_PWA_INSTALL_HELP_EVENT/);
+  assert.match(prompt, /isIosDevice\(\) && !isStandaloneMode\(\)/);
+  assert.match(prompt, /ios-install-required/);
+  assert.match(prompt, /iOS 16\.4 ou superior/);
+  assert.match(layout, /apple: \[\{ url: "\/icons\/icon-192\.png"/);
 });
 
 test("env example documenta chaves VAPID sem valores reais", () => {
