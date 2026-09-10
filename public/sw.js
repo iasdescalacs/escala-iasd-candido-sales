@@ -1,4 +1,4 @@
-const CACHE_NAME = "escala-iasd-candido-sales-v4";
+const CACHE_NAME = "escala-iasd-candido-sales-v5";
 const APP_SHELL = ["/", "/login", "/painel", "/agenda", "/manifest.json", "/icons/icon.svg"];
 const DEFAULT_NOTIFICATION_URL = "/agenda";
 

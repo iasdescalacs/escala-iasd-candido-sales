@@ -97,6 +97,7 @@ Entregue até esta etapa:
 - O manifest possui ícones PNG 192x192 e 512x512 para melhorar a instalação no Android.
 - Se notificações estiverem bloqueadas, o aviso permanece orientando a liberar o site nas configurações do navegador.
 - Ativação de notificações tenta recriar a inscrição e o service worker quando o Android retorna erro de serviço push.
+- Ativação de notificações também remove assinatura antiga do navegador/servidor antes de tentar reinscrever o Android.
 - Manifest inclui `gcm_sender_id` de compatibilidade para Chrome Android aceitar inscrição Web Push em dispositivos mais sensíveis.
 - Notificações Web Push usam ícone PNG, `badge`, URL de destino e TTL de 24 horas para entrega posterior quando o dispositivo voltar a ficar online.
 - Service worker recebe eventos `push`, exibe notificação nativa e abre `/agenda` ou `/painel` ao tocar no aviso.

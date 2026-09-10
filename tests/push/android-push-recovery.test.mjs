@@ -8,7 +8,10 @@ const manifest = readFileSync("public/manifest.json", "utf8");
 
 test("ativacao push tenta recuperar erro de servico no android", () => {
   assert.match(prompt, /subscribeWithRecovery/);
+  assert.match(prompt, /repairPushRegistration/);
   assert.match(prompt, /resetServiceWorkerRegistration/);
+  assert.match(prompt, /removeCurrentPushSubscription/);
+  assert.match(prompt, /waitForServiceWorkerController/);
   assert.match(prompt, /waitForActiveServiceWorker/);
   assert.match(prompt, /registration\.active/);
   assert.match(prompt, /registration failed\|push service\|push service error/i);
@@ -16,7 +19,7 @@ test("ativacao push tenta recuperar erro de servico no android", () => {
 });
 
 test("service worker incrementa cache para atualizar pwa instalado", () => {
-  assert.match(serviceWorker, /escala-iasd-candido-sales-v4/);
+  assert.match(serviceWorker, /escala-iasd-candido-sales-v5/);
   assert.match(serviceWorker, /"\/agenda"/);
 });
 

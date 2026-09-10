@@ -180,7 +180,7 @@ async function subscribeWithRecovery(publicKey: string) {
       throw error;
     }
 
-    await resetServiceWorkerRegistration();
+    await repairPushRegistration();
     return createPushSubscription(applicationServerKey);
   }
 }
@@ -189,10 +189,12 @@ async function createPushSubscription(applicationServerKey: ArrayBuffer) {
   const registration = await getActiveServiceWorkerRegistration();
   await registration.update().catch(() => undefined);
   await waitForActiveServiceWorker(registration);
+  await waitForServiceWorkerController();
 
   const currentSubscription = await registration.pushManager.getSubscription();
 
   if (currentSubscription) {
+    await removeSavedSubscription(currentSubscription);
     await currentSubscription.unsubscribe().catch(() => undefined);
   }
 
@@ -200,6 +202,33 @@ async function createPushSubscription(applicationServerKey: ArrayBuffer) {
     applicationServerKey,
     userVisibleOnly: true,
   });
+}
+
+async function repairPushRegistration() {
+  await removeCurrentPushSubscription();
+  await resetServiceWorkerRegistration();
+  await waitForServiceWorkerController();
+}
+
+async function removeCurrentPushSubscription() {
+  const registration = await navigator.serviceWorker.getRegistration("/");
+  const subscription = await registration?.pushManager.getSubscription();
+
+  if (!subscription) {
+    return;
+  }
+
+  await removeSavedSubscription(subscription);
+  await subscription.unsubscribe().catch(() => undefined);
+}
+
+async function removeSavedSubscription(subscription: PushSubscription) {
+  await fetch("/api/push/unsubscribe", {
+    body: JSON.stringify({ endpoint: subscription.endpoint }),
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  }).catch(() => undefined);
 }
 
 async function resetServiceWorkerRegistration() {
@@ -222,6 +251,25 @@ async function getActiveServiceWorkerRegistration() {
 
   await waitForActiveServiceWorker(registration);
   return registration;
+}
+
+async function waitForServiceWorkerController() {
+  if (navigator.serviceWorker.controller) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const timeout = window.setTimeout(resolve, 3000);
+
+    navigator.serviceWorker.addEventListener(
+      "controllerchange",
+      () => {
+        window.clearTimeout(timeout);
+        resolve();
+      },
+      { once: true },
+    );
+  });
 }
 
 async function waitForActiveServiceWorker(registration: ServiceWorkerRegistration) {
@@ -277,7 +325,7 @@ function getPushActivationErrorMessage(error: unknown) {
 
   if (error instanceof Error && error.message) {
     if (isPushServiceRegistrationError(error)) {
-      return "O Android recusou a inscrição no serviço de push. Feche e abra o app/site para atualizar o manifest e toque em Ativar novamente. Se persistir, atualize Chrome e Android System WebView.";
+      return "O Android ainda recusou a inscrição no serviço de push. O app já tentou reparar a inscrição e o service worker. Se continuar, o bloqueio está no serviço de push do Chrome/Google Play deste aparelho.";
     }
 
     return error.message;
