@@ -8,7 +8,7 @@ export function ApprovalRequestsPanel({
   requests: UserApprovalRequest[];
 }) {
   return (
-    <section className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm">
+    <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
       <div className="flex items-center gap-2">
         <UserCheck size={18} className="text-primary" aria-hidden="true" />
         <h2 className="text-lg font-semibold text-foreground">Solicitações de aprovação</h2>
@@ -20,7 +20,7 @@ export function ApprovalRequestsPanel({
       <div className="mt-4 grid gap-3">
         {requests.map((request) => (
           <article
-            className="grid gap-3 rounded-md border border-border bg-background p-3 text-sm md:grid-cols-[1fr_auto]"
+            className="grid gap-3 rounded-md border border-border bg-background p-3 text-sm"
             key={`${request.userId}-${request.roleKey}-${request.churchId}`}
           >
             <div className="min-w-0 text-muted">

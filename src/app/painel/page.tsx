@@ -72,15 +72,20 @@ export default async function PainelPage() {
         </p>
       </section>
 
-      {canReviewSwaps ? (
-        <PendingSwapRequests requests={pendingSwapRequests} />
+      {canReviewSwaps || canManageApprovals ? (
+        <div className="mt-6 grid gap-4">
+          {canReviewSwaps ? (
+            <PendingSwapRequests requests={pendingSwapRequests} />
+          ) : null}
+
+          {canManageApprovals ? (
+            <ApprovalRequestsPanel requests={approvalData.requests} />
+          ) : null}
+        </div>
       ) : null}
 
       {canManageApprovals ? (
-        <>
-          <ApprovalRequestsPanel requests={approvalData.requests} />
-          <ManagedUserCreateForm context={approvalData.creationContext} />
-        </>
+        <ManagedUserCreateForm context={approvalData.creationContext} />
       ) : null}
 
       <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -114,7 +119,7 @@ export default async function PainelPage() {
 
 function PendingSwapRequests({ requests }: { requests: SwapRequestSummary[] }) {
   return (
-    <section className="mt-6 rounded-lg border border-border bg-surface p-5 shadow-sm">
+    <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
       <div className="flex items-center gap-2">
         <Repeat2 size={18} className="text-primary" aria-hidden="true" />
         <h2 className="text-lg font-semibold text-foreground">Permutas pendentes</h2>
@@ -122,7 +127,7 @@ function PendingSwapRequests({ requests }: { requests: SwapRequestSummary[] }) {
       <div className="mt-4 grid gap-3">
         {requests.map((request) => (
           <article
-            className="grid gap-3 rounded-md border border-border bg-background p-3 text-sm md:grid-cols-[1fr_auto]"
+            className="grid gap-3 rounded-md border border-border bg-background p-3 text-sm"
             key={request.id}
           >
             <div className="min-w-0 text-muted">
