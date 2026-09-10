@@ -3,6 +3,8 @@ import { decideProtectedAccess } from "@/lib/auth/access-rules";
 import { getCurrentUserProfile, toAccessProfile } from "@/lib/auth/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const profile = await getCurrentUserProfile();
   const decision = decideProtectedAccess(toAccessProfile(profile));

@@ -3,6 +3,8 @@ import { getCurrentUserProfile, toAccessProfile } from "@/lib/auth/session";
 import { decideProtectedAccess } from "@/lib/auth/access-rules";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
+export const runtime = "nodejs";
+
 type PushSubscriptionPayload = {
   endpoint?: unknown;
   expirationTime?: unknown;

@@ -1,4 +1,4 @@
-const CACHE_NAME = "escala-iasd-candido-sales-v3";
+const CACHE_NAME = "escala-iasd-candido-sales-v4";
 const APP_SHELL = ["/", "/login", "/painel", "/agenda", "/manifest.json", "/icons/icon.svg"];
 const DEFAULT_NOTIFICATION_URL = "/agenda";
 
@@ -44,13 +44,13 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     self.registration.showNotification(title, {
-      badge: "/icons/icon.svg",
+      badge: payload.badge || "/icons/icon-192.png",
       body: payload.body || "Voce tem uma nova notificacao.",
       data: {
         notificationId: payload.data?.notificationId,
-        url: payload.data?.url || DEFAULT_NOTIFICATION_URL,
+        url: payload.data?.url || payload.url || DEFAULT_NOTIFICATION_URL,
       },
-      icon: payload.icon || "/icons/icon.svg",
+      icon: payload.icon || "/icons/icon-192.png",
       tag: payload.tag || payload.data?.notificationId || "escala-iasd",
     }),
   );

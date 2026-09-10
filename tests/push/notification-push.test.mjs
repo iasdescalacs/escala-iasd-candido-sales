@@ -25,13 +25,17 @@ test("migration de push cria tabela protegida por RLS", () => {
 test("service worker recebe push e abre rota ao clicar na notificacao", () => {
   assert.match(serviceWorker, /addEventListener\("push"/);
   assert.match(serviceWorker, /showNotification/);
+  assert.match(serviceWorker, /badge: payload\.badge \|\| "\/icons\/icon-192\.png"/);
+  assert.match(serviceWorker, /payload\.url/);
   assert.match(serviceWorker, /addEventListener\("notificationclick"/);
   assert.match(serviceWorker, /openWindow/);
 });
 
 test("rotas de push exigem usuario aprovado", () => {
+  assert.match(subscribeRoute, /export const runtime = "nodejs"/);
   assert.match(subscribeRoute, /decideProtectedAccess/);
   assert.match(subscribeRoute, /status: 401/);
+  assert.match(unsubscribeRoute, /export const runtime = "nodejs"/);
   assert.match(unsubscribeRoute, /decideProtectedAccess/);
   assert.match(unsubscribeRoute, /status: 401/);
 });
@@ -59,6 +63,8 @@ test("env example documenta chaves VAPID sem valores reais", () => {
 
 test("envio server-side remove inscricoes expiradas", () => {
   assert.match(pushServer, /webPush\.sendNotification/);
+  assert.match(pushServer, /TTL: 60 \* 60 \* 24/);
+  assert.match(pushServer, /icon: "\/icons\/icon-192\.png"/);
   assert.match(pushServer, /statusCode === 404 \|\| statusCode === 410/);
   assert.match(pushServer, /enabled: false/);
 });

@@ -94,18 +94,22 @@ async function sendToSubscription(
   notification: PushNotificationInput & { notificationId: string },
 ) {
   const payload = JSON.stringify({
+    badge: "/icons/icon-192.png",
     body: notification.body,
     data: {
       notificationId: notification.notificationId,
       url: getNotificationUrl(notification.metadata),
     },
-    icon: "/icons/icon.svg",
+    icon: "/icons/icon-192.png",
     tag: notification.notificationId,
     title: notification.title,
+    url: getNotificationUrl(notification.metadata),
   });
 
   try {
-    await webPush.sendNotification(toWebPushSubscription(subscription), payload);
+    await webPush.sendNotification(toWebPushSubscription(subscription), payload, {
+      TTL: 60 * 60 * 24,
+    });
     await admin
       .from("push_subscriptions")
       .update({ last_used_at: new Date().toISOString() })

@@ -98,6 +98,7 @@ Entregue até esta etapa:
 - Se notificações estiverem bloqueadas, o aviso permanece orientando a liberar o site nas configurações do navegador.
 - Ativação de notificações tenta recriar a inscrição e o service worker quando o Android retorna erro de serviço push.
 - Manifest inclui `gcm_sender_id` de compatibilidade para Chrome Android aceitar inscrição Web Push em dispositivos mais sensíveis.
+- Notificações Web Push usam ícone PNG, `badge`, URL de destino e TTL de 24 horas para entrega posterior quando o dispositivo voltar a ficar online.
 - Service worker recebe eventos `push`, exibe notificação nativa e abre `/agenda` ou `/painel` ao tocar no aviso.
 - Inscrições push são salvas em `push_subscriptions` com RLS, vinculadas ao usuário aprovado.
 - Assinaturas expiradas retornando HTTP 404 ou 410 são desativadas automaticamente no envio.

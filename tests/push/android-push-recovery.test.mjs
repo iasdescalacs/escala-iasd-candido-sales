@@ -16,7 +16,7 @@ test("ativacao push tenta recuperar erro de servico no android", () => {
 });
 
 test("service worker incrementa cache para atualizar pwa instalado", () => {
-  assert.match(serviceWorker, /escala-iasd-candido-sales-v3/);
+  assert.match(serviceWorker, /escala-iasd-candido-sales-v4/);
   assert.match(serviceWorker, /"\/agenda"/);
 });
 
