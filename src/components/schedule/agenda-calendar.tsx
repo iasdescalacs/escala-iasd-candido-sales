@@ -6,7 +6,7 @@ import { CalendarDays, MapPin, Mic2, Music2 } from "lucide-react";
 import { SwapRequestForm } from "@/components/schedule/swap-request-form";
 import type { CalendarDay } from "@/lib/cultos/schedule";
 import { getTemplateLabel } from "@/lib/cultos/schedule";
-import type { ScheduleService, UserAgendaItem } from "@/lib/escalas/queries";
+import type { SwapTargetService, UserAgendaItem } from "@/lib/escalas/queries";
 
 export function AgendaCalendar({
   agenda,
@@ -15,7 +15,7 @@ export function AgendaCalendar({
 }: {
   agenda: UserAgendaItem[];
   calendarDays: CalendarDay[];
-  swapTargets: ScheduleService[];
+  swapTargets: SwapTargetService[];
 }) {
   const agendaByDate = useMemo(() => groupAgendaByDate(agenda), [agenda]);
   const preachingItems = agenda.filter((item) => item.roleKey === "pregador");
@@ -156,7 +156,7 @@ function AgendaRoleSection({
 }: {
   emptyText: string;
   item: UserAgendaItem | null;
-  targets: ScheduleService[];
+  targets: SwapTargetService[];
   title: string;
 }) {
   return (
@@ -165,7 +165,7 @@ function AgendaRoleSection({
       {item ? (
         <div className="mt-3 grid min-w-0 gap-4">
           <AgendaDetails item={item} />
-          <SwapRequestForm item={item} targets={targets} />
+          <SwapRequestForm key={getAgendaKey(item)} item={item} targets={targets} />
         </div>
       ) : (
         <div className="mt-3 flex min-w-0 items-center gap-3 rounded-md bg-surface-muted p-3 text-sm text-muted">

@@ -81,6 +81,7 @@ Entregue até esta etapa:
 - Permutas aparecem no início da página `/agenda`.
 - A seção `Permutas` em `/agenda` inicia recolhida.
 - Usuário permutado também vê a solicitação de permuta em `Minha agenda`, com nomes e datas envolvidas.
+- Ao escolher uma pessoa para permuta, o formulário mostra a igreja, a data e o horário da escala selecionada com tipografia responsiva e cor do tema.
 - Notificações aparecem abaixo de `Louvor` e iniciam recolhidas.
 - Administrador pode limpar permutas e notificações exibidas em `/agenda`, com confirmação.
 - Páginas `/agenda`, `/escalas/pregacao` e `/escalas/louvor` têm botão para gerar e baixar PDF em formato de calendário, com versículo sobre serviço cristão.

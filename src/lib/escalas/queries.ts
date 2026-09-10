@@ -51,6 +51,10 @@ export type UserAgendaItem = ScheduleService & {
   church_state: string;
 };
 
+export type SwapTargetService = ScheduleService & {
+  church_name: string;
+};
+
 export type NotificationSummary = Pick<
   Database["public"]["Tables"]["notifications"]["Row"],
   "id" | "title" | "body" | "status" | "created_at"
@@ -217,6 +221,10 @@ export async function getUserAgendaPageData({
     monthStart,
     monthEnd,
   });
+  const swapTargets: SwapTargetService[] = allServices.map((service) => ({
+    ...service,
+    church_name: churchMap.get(service.church_id)?.name ?? "Igreja não informada",
+  }));
   const userSwapRequests = await getUserSwapRequests(supabase, profile.appUser.id);
 
   return {
@@ -224,7 +232,7 @@ export async function getUserAgendaPageData({
     agenda,
     notifications: (notifications ?? []) as NotificationSummary[],
     swapRequests: userSwapRequests,
-    swapTargets: allServices,
+    swapTargets,
   };
 }
 

@@ -48,7 +48,7 @@ export default async function AgendaPage({
         </p>
         <div className="mt-3 flex min-w-0 flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0">
-            <h1 className="text-3xl font-semibold text-foreground">
+            <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
               Escalas e permutas
             </h1>
             <p className="mt-3 max-w-3xl leading-7 text-muted">
