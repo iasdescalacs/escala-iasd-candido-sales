@@ -448,8 +448,11 @@ npx vercel --prod --yes
 Confirme o status do deploy:
 
 ```bash
-npx vercel inspect https://escala-iasd-candido-sales-two.vercel.app
+npx vercel inspect https://escalaiasdcs.vercel.app
 ```
+
+O endereço público oficial é `https://escalaiasdcs.vercel.app`. O alias
+`escala-iasd-candido-sales-two.vercel.app` deve permanecer removido.
 
 ### Deploy Automático
 
