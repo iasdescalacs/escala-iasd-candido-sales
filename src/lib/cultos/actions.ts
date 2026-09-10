@@ -16,6 +16,15 @@ import {
 type WorshipServiceInsert =
   Database["public"]["Tables"]["worship_services"]["Insert"];
 
+const worshipServiceDependentPaths = [
+  "/admin/cultos",
+  "/agenda",
+  "/disponibilidade",
+  "/escalas/louvor",
+  "/escalas/pregacao",
+  "/painel",
+];
+
 export async function generateWorshipServicesAction(
   _state: AuthActionState,
   formData: FormData,
@@ -215,6 +224,45 @@ export async function createSpecialWorshipServicesAction(
   return {
     ok: true,
     message: `${rows.length} culto(s) especial(is) criado(s) com sucesso.`,
+  };
+}
+
+export async function clearAllWorshipServicesAction(
+  _state: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  void _state;
+
+  const adminProfile = await requireAdminUser();
+
+  if (readString(formData, "confirmation") !== "delete-all") {
+    return { message: "Confirmação inválida. Nenhum dado foi removido." };
+  }
+
+  const supabase = createAdminSupabaseClient();
+  const { data: deletedServices, error } = await supabase.rpc(
+    "clear_all_worship_services",
+    { actor_id: adminProfile.appUser.id },
+  );
+
+  if (error) {
+    return {
+      message: "Não foi possível excluir os cultos e as escalas.",
+    };
+  }
+
+  for (const path of worshipServiceDependentPaths) {
+    revalidatePath(path);
+  }
+
+  const total = Number(deletedServices ?? 0);
+
+  return {
+    ok: true,
+    message:
+      total === 1
+        ? "1 culto e sua escala foram excluídos com sucesso."
+        : `${total} cultos e suas escalas foram excluídos com sucesso.`,
   };
 }
 

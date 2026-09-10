@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { ClearWorshipServicesForm } from "@/components/admin/clear-worship-services-form";
 import { SpecialWorshipForm } from "@/components/admin/special-worship-form";
 import { WorshipGenerationForm } from "@/components/admin/worship-generation-form";
 import { PdfDownloadButton } from "@/components/pdf/pdf-download-button";
@@ -133,6 +134,13 @@ export default async function AdminCultosPage({
           Criar culto especial
         </h2>
         <SpecialWorshipForm churches={churchOptions} defaultDate={monthStart} />
+      </section>
+
+      <section className="mt-6">
+        <h2 className="mb-3 text-lg font-semibold text-foreground">
+          Limpar cultos e escalas
+        </h2>
+        <ClearWorshipServicesForm />
       </section>
 
       <section className="mt-6 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">

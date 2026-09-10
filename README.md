@@ -62,6 +62,7 @@ Entregue até esta etapa:
 - Cada culto exibe igreja, horário, pregador e cantor/grupo, mantendo pregador e música como `A definir` nesta etapa.
 - Admin pode criar cultos especiais para uma igreja selecionada, como Semana de Oração, Mini Semana de Oração, Culto de Gratidão e Culto da Virada.
 - Cultos especiais podem ter uma data única ou um período de vários dias.
+- Admin pode excluir todos os cultos em `/admin/cultos` com confirmação; a limpeza remove também as escalas de pregação e louvor, as permutas e as disponibilidades por data, preservando usuários, igrejas e preferências de igrejas dos voluntários.
 - Página de disponibilidade em `/disponibilidade` para usuários aprovados.
 - Pregadores e cantores podem marcar cultos disponíveis no calendário do mês.
 - Usuários com as duas funções veem seções separadas para Pregador e Cantor.
@@ -332,6 +333,7 @@ supabase/migrations/20260908143000_create_swap_requests.sql
 supabase/migrations/20260909110000_add_user_approval_audit.sql
 supabase/migrations/20260909143000_create_push_subscriptions.sql
 supabase/migrations/20260910123000_distinguish_special_service_availability.sql
+supabase/migrations/20260910150000_clear_all_worship_services.sql
 ```
 
 Tabelas iniciais:
