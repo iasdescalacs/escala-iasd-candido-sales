@@ -225,13 +225,13 @@ export async function requestSwapAction(
   return { ok: true, message: "Permuta solicitada com sucesso." };
 }
 
-export async function reviewSwapRequestAction(formData: FormData) {
+export async function reviewSwapRequestAction(formData: FormData): Promise<AuthActionState> {
   const profile = await requireApprovedUser();
   const requestId = readString(formData, "requestId");
   const decision = readString(formData, "decision") as SwapStatus;
 
   if (!requestId || !["approved", "rejected"].includes(decision)) {
-    return;
+    return { message: "Informe a permuta e a decisão." };
   }
 
   const admin = createAdminSupabaseClient();
@@ -244,7 +244,7 @@ export async function reviewSwapRequestAction(formData: FormData) {
     .maybeSingle();
 
   if (!request || (request.role_key !== "pregador" && request.role_key !== "cantor")) {
-    return;
+    return { message: "Permuta pendente não localizada." };
   }
 
   const sourceContext = await canManageService({
@@ -265,7 +265,7 @@ export async function reviewSwapRequestAction(formData: FormData) {
       });
 
   if (!targetContext.allowed) {
-    return;
+    return { message: "Você não tem permissão para decidir esta permuta." };
   }
 
   if (decision === "approved") {
@@ -278,7 +278,7 @@ export async function reviewSwapRequestAction(formData: FormData) {
     const target = services?.find((service) => service.id === request.target_service_id);
 
     if (!source || !target) {
-      return;
+      return { message: "Não foi possível localizar as escalas da permuta." };
     }
 
     const sourceUserId =
@@ -328,7 +328,10 @@ export async function reviewSwapRequestAction(formData: FormData) {
 
       revalidatePath("/agenda");
       revalidateSchedule(request.role_key);
-      return;
+      return {
+        ok: true,
+        message: "Permuta recusada por conflito de agenda.",
+      };
     }
 
     if (request.role_key === "pregador") {
@@ -385,6 +388,11 @@ export async function reviewSwapRequestAction(formData: FormData) {
 
   revalidatePath("/agenda");
   revalidateSchedule(request.role_key);
+
+  return {
+    ok: true,
+    message: decision === "approved" ? "Permuta aprovada com sucesso." : "Permuta recusada.",
+  };
 }
 
 export async function clearAgendaNotificationsAction() {

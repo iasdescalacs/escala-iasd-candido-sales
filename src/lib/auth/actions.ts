@@ -323,19 +323,19 @@ export async function updateUserStatusAction(formData: FormData) {
   revalidatePath("/painel");
 }
 
-export async function approvePendingUserAction(formData: FormData) {
+export async function approvePendingUserAction(formData: FormData): Promise<AuthActionState> {
   const profile = await requireApprovedUser();
   const userId = readString(formData, "userId");
 
   if (!userId) {
-    return;
+    return { message: "Usuário não informado." };
   }
 
   const admin = createAdminSupabaseClient();
   const context = await getPendingUserApprovalContext(admin, userId);
 
   if (!context) {
-    return;
+    return { message: "Solicitação pendente não localizada." };
   }
 
   const roleKeys = profile.roles.map((role) => role.key) as RoleKey[];
@@ -350,7 +350,7 @@ export async function approvePendingUserAction(formData: FormData) {
   );
 
   if (!canApproveAllRequests) {
-    return;
+    return { message: "Você não tem permissão para aprovar esta solicitação." };
   }
 
   const approvedAt = new Date().toISOString();
@@ -368,7 +368,7 @@ export async function approvePendingUserAction(formData: FormData) {
     .maybeSingle();
 
   if (!updatedUser) {
-    return;
+    return { message: "Esse usuário já foi aprovado ou não está mais pendente." };
   }
 
   await Promise.all([
@@ -393,6 +393,8 @@ export async function approvePendingUserAction(formData: FormData) {
 
   revalidatePath("/painel");
   revalidatePath("/admin/usuarios");
+
+  return { ok: true, message: "Solicitação aprovada com sucesso." };
 }
 
 export async function deleteUserByAdminAction(formData: FormData) {

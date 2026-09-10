@@ -99,6 +99,7 @@ Entregue até esta etapa:
 - Painel exibe `Permutas pendentes` para admin, ancião e líder de música quando houver permutas aguardando decisão.
 - Painel exibe `Solicitações de aprovação` para admin, ancião e líder de música conforme a igreja e a função que cada perfil pode aprovar.
 - Painel organiza `Permutas pendentes` e `Solicitações de aprovação` lado a lado em telas maiores, mantendo coluna no celular.
+- Botões de permutas pendentes e solicitações de aprovação no painel mostram carregamento e removem o item concluído sem recarregar a página inteira.
 - Admin aprova solicitações de pregadores e cantores de qualquer igreja.
 - Ancião aprova solicitações de pregadores e cantores das igrejas gerenciadas por ele.
 - Líder de Música aprova somente solicitações de cantores das igrejas gerenciadas por ele.

@@ -42,6 +42,9 @@ export function ScheduleCalendar({
   const [state, formAction] = useActionState(assignScheduleAction, initialState);
   const churchesById = new Map(churches.map((church) => [church.id, church.name]));
   const servicesByDate = groupServicesByDate(services);
+  const reviewSwapFormAction = async (formData: FormData) => {
+    await reviewSwapRequestAction(formData);
+  };
 
   return (
     <div className="grid gap-6">
@@ -68,14 +71,14 @@ export function ScheduleCalendar({
                   {request.reason ? <p className="mt-1">{request.reason}</p> : null}
                 </div>
                 <div className="flex gap-2">
-                  <form action={reviewSwapRequestAction}>
+                  <form action={reviewSwapFormAction}>
                     <input name="requestId" type="hidden" value={request.id} />
                     <input name="decision" type="hidden" value="approved" />
                     <button className="h-10 rounded-md bg-success px-3 text-sm font-semibold text-white transition hover:brightness-95" type="submit">
                       Aprovar
                     </button>
                   </form>
-                  <form action={reviewSwapRequestAction}>
+                  <form action={reviewSwapFormAction}>
                     <input name="requestId" type="hidden" value={request.id} />
                     <input name="decision" type="hidden" value="rejected" />
                     <button className="h-10 rounded-md border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-surface-muted" type="submit">

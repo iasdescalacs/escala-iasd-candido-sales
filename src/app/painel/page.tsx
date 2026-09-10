@@ -1,13 +1,10 @@
-import { CalendarDays, Church, Repeat2, ShieldCheck, UsersRound } from "lucide-react";
+import { CalendarDays, Church, ShieldCheck, UsersRound } from "lucide-react";
 import { ApprovalRequestsPanel } from "@/components/dashboard/approval-requests-panel";
 import { ManagedUserCreateForm } from "@/components/dashboard/managed-user-create-form";
+import { PendingSwapRequestsPanel } from "@/components/dashboard/pending-swap-requests-panel";
 import { getUserApprovalDashboardData } from "@/lib/auth/approval-queries";
 import { requireApprovedUser } from "@/lib/auth/session";
-import { reviewSwapRequestAction } from "@/lib/escalas/actions";
-import {
-  getPanelPendingSwapRequests,
-  type SwapRequestSummary,
-} from "@/lib/escalas/queries";
+import { getPanelPendingSwapRequests } from "@/lib/escalas/queries";
 
 export default async function PainelPage() {
   const profile = await requireApprovedUser();
@@ -75,7 +72,7 @@ export default async function PainelPage() {
       {canReviewSwaps || canManageApprovals ? (
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
           {canReviewSwaps ? (
-            <PendingSwapRequests requests={pendingSwapRequests} />
+            <PendingSwapRequestsPanel requests={pendingSwapRequests} />
           ) : null}
 
           {canManageApprovals ? (
@@ -114,67 +111,5 @@ export default async function PainelPage() {
         })}
       </section>
     </div>
-  );
-}
-
-function PendingSwapRequests({ requests }: { requests: SwapRequestSummary[] }) {
-  return (
-    <section className="rounded-lg border border-border bg-surface p-5 shadow-sm">
-      <div className="flex items-center gap-2">
-        <Repeat2 size={18} className="text-primary" aria-hidden="true" />
-        <h2 className="text-lg font-semibold text-foreground">Permutas pendentes</h2>
-      </div>
-      <div className="mt-4 grid gap-3">
-        {requests.map((request) => (
-          <article
-            className="grid gap-3 rounded-md border border-border bg-background p-3 text-sm"
-            key={request.id}
-          >
-            <div className="min-w-0 text-muted">
-              <p className="font-semibold text-foreground">
-                {request.requester_name} solicitou permuta com {request.target_name}
-              </p>
-              <p>
-                {request.role_key === "pregador" ? "Pregação" : "Louvor"} ·{" "}
-                {formatDate(request.source_date)} por {formatDate(request.target_date)}
-              </p>
-              {request.reason ? <p className="mt-1">{request.reason}</p> : null}
-            </div>
-            <div className="flex gap-2">
-              <form action={reviewSwapRequestAction}>
-                <input name="requestId" type="hidden" value={request.id} />
-                <input name="decision" type="hidden" value="approved" />
-                <button className="h-9 rounded-md bg-success px-3 text-sm font-semibold text-white transition hover:brightness-95" type="submit">
-                  Aprovar
-                </button>
-              </form>
-              <form action={reviewSwapRequestAction}>
-                <input name="requestId" type="hidden" value={request.id} />
-                <input name="decision" type="hidden" value="rejected" />
-                <button className="h-9 rounded-md border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-surface-muted" type="submit">
-                  Recusar
-                </button>
-              </form>
-            </div>
-          </article>
-        ))}
-
-        {requests.length === 0 ? (
-          <p className="rounded-md bg-surface-muted p-3 text-sm text-muted">
-            Nenhuma permuta pendente para sua função.
-          </p>
-        ) : null}
-      </div>
-    </section>
-  );
-}
-
-function formatDate(value: string) {
-  if (!value) {
-    return "data não informada";
-  }
-
-  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
-    new Date(`${value}T00:00:00.000Z`),
   );
 }
