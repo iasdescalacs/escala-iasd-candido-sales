@@ -60,7 +60,7 @@ export function ManagedUserCreateForm({
           <ActionMessage state={state} />
 
           <div className="grid gap-4 lg:grid-cols-3">
-            <label className="grid gap-2 text-sm font-medium text-foreground lg:col-span-2">
+            <label className="grid min-w-0 gap-2 text-sm font-medium text-foreground lg:col-span-2">
               Nome completo
               <input
                 autoComplete="name"
@@ -72,12 +72,14 @@ export function ManagedUserCreateForm({
               />
             </label>
 
-            <label className="grid gap-2 text-sm font-medium text-foreground">
+            <label className="grid min-w-0 gap-2 text-sm font-medium text-foreground">
               Telefone
               <PhoneInput />
             </label>
+          </div>
 
-            <label className="grid gap-2 text-sm font-medium text-foreground">
+          <div className="grid gap-4 lg:grid-cols-3">
+            <label className="grid min-w-0 gap-2 text-sm font-medium text-foreground lg:col-span-2">
               E-mail
               <input
                 autoComplete="email"
@@ -90,24 +92,7 @@ export function ManagedUserCreateForm({
               />
             </label>
 
-            <fieldset className="grid gap-2 text-sm font-medium text-foreground">
-              <legend>Funções</legend>
-              <div className="grid gap-2 rounded-md border border-border bg-background p-3">
-                {context.allowedRoles.map((roleKey) => (
-                  <label className="flex min-h-9 items-center gap-3 text-sm" key={roleKey}>
-                    <input
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
-                      name="roleKeys"
-                      type="checkbox"
-                      value={roleKey}
-                    />
-                    {roleLabels[roleKey]}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <label className="grid gap-2 text-sm font-medium text-foreground">
+            <label className="grid min-w-0 gap-2 text-sm font-medium text-foreground">
               Igreja
               <select
                 className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
@@ -122,8 +107,32 @@ export function ManagedUserCreateForm({
                 ))}
               </select>
             </label>
+          </div>
 
+          <fieldset className="grid min-w-0 gap-2 text-sm font-medium text-foreground">
+            <legend>Funções</legend>
+            <div className="flex min-h-11 flex-wrap items-center gap-x-6 gap-y-2 rounded-md border border-border bg-background px-3 py-2">
+              {context.allowedRoles.map((roleKey) => (
+                <label className="flex min-h-7 items-center gap-2 text-sm" key={roleKey}>
+                  <input
+                    className="h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
+                    name="roleKeys"
+                    type="checkbox"
+                    value={roleKey}
+                  />
+                  {roleLabels[roleKey]}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="grid gap-4 md:grid-cols-2">
             <PasswordField autoComplete="new-password" label="Senha inicial" name="password" />
+            <PasswordField
+              autoComplete="new-password"
+              label="Digite a senha novamente"
+              name="confirmPassword"
+            />
           </div>
 
           <SubmitButton>Criar e aprovar</SubmitButton>

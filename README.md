@@ -124,7 +124,7 @@ Entregue até esta etapa:
 - Admin aprova solicitações de pregadores e cantores de qualquer igreja.
 - Ancião aprova solicitações de pregadores e cantores das igrejas gerenciadas por ele.
 - Líder de Música aprova somente solicitações de cantores das igrejas gerenciadas por ele.
-- Painel permite que ancião cadastre pregador ou cantor nas igrejas gerenciadas, e que líder de música cadastre cantor na própria igreja.
+- Painel permite que ancião cadastre pregador ou cantor nas igrejas gerenciadas, e que líder de música cadastre cantor na própria igreja, com confirmação obrigatória da senha inicial e campos organizados em linhas compactas e responsivas.
 - Ancião vê em `Escala de pregação` as permutas pendentes que envolvem qualquer igreja gerenciada por ele.
 - Cadastro público permite selecionar mais de uma função para a mesma conta.
 - Admin pode criar e editar usuários com múltiplas funções.

@@ -598,15 +598,28 @@ export async function createUserByManagerAction(
   const roleKeys = normalizeRoleKeys(readStringList(formData, "roleKeys"));
   const churchId = readString(formData, "churchId");
   const password = readString(formData, "password");
+  const confirmPassword = readString(formData, "confirmPassword");
   const currentRoleKeys = profile.roles.map((role) => role.key) as RoleKey[];
   const allowedRoles = getAllowedManagedCreationRoles(currentRoleKeys);
 
-  if (!fullName || !email || !phone || roleKeys.length === 0 || !churchId || !password) {
+  if (
+    !fullName ||
+    !email ||
+    !phone ||
+    roleKeys.length === 0 ||
+    !churchId ||
+    !password ||
+    !confirmPassword
+  ) {
     return { message: "Preencha todos os campos obrigatórios." };
   }
 
   if (password.length < 8) {
     return { message: "A senha precisa ter pelo menos 8 caracteres." };
+  }
+
+  if (password !== confirmPassword) {
+    return { message: "As senhas não conferem." };
   }
 
   if (
