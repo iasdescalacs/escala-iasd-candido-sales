@@ -498,6 +498,20 @@ export type Database = {
         };
         Returns: number;
       };
+      update_worship_service: {
+        Args: {
+          actor_id: string;
+          target_service_id: string;
+          target_start_time: string;
+          target_end_time: string;
+          target_title?: Nullable<string>;
+          target_special_type?: Nullable<
+            Database["public"]["Enums"]["worship_special_type"]
+          >;
+          target_notes?: Nullable<string>;
+        };
+        Returns: boolean;
+      };
       current_app_user_id: {
         Args: Record<PropertyKey, never>;
         Returns: string | null;

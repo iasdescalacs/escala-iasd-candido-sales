@@ -2,6 +2,10 @@ import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { ClearWorshipServicesForm } from "@/components/admin/clear-worship-services-form";
 import { DeleteWorshipServiceButton } from "@/components/admin/delete-worship-service-button";
+import {
+  EditWorshipServiceButton,
+  WorshipServiceEditorProvider,
+} from "@/components/admin/edit-worship-service-button";
 import { SpecialWorshipForm } from "@/components/admin/special-worship-form";
 import { WorshipGenerationForm } from "@/components/admin/worship-generation-form";
 import { PdfDownloadButton } from "@/components/pdf/pdf-download-button";
@@ -32,6 +36,7 @@ type WorshipServiceRow = {
   is_special: boolean;
   special_type: WorshipSpecialType | null;
   title: string | null;
+  notes: string | null;
 };
 
 type ChurchRow = {
@@ -73,7 +78,7 @@ export default async function AdminCultosPage({
       .order("name", { ascending: true }),
     supabase
       .from("worship_services")
-      .select("id,church_id,service_date,service_type,start_time,end_time,preacher_name,singer_name,is_special,special_type,title")
+      .select("id,church_id,service_date,service_type,start_time,end_time,preacher_name,singer_name,is_special,special_type,title,notes")
       .gte("service_date", monthStart)
       .lte("service_date", monthEnd)
       .is("deleted_at", null)
@@ -144,6 +149,7 @@ export default async function AdminCultosPage({
         <ClearWorshipServicesForm />
       </section>
 
+      <WorshipServiceEditorProvider>
       <section className="mt-6 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
         <div className="flex flex-col gap-3 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
@@ -224,10 +230,15 @@ export default async function AdminCultosPage({
                             ? getSpecialWorshipLabel(service.special_type)
                             : getTemplateLabel(service.service_type)}
                         </p>
-                        <DeleteWorshipServiceButton
-                          description={`o culto de ${formatDate(service.service_date)} às ${formatTime(service.start_time)}`}
-                          serviceId={service.id}
-                        />
+                        <div className="flex shrink-0 items-center gap-1">
+                          <EditWorshipServiceButton
+                            service={buildEditableService(service, churchNames)}
+                          />
+                          <DeleteWorshipServiceButton
+                            description={`o culto de ${formatDate(service.service_date)} às ${formatTime(service.start_time)}`}
+                            serviceId={service.id}
+                          />
+                        </div>
                       </div>
                       {service.is_special ? (
                         <p className="truncate font-semibold">
@@ -243,6 +254,9 @@ export default async function AdminCultosPage({
                       <p className="truncate text-muted">
                         Música: {service.singer_name ?? "A definir"}
                       </p>
+                      {service.notes ? (
+                        <p className="truncate text-muted">Obs.: {service.notes}</p>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -264,10 +278,15 @@ export default async function AdminCultosPage({
                       ? getSpecialWorshipLabel(service.special_type)
                       : getTemplateLabel(service.service_type)}
                   </p>
-                  <DeleteWorshipServiceButton
-                    description={`o culto de ${formatDate(service.service_date)} às ${formatTime(service.start_time)}`}
-                    serviceId={service.id}
-                  />
+                  <div className="flex shrink-0 items-center gap-1">
+                    <EditWorshipServiceButton
+                      service={buildEditableService(service, churchNames)}
+                    />
+                    <DeleteWorshipServiceButton
+                      description={`o culto de ${formatDate(service.service_date)} às ${formatTime(service.start_time)}`}
+                      serviceId={service.id}
+                    />
+                  </div>
                 </div>
                 {service.is_special ? (
                   <p className="mt-1 font-semibold">
@@ -283,6 +302,9 @@ export default async function AdminCultosPage({
                 <p className="text-muted">
                   Música: {service.singer_name ?? "A definir"}
                 </p>
+                {service.notes ? (
+                  <p className="mt-1 text-muted">Obs.: {service.notes}</p>
+                ) : null}
               </article>
             ))
           ) : (
@@ -299,6 +321,7 @@ export default async function AdminCultosPage({
           </div>
         ) : null}
       </section>
+      </WorshipServiceEditorProvider>
     </div>
   );
 }
@@ -374,6 +397,23 @@ function groupServicesByDate(services: WorshipServiceRow[]) {
   }
 
   return map;
+}
+
+function buildEditableService(
+  service: WorshipServiceRow,
+  churchNames: Map<string, string>,
+) {
+  return {
+    id: service.id,
+    churchName: churchNames.get(service.church_id) ?? "Igreja",
+    dateLabel: formatDate(service.service_date),
+    endTime: formatTime(service.end_time),
+    isSpecial: service.is_special,
+    notes: service.notes,
+    specialType: service.special_type,
+    startTime: formatTime(service.start_time),
+    title: service.title,
+  };
 }
 
 function buildChurchPdfCalendars({

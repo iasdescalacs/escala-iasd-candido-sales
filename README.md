@@ -64,6 +64,7 @@ Entregue até esta etapa:
 - Cultos especiais podem ter uma data única ou um período de vários dias.
 - Ao criar um culto especial no mesmo dia e horário de um culto existente da igreja, o culto regular é substituído e as pessoas já escaladas são preservadas.
 - Cada culto do calendário administrativo tem um botão `X` vermelho para exclusão individual com confirmação; escalas, permutas e disponibilidades específicas vinculadas ao culto também são removidas.
+- Cada culto também tem um botão de lápis que abre uma janela responsiva para editar horários, observações e, nos cultos especiais, nome e categoria, preservando igreja, data e pessoas escaladas.
 - Admin pode excluir todos os cultos em `/admin/cultos` com confirmação; a limpeza remove também as escalas de pregação e louvor, as permutas e as disponibilidades por data, preservando usuários, igrejas e preferências de igrejas dos voluntários.
 - Página de disponibilidade em `/disponibilidade` para usuários aprovados.
 - Pregadores e cantores podem marcar cultos disponíveis no calendário do mês.
@@ -342,6 +343,7 @@ supabase/migrations/20260910150000_clear_all_worship_services.sql
 supabase/migrations/20260910163000_add_clear_worship_services_dry_run.sql
 supabase/migrations/20260910164500_fix_clear_worship_services_safe_delete.sql
 supabase/migrations/20260912113000_replace_special_worship_service_conflicts.sql
+supabase/migrations/20260912231500_edit_worship_services.sql
 ```
 
 Tabelas iniciais:

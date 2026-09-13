@@ -248,6 +248,86 @@ export async function deleteWorshipServiceAction(
   return { ok: true, message: "Culto excluído com sucesso." };
 }
 
+export async function updateWorshipServiceAction(
+  _state: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  void _state;
+
+  const adminProfile = await requireAdminUser();
+  const serviceId = readString(formData, "serviceId");
+  const startTime = readString(formData, "startTime");
+  const endTime = readString(formData, "endTime");
+  const isSpecial = readString(formData, "isSpecial") === "true";
+  const title = readString(formData, "title");
+  const specialType = readString(formData, "specialType");
+  const notes = readString(formData, "notes");
+
+  if (!isUuid(serviceId)) {
+    return { message: "Culto inválido. Atualize a página e tente novamente." };
+  }
+
+  if (!isValidTime(startTime) || !isValidTime(endTime)) {
+    return { message: "Informe horários válidos para início e término." };
+  }
+
+  if (endTime <= startTime) {
+    return { message: "O horário de término deve ser posterior ao início." };
+  }
+
+  if (notes.length > 500) {
+    return { message: "As observações devem ter no máximo 500 caracteres." };
+  }
+
+  if (isSpecial) {
+    if (!title) {
+      return { message: "Informe o nome do culto especial." };
+    }
+
+    if (title.length > 120) {
+      return { message: "O nome do culto deve ter no máximo 120 caracteres." };
+    }
+
+    if (!isWorshipSpecialType(specialType)) {
+      return { message: "Selecione um tipo válido de culto especial." };
+    }
+  }
+
+  const supabase = createAdminSupabaseClient();
+  const { data: updated, error } = await supabase.rpc("update_worship_service", {
+    actor_id: adminProfile.appUser.id,
+    target_service_id: serviceId,
+    target_start_time: startTime,
+    target_end_time: endTime,
+    target_title: title || null,
+    target_special_type: isWorshipSpecialType(specialType) ? specialType : null,
+    target_notes: notes || null,
+  });
+
+  if (error) {
+    console.error("Falha ao editar culto", {
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      message: error.message,
+    });
+
+    return {
+      message: error.message.includes("mesma data e horario")
+        ? "Já existe outro culto desta igreja na mesma data e horário."
+        : "Não foi possível salvar as alterações do culto.",
+    };
+  }
+
+  if (!updated) {
+    return { message: "O culto não existe mais ou já foi excluído." };
+  }
+
+  revalidateWorshipServicePaths();
+
+  return { ok: true, message: "Culto atualizado com sucesso." };
+}
+
 export async function clearAllWorshipServicesAction(
   _state: AuthActionState,
   formData: FormData,
@@ -307,6 +387,20 @@ function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
+}
+
+function isValidTime(value: string) {
+  return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function isWorshipSpecialType(value: string): value is WorshipSpecialType {
+  return [
+    "semana_oracao",
+    "mini_semana_oracao",
+    "culto_gratidao",
+    "culto_virada",
+    "outro",
+  ].includes(value);
 }
 
 function revalidateWorshipServicePaths() {
