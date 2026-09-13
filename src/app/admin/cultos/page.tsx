@@ -9,8 +9,7 @@ import {
 import { SpecialWorshipForm } from "@/components/admin/special-worship-form";
 import { WorshipGenerationForm } from "@/components/admin/worship-generation-form";
 import { PdfDownloadButton } from "@/components/pdf/pdf-download-button";
-import { getChurchOptions } from "@/lib/admin/lookups";
-import { requireAdminUser } from "@/lib/auth/session";
+import { requireWorshipManager } from "@/lib/cultos/access";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import {
   buildCalendarDays,
@@ -53,8 +52,6 @@ export default async function AdminCultosPage({
 }: {
   searchParams: SearchParams;
 }) {
-  await requireAdminUser();
-
   const params = await searchParams;
   const today = new Date();
   const viewYear = parseNumberParam(params.ano, today.getFullYear());
@@ -70,23 +67,27 @@ export default async function AdminCultosPage({
   const requestedChurchId = readStringParam(params.igreja);
   const calendarDays = buildCalendarDays(viewYear, viewMonth);
   const supabase = createAdminSupabaseClient();
-  const [{ data: churches }, { data: services }, churchOptions] = await Promise.all([
-    supabase
-      .from("churches")
-      .select("id,name,city,state")
-      .is("deleted_at", null)
-      .order("name", { ascending: true }),
-    supabase
+  const management = await requireWorshipManager(supabase);
+  const allChurches = management.churches as ChurchRow[];
+  const churchOptions = management.activeChurches.map(
+    ({ id, name, city, state }) => ({ id, name, city, state }),
+  );
+  let services: WorshipServiceRow[] = [];
+
+  if (management.churchIds.length > 0) {
+    const { data } = await supabase
       .from("worship_services")
       .select("id,church_id,service_date,service_type,start_time,end_time,preacher_name,singer_name,is_special,special_type,title,notes")
+      .in("church_id", management.churchIds)
       .gte("service_date", monthStart)
       .lte("service_date", monthEnd)
       .is("deleted_at", null)
       .order("service_date", { ascending: true })
-      .order("start_time", { ascending: true }),
-    getChurchOptions(),
-  ]);
-  const allChurches = (churches ?? []) as ChurchRow[];
+      .order("start_time", { ascending: true });
+
+    services = (data ?? []) as WorshipServiceRow[];
+  }
+
   const selectedChurchId = allChurches.some((church) => church.id === requestedChurchId)
     ? requestedChurchId
     : "todas";
@@ -95,7 +96,7 @@ export default async function AdminCultosPage({
       ? allChurches
       : allChurches.filter((church) => church.id === selectedChurchId);
   const filteredChurchIds = new Set(filteredChurches.map((church) => church.id));
-  const filteredServices = ((services ?? []) as WorshipServiceRow[]).filter((service) =>
+  const filteredServices = services.filter((service) =>
     filteredChurchIds.has(service.church_id),
   );
   const churchNames = new Map(filteredChurches.map((church) => [church.id, church.name]));
@@ -117,14 +118,14 @@ export default async function AdminCultosPage({
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
-          Administração
+          {management.isAdmin ? "Administração" : "Gestão da igreja"}
         </p>
         <h1 className="mt-3 text-3xl font-semibold text-foreground">
           Cultos
         </h1>
         <p className="mt-3 max-w-3xl leading-7 text-muted">
-          Gere os cultos do mês para todas as igrejas ativas e acompanhe a
-          escala mensal em calendário.
+          Gere e organize os cultos das igrejas vinculadas ao seu perfil e
+          acompanhe a escala mensal em calendário.
         </p>
       </section>
 
@@ -132,7 +133,12 @@ export default async function AdminCultosPage({
         <h2 className="mb-3 text-lg font-semibold text-foreground">
           Gerar cultos
         </h2>
-        <WorshipGenerationForm defaultMonth={viewMonth} defaultYear={viewYear} />
+        <WorshipGenerationForm
+          churches={churchOptions}
+          defaultMonth={viewMonth}
+          defaultYear={viewYear}
+          isAdmin={management.isAdmin}
+        />
       </section>
 
       <section className="mt-6">
@@ -142,12 +148,14 @@ export default async function AdminCultosPage({
         <SpecialWorshipForm churches={churchOptions} defaultDate={monthStart} />
       </section>
 
-      <section className="mt-6">
-        <h2 className="mb-3 text-lg font-semibold text-foreground">
-          Limpar cultos e escalas
-        </h2>
-        <ClearWorshipServicesForm />
-      </section>
+      {management.isAdmin ? (
+        <section className="mt-6">
+          <h2 className="mb-3 text-lg font-semibold text-foreground">
+            Limpar cultos e escalas
+          </h2>
+          <ClearWorshipServicesForm />
+        </section>
+      ) : null}
 
       <WorshipServiceEditorProvider>
       <section className="mt-6 overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
@@ -161,6 +169,9 @@ export default async function AdminCultosPage({
             </h2>
           </div>
           <ChurchFilter
+            allChurchesLabel={
+              management.isAdmin ? "Todas as igrejas" : "Todas as minhas igrejas"
+            }
             churches={allChurches}
             month={viewMonth}
             selectedChurchId={selectedChurchId}
@@ -348,11 +359,13 @@ function CalendarLink({
 }
 
 function ChurchFilter({
+  allChurchesLabel,
   churches,
   month,
   selectedChurchId,
   year,
 }: {
+  allChurchesLabel: string;
   churches: ChurchRow[];
   month: number;
   selectedChurchId: string;
@@ -369,7 +382,7 @@ function ChurchFilter({
           defaultValue={selectedChurchId}
           name="igreja"
         >
-          <option value="todas">Todas as igrejas</option>
+          <option value="todas">{allChurchesLabel}</option>
           {churches.map((church) => (
             <option key={church.id} value={church.id}>
               {church.name}

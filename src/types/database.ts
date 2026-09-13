@@ -482,6 +482,10 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      can_manage_church_worship: {
+        Args: { actor_id: string; target_church_id: string };
+        Returns: boolean;
+      };
       clear_all_worship_services: {
         Args: { actor_id: string; dry_run?: boolean };
         Returns: number;
@@ -489,6 +493,14 @@ export type Database = {
       delete_worship_service: {
         Args: { actor_id: string; target_service_id: string };
         Returns: boolean;
+      };
+      generate_worship_services: {
+        Args: {
+          actor_id: string;
+          target_church_ids: string[];
+          service_rows: Json;
+        };
+        Returns: number;
       };
       replace_special_worship_services: {
         Args: {

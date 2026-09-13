@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const migration = readFileSync(
-  "supabase/migrations/20260912231500_edit_worship_services.sql",
+  "supabase/migrations/20260913003000_allow_elders_manage_worship_services.sql",
   "utf8",
 );
 const actions = readFileSync("src/lib/cultos/actions.ts", "utf8");
@@ -15,7 +15,7 @@ const page = readFileSync("src/app/admin/cultos/page.tsx", "utf8");
 
 test("edicao de culto e transacional, auditada e restrita ao servidor", () => {
   assert.match(migration, /create or replace function public\.update_worship_service/);
-  assert.match(migration, /role\.key = 'admin'/);
+  assert.match(migration, /can_manage_church_worship\(actor_id, current_service\.church_id\)/);
   assert.match(migration, /for update/);
   assert.match(migration, /conflicting_service\.start_time = target_start_time/);
   assert.match(migration, /insert into public\.history/);
@@ -23,9 +23,10 @@ test("edicao de culto e transacional, auditada e restrita ao servidor", () => {
   assert.match(migration, /grant execute[\s\S]+to service_role/);
 });
 
-test("acao valida horario e exige administrador antes de atualizar", () => {
+test("acao valida horario e exige gestor vinculado antes de atualizar", () => {
   assert.match(actions, /updateWorshipServiceAction/);
-  assert.match(actions, /const adminProfile = await requireAdminUser\(\)/);
+  assert.match(actions, /const management = await requireWorshipManager\(supabase\)/);
+  assert.match(actions, /canManageWorshipService\(supabase, management\.churchIds, serviceId\)/);
   assert.match(actions, /if \(endTime <= startTime\)/);
   assert.match(actions, /\.rpc\("update_worship_service"/);
   assert.match(actions, /revalidateWorshipServicePaths\(\)/);

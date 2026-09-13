@@ -13,11 +13,14 @@ const protectedPages = [
   "src/app/disponibilidade/page.tsx",
 ].map((path) => readFileSync(path, "utf8"));
 const adminPages = [
-  "src/app/admin/cultos/page.tsx",
   "src/app/admin/igrejas/page.tsx",
   "src/app/admin/usuarios/page.tsx",
   "src/app/admin/usuarios/[id]/editar/page.tsx",
 ].map((path) => readFileSync(path, "utf8"));
+const worshipManagementPage = readFileSync(
+  "src/app/admin/cultos/page.tsx",
+  "utf8",
+);
 const vercelConfig = JSON.parse(readFileSync("vercel.json", "utf8"));
 
 test("perfil atual e deduplicado durante a renderizacao", () => {
@@ -40,6 +43,8 @@ test("rotas protegidas preservam autorizacao no servidor", () => {
   for (const page of adminPages) {
     assert.match(page, /requireAdminUser/);
   }
+
+  assert.match(worshipManagementPage, /requireWorshipManager/);
 
   assert.match(scheduleQueries, /getSchedulePageData[\s\S]*requireApprovedUser/);
   assert.match(scheduleQueries, /getUserAgendaPageData[\s\S]*requireApprovedUser/);

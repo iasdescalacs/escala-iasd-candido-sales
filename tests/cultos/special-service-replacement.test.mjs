@@ -6,6 +6,10 @@ const migration = readFileSync(
   "supabase/migrations/20260912113000_replace_special_worship_service_conflicts.sql",
   "utf8",
 );
+const managementMigration = readFileSync(
+  "supabase/migrations/20260913003000_allow_elders_manage_worship_services.sql",
+  "utf8",
+);
 const actions = readFileSync("src/lib/cultos/actions.ts", "utf8");
 const page = readFileSync("src/app/admin/cultos/page.tsx", "utf8");
 const deleteButton = readFileSync(
@@ -30,11 +34,8 @@ test("culto especial substitui o culto da mesma igreja, data e horario", () => {
 });
 
 test("geracao regular nao recria um culto no horario ocupado por especial", () => {
-  assert.match(actions, /\.select\("church_id,service_date,start_time"\)/);
-  assert.match(
-    actions,
-    /`\$\{church\.id\}:\$\{occurrence\.serviceDate\}:\$\{occurrence\.startTime\}`/,
-  );
+  assert.match(actions, /\.rpc\([\s\S]*"generate_worship_services"/);
+  assert.match(managementMigration, /on conflict do nothing/);
 });
 
 test("calendario permite excluir um culto com confirmacao e carregamento", () => {

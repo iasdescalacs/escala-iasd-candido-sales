@@ -6,16 +6,18 @@ import { useFormStatus } from "react-dom";
 export function SubmitButton({
   children,
   className = "",
+  disabled = false,
 }: {
   children: string;
   className?: string;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
 
   return (
     <button
       className={`inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-white transition hover:bg-primary-strong disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto ${className}`}
-      disabled={pending}
+      disabled={disabled || pending}
       type="submit"
     >
       {pending ? <Loader2 className="animate-spin" size={18} /> : null}

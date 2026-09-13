@@ -57,6 +57,7 @@ Entregue até esta etapa:
 - Menu `Status Supabase` aparece somente para administrador.
 - Página administrativa de cultos em `/admin/cultos`.
 - Admin pode gerar cultos para todas as igrejas ativas por mês, ou por intervalo de até 3 meses no mesmo ano.
+- Anciãos aprovados podem abrir `Cultos` e criar, editar ou excluir cultos somente nas igrejas onde possuem vínculo gerencial como ancião; a interface, o servidor e o banco aplicam o mesmo limite.
 - Cultos padrão gerados: quarta-feira das 19:45 às 21:00, sábado das 08:45 às 12:00 e domingo das 19:45 às 21:00.
 - Calendário mensal de cultos com navegação para mês anterior e próximo mês.
 - Cada culto exibe igreja, horário, pregador e cantor/grupo, mantendo pregador e música como `A definir` nesta etapa.
@@ -344,6 +345,7 @@ supabase/migrations/20260910163000_add_clear_worship_services_dry_run.sql
 supabase/migrations/20260910164500_fix_clear_worship_services_safe_delete.sql
 supabase/migrations/20260912113000_replace_special_worship_service_conflicts.sql
 supabase/migrations/20260912231500_edit_worship_services.sql
+supabase/migrations/20260913003000_allow_elders_manage_worship_services.sql
 ```
 
 Tabelas iniciais:

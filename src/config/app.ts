@@ -44,6 +44,10 @@ export const elderNavigation = [
     label: "Escala Pregação",
     href: "/escalas/pregacao",
   },
+  {
+    label: "Cultos",
+    href: "/admin/cultos",
+  },
 ];
 
 export const musicLeaderNavigation = [
@@ -61,10 +65,6 @@ export const adminNavigation = [
   {
     label: "Igrejas",
     href: "/admin/igrejas",
-  },
-  {
-    label: "Cultos",
-    href: "/admin/cultos",
   },
 ];
 

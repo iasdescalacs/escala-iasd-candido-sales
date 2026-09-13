@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { requireAdminUser } from "@/lib/auth/session";
 import type { AuthActionState } from "@/lib/auth/actions";
-import type { Database } from "@/types/database";
+import { requireWorshipManager } from "./access";
 import {
   buildSpecialWorshipOccurrences,
   buildWorshipOccurrences,
@@ -12,9 +12,6 @@ import {
   validateMonthRange,
   type WorshipSpecialType,
 } from "./schedule";
-
-type WorshipServiceInsert =
-  Database["public"]["Tables"]["worship_services"]["Insert"];
 
 const worshipServiceDependentPaths = [
   "/admin/cultos",
@@ -29,92 +26,77 @@ export async function generateWorshipServicesAction(
   _state: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  await requireAdminUser();
+  const supabase = createAdminSupabaseClient();
+  const management = await requireWorshipManager(supabase);
 
   const year = Number(readString(formData, "year"));
   const startMonth = Number(readString(formData, "startMonth"));
   const endMonth = Number(readString(formData, "endMonth") || startMonth);
+  const requestedChurchId = readString(formData, "churchId") || "todas";
   const validationError = validateMonthRange({ year, startMonth, endMonth });
 
   if (validationError) {
     return { message: validationError };
   }
 
-  const supabase = createAdminSupabaseClient();
-  const { data: churches, error: churchesError } = await supabase
-    .from("churches")
-    .select("id")
-    .eq("active", true)
-    .is("deleted_at", null);
+  const activeChurchIds = management.activeChurches.map((church) => church.id);
 
-  if (churchesError) {
-    return { message: "Não foi possível buscar as igrejas ativas." };
+  if (
+    requestedChurchId !== "todas" &&
+    !activeChurchIds.includes(requestedChurchId)
+  ) {
+    return { message: "Essa igreja não está vinculada ao seu perfil de gestão." };
   }
 
-  if (!churches || churches.length === 0) {
-    return { message: "Cadastre pelo menos uma igreja ativa antes de gerar cultos." };
+  const churchIds =
+    requestedChurchId === "todas" ? activeChurchIds : [requestedChurchId];
+
+  if (churchIds.length === 0) {
+    return { message: "Nenhuma igreja ativa está disponível para gerar cultos." };
   }
 
   const occurrences = buildWorshipOccurrences({ year, startMonth, endMonth });
-  const startDate = occurrences[0]?.serviceDate;
-  const endDate = occurrences[occurrences.length - 1]?.serviceDate;
 
-  if (!startDate || !endDate) {
+  if (occurrences.length === 0) {
     return { message: "Nenhum culto encontrado para o período informado." };
   }
 
-  const churchIds = churches.map((church) => church.id);
-  const { data: existingServices, error: existingError } = await supabase
-    .from("worship_services")
-    .select("church_id,service_date,start_time")
-    .in("church_id", churchIds)
-    .gte("service_date", startDate)
-    .lte("service_date", endDate)
-    .is("deleted_at", null);
-
-  if (existingError) {
-    return { message: "Não foi possível verificar cultos já gerados." };
-  }
-
-  const existingKeys = new Set(
-    (existingServices ?? []).map(
-      (service) =>
-        `${service.church_id}:${service.service_date}:${formatTime(service.start_time)}`,
-    ),
+  const { data: insertedServices, error } = await supabase.rpc(
+    "generate_worship_services",
+    {
+      actor_id: management.profile.appUser.id,
+      target_church_ids: churchIds,
+      service_rows: occurrences.map((occurrence) => ({
+        service_date: occurrence.serviceDate,
+        service_type: occurrence.serviceType,
+        start_time: occurrence.startTime,
+        end_time: occurrence.endTime,
+      })),
+    },
   );
-  const rows: WorshipServiceInsert[] = [];
 
-  for (const church of churches) {
-    for (const occurrence of occurrences) {
-      const key = `${church.id}:${occurrence.serviceDate}:${occurrence.startTime}`;
+  if (error) {
+    console.error("Falha ao gerar cultos", {
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      message: error.message,
+    });
 
-      if (!existingKeys.has(key)) {
-        rows.push({
-          church_id: church.id,
-          service_date: occurrence.serviceDate,
-          service_type: occurrence.serviceType,
-          start_time: occurrence.startTime,
-          end_time: occurrence.endTime,
-        });
-      }
-    }
-  }
-
-  if (rows.length === 0) {
-    return { ok: true, message: "Os cultos desse período já estavam gerados." };
-  }
-
-  const { error: insertError } = await supabase.from("worship_services").insert(rows);
-
-  if (insertError) {
     return { message: "Não foi possível gerar os cultos." };
+  }
+
+  const total = Number(insertedServices ?? 0);
+
+  if (total === 0) {
+    return { ok: true, message: "Os cultos desse período já estavam gerados." };
   }
 
   revalidateWorshipServicePaths();
 
   return {
     ok: true,
-    message: `${rows.length} culto(s) gerado(s) com sucesso.`,
+    message: `${total} culto(s) gerado(s) com sucesso.`,
   };
 }
 
@@ -122,7 +104,8 @@ export async function createSpecialWorshipServicesAction(
   _state: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const adminProfile = await requireAdminUser();
+  const supabase = createAdminSupabaseClient();
+  const management = await requireWorshipManager(supabase);
 
   const churchId = readString(formData, "churchId");
   const title = readString(formData, "title");
@@ -134,6 +117,10 @@ export async function createSpecialWorshipServicesAction(
 
   if (!churchId) {
     return { message: "Selecione a igreja do culto especial." };
+  }
+
+  if (!management.activeChurches.some((church) => church.id === churchId)) {
+    return { message: "Essa igreja não está vinculada ao seu perfil de gestão." };
   }
 
   const validationError = validateSpecialWorshipRange({
@@ -149,19 +136,6 @@ export async function createSpecialWorshipServicesAction(
     return { message: validationError };
   }
 
-  const supabase = createAdminSupabaseClient();
-  const { data: church } = await supabase
-    .from("churches")
-    .select("id")
-    .eq("id", churchId)
-    .eq("active", true)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (!church) {
-    return { message: "Igreja ativa não localizada." };
-  }
-
   const occurrences = buildSpecialWorshipOccurrences({
     title,
     specialType: specialType as WorshipSpecialType,
@@ -173,7 +147,7 @@ export async function createSpecialWorshipServicesAction(
   const { data: processedServices, error } = await supabase.rpc(
     "replace_special_worship_services",
     {
-      actor_id: adminProfile.appUser.id,
+      actor_id: management.profile.appUser.id,
       target_church_id: churchId,
       service_rows: occurrences.map((occurrence) => ({
         service_date: occurrence.serviceDate,
@@ -215,16 +189,20 @@ export async function deleteWorshipServiceAction(
 ): Promise<AuthActionState> {
   void _state;
 
-  const adminProfile = await requireAdminUser();
+  const supabase = createAdminSupabaseClient();
+  const management = await requireWorshipManager(supabase);
   const serviceId = readString(formData, "serviceId");
 
   if (!isUuid(serviceId)) {
     return { message: "Culto inválido. Atualize a página e tente novamente." };
   }
 
-  const supabase = createAdminSupabaseClient();
+  if (!(await canManageWorshipService(supabase, management.churchIds, serviceId))) {
+    return { message: "Culto não localizado ou fora das suas igrejas vinculadas." };
+  }
+
   const { data: deleted, error } = await supabase.rpc("delete_worship_service", {
-    actor_id: adminProfile.appUser.id,
+    actor_id: management.profile.appUser.id,
     target_service_id: serviceId,
   });
 
@@ -254,7 +232,8 @@ export async function updateWorshipServiceAction(
 ): Promise<AuthActionState> {
   void _state;
 
-  const adminProfile = await requireAdminUser();
+  const supabase = createAdminSupabaseClient();
+  const management = await requireWorshipManager(supabase);
   const serviceId = readString(formData, "serviceId");
   const startTime = readString(formData, "startTime");
   const endTime = readString(formData, "endTime");
@@ -293,9 +272,12 @@ export async function updateWorshipServiceAction(
     }
   }
 
-  const supabase = createAdminSupabaseClient();
+  if (!(await canManageWorshipService(supabase, management.churchIds, serviceId))) {
+    return { message: "Culto não localizado ou fora das suas igrejas vinculadas." };
+  }
+
   const { data: updated, error } = await supabase.rpc("update_worship_service", {
-    actor_id: adminProfile.appUser.id,
+    actor_id: management.profile.appUser.id,
     target_service_id: serviceId,
     target_start_time: startTime,
     target_end_time: endTime,
@@ -379,14 +361,30 @@ function readString(formData: FormData, key: string) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function formatTime(value: string) {
-  return value.slice(0, 5);
-}
-
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
+}
+
+async function canManageWorshipService(
+  supabase: ReturnType<typeof createAdminSupabaseClient>,
+  churchIds: string[],
+  serviceId: string,
+) {
+  if (churchIds.length === 0) {
+    return false;
+  }
+
+  const { data: service } = await supabase
+    .from("worship_services")
+    .select("church_id")
+    .eq("id", serviceId)
+    .in("church_id", churchIds)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  return Boolean(service);
 }
 
 function isValidTime(value: string) {
