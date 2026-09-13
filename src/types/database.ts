@@ -486,6 +486,18 @@ export type Database = {
         Args: { actor_id: string; dry_run?: boolean };
         Returns: number;
       };
+      delete_worship_service: {
+        Args: { actor_id: string; target_service_id: string };
+        Returns: boolean;
+      };
+      replace_special_worship_services: {
+        Args: {
+          actor_id: string;
+          target_church_id: string;
+          service_rows: Json;
+        };
+        Returns: number;
+      };
       current_app_user_id: {
         Args: Record<PropertyKey, never>;
         Returns: string | null;

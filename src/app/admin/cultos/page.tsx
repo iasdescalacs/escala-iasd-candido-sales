@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { ClearWorshipServicesForm } from "@/components/admin/clear-worship-services-form";
+import { DeleteWorshipServiceButton } from "@/components/admin/delete-worship-service-button";
 import { SpecialWorshipForm } from "@/components/admin/special-worship-form";
 import { WorshipGenerationForm } from "@/components/admin/worship-generation-form";
 import { PdfDownloadButton } from "@/components/pdf/pdf-download-button";
@@ -216,12 +217,18 @@ export default async function AdminCultosPage({
                       className="min-w-0 rounded-md border border-primary/30 bg-primary-soft px-2 py-1 text-[11px] leading-4 text-foreground"
                       key={service.id}
                     >
-                      <p className="truncate font-semibold text-primary-strong">
-                        {formatTime(service.start_time)}{" "}
-                        {service.is_special
-                          ? getSpecialWorshipLabel(service.special_type)
-                          : getTemplateLabel(service.service_type)}
-                      </p>
+                      <div className="flex min-w-0 items-start gap-1">
+                        <p className="min-w-0 flex-1 truncate font-semibold text-primary-strong">
+                          {formatTime(service.start_time)}{" "}
+                          {service.is_special
+                            ? getSpecialWorshipLabel(service.special_type)
+                            : getTemplateLabel(service.service_type)}
+                        </p>
+                        <DeleteWorshipServiceButton
+                          description={`o culto de ${formatDate(service.service_date)} às ${formatTime(service.start_time)}`}
+                          serviceId={service.id}
+                        />
+                      </div>
                       {service.is_special ? (
                         <p className="truncate font-semibold">
                           {service.title ?? "Culto especial"}
@@ -250,12 +257,18 @@ export default async function AdminCultosPage({
                 className="rounded-md border border-primary/30 bg-primary-soft p-3 text-sm text-foreground"
                 key={service.id}
               >
-                <p className="font-semibold text-primary-strong">
-                  {formatDate(service.service_date)} · {formatTime(service.start_time)}{" "}
-                  {service.is_special
-                    ? getSpecialWorshipLabel(service.special_type)
-                    : getTemplateLabel(service.service_type)}
-                </p>
+                <div className="flex min-w-0 items-start gap-2">
+                  <p className="min-w-0 flex-1 font-semibold text-primary-strong">
+                    {formatDate(service.service_date)} · {formatTime(service.start_time)}{" "}
+                    {service.is_special
+                      ? getSpecialWorshipLabel(service.special_type)
+                      : getTemplateLabel(service.service_type)}
+                  </p>
+                  <DeleteWorshipServiceButton
+                    description={`o culto de ${formatDate(service.service_date)} às ${formatTime(service.start_time)}`}
+                    serviceId={service.id}
+                  />
+                </div>
                 {service.is_special ? (
                   <p className="mt-1 font-semibold">
                     {service.title ?? "Culto especial"}
