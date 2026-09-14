@@ -31,6 +31,7 @@ test("perfil preserva funcoes protegidas e troca apenas funcoes de escala", () =
 });
 
 test("identifica funcoes vinculadas como gestor de igreja", () => {
+  assert.equal(isManagerRoleKey("pastor"), true);
   assert.equal(isManagerRoleKey("anciao"), true);
   assert.equal(isManagerRoleKey("lider_musica"), true);
   assert.equal(isManagerRoleKey("pregador"), false);

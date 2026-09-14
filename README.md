@@ -4,7 +4,7 @@ Sistema web para organização de escalas da IASD Candido Sales.
 
 ## Etapa Atual
 
-### Etapa 7: Notificações Push
+### Etapa atual: Formações musicais e perfil Pastor
 
 Entregue até esta etapa:
 
@@ -145,6 +145,12 @@ Entregue até esta etapa:
 - Admin pode criar e editar usuários com múltiplas funções.
 - Perfil do usuário permite adicionar ou remover funções de escala (`Pregador` e `Cantor`).
 - Funções gerenciais, como `Ancião` e `Líder de Música`, ficam vinculadas à igreja principal selecionada no cadastro ou pelo administrador.
+- Cantores podem continuar disponíveis e escalados como solistas mesmo quando também integram ou lideram uma dupla, trio ou grupo.
+- A página `/formacoes` cadastra duplas, trios e grupos com igreja de origem, integrantes, responsáveis e igrejas atendidas.
+- Uma formação criada por cantor responsável fica pendente até aprovação; administrador ou Líder de Música da igreja de origem pode ativá-la.
+- Responsáveis pela formação e gestores autorizados informam a disponibilidade coletiva por culto em calendário mensal.
+- A escala de louvor lista opções `Solo`, `Dupla`, `Trio` e `Grupo`; ao escalar uma formação, todos os integrantes ficam indisponíveis para outro culto no mesmo dia.
+- Escalas coletivas aparecem na agenda de cada integrante, identificadas pelo nome e tipo da formação.
 - Igrejas onde o usuário aceita ser escalado como pregador ou cantor continuam sendo definidas em `/disponibilidade`.
 - Testes de permissões em `tests/auth/access-rules.test.mjs`.
 - Testes de regras de múltiplas funções em `tests/auth/role-rules.test.mjs`.
@@ -157,7 +163,7 @@ Pendente:
 
 - Cadastrar pelo menos uma igreja real em `/admin/igrejas` antes de liberar novos cadastros públicos.
 - Confirmar login real do administrador criado no Supabase Auth.
-- Implementar funcionalidades completas de escala em etapas futuras autorizadas.
+- Validar os novos fluxos de Pastor e formações com contas reais dos cinco perfis do sistema.
 
 ## Tecnologias
 
@@ -365,6 +371,8 @@ supabase/migrations/20260912231500_edit_worship_services.sql
 supabase/migrations/20260913003000_allow_elders_manage_worship_services.sql
 supabase/migrations/20260913110000_manage_team_availability.sql
 supabase/migrations/20260913113000_protect_managed_availability.sql
+supabase/migrations/20260914001000_add_pastor_role_value.sql
+supabase/migrations/20260914002000_add_musical_formations.sql
 ```
 
 Tabelas iniciais:
@@ -534,7 +542,9 @@ Depois de conectar GitHub na Vercel, cada push na branch `main` deve gerar um de
 - Usuário novo deve ficar aguardando aprovação.
 - Usuário bloqueado não pode acessar o sistema.
 - Usuário inativo não pode acessar o sistema.
-- Uma pessoa pode ter várias funções na mesma conta, como Ancião, Líder de Música, Cantor e Pregador.
+- Uma pessoa pode ter várias funções na mesma conta, como Pastor, Ancião, Líder de Música, Cantor e Pregador.
+- A função `Pastor` atua globalmente: cria e altera escalas de pregação, gerencia cultos de todas as igrejas, atribui disponibilidade a pregadores e cadastra ou aprova pregadores e cantores.
+- Somente o administrador pode aprovar outro Pastor; operações destrutivas globais e a administração de igrejas continuam exclusivas do administrador.
 - Administrador pode gerenciar todo o sistema.
 - Ancião gerencia pregadores e pode atribuir disponibilidade por culto nas igrejas onde possui vínculo gerencial, inclusive para pregadores membros de outras igrejas.
 - Líder de música gerencia cantores e grupos e pode atribuir disponibilidade por culto nas igrejas onde possui vínculo gerencial, independentemente da igreja de origem do voluntário.

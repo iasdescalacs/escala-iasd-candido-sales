@@ -44,6 +44,7 @@ test("limita as funcoes que cada gestor pode administrar", () => {
     "pregador",
     "cantor",
   ]);
+  assert.deepEqual(getManagedAvailabilityRoleKeys(["pastor"]), ["pregador"]);
   assert.equal(
     canManageAvailabilityRole({
       targetRoleKey: "cantor",

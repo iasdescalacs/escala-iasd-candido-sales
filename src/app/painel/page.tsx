@@ -12,10 +12,12 @@ export default async function PainelPage() {
   const roleKeys = profile.roles.map((role) => role.key);
   const canReviewSwaps =
     roleKeys.includes("admin") ||
+    roleKeys.includes("pastor") ||
     roleKeys.includes("anciao") ||
     roleKeys.includes("lider_musica");
   const canManageApprovals =
     roleKeys.includes("admin") ||
+    roleKeys.includes("pastor") ||
     roleKeys.includes("anciao") ||
     roleKeys.includes("lider_musica");
   const [pendingSwapRequests, approvalData] = await Promise.all([

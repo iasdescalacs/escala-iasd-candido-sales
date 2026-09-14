@@ -13,6 +13,8 @@ export async function AppShell({ children }: { children: ReactNode }) {
     isAdmin: accessProfile?.roles.includes("admin") ?? false,
     isElder: accessProfile?.roles.includes("anciao") ?? false,
     isMusicLeader: accessProfile?.roles.includes("lider_musica") ?? false,
+    isPastor: accessProfile?.roles.includes("pastor") ?? false,
+    isSinger: accessProfile?.roles.includes("cantor") ?? false,
     isPending: accessProfile?.status === "pending",
   };
 

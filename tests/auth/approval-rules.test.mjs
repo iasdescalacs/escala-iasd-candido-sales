@@ -31,5 +31,14 @@ test("lider de musica aprova somente cantor da propria igreja", () => {
 test("funcoes permitidas para cadastro por gestores", () => {
   assert.deepEqual(getAllowedManagedCreationRoles(["lider_musica"]), ["cantor"]);
   assert.deepEqual(getAllowedManagedCreationRoles(["anciao"]), ["pregador", "cantor"]);
+  assert.deepEqual(getAllowedManagedCreationRoles(["pastor"]), ["pregador", "cantor"]);
   assert.deepEqual(getAllowedManagedCreationRoles(["pregador"]), []);
+});
+
+test("pastor aprova pregador e cantor em qualquer igreja, mas nao outro pastor", () => {
+  const viewer = { roleKeys: ["pastor"], managedChurchIds: [] };
+
+  assert.equal(canApprovePendingUserRole({ viewer, request: { roleKey: "pregador", churchId: "a" } }), true);
+  assert.equal(canApprovePendingUserRole({ viewer, request: { roleKey: "cantor", churchId: "b" } }), true);
+  assert.equal(canApprovePendingUserRole({ viewer, request: { roleKey: "pastor", churchId: "a" } }), false);
 });

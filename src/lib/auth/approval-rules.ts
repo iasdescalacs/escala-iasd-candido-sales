@@ -1,6 +1,6 @@
 import type { RoleKey } from "./role-rules";
 
-export type ApprovalRequestRole = "pregador" | "cantor";
+export type ApprovalRequestRole = "pastor" | "pregador" | "cantor";
 
 export type ApprovalViewer = {
   managedChurchIds: string[];
@@ -23,6 +23,10 @@ export function canApprovePendingUserRole({
     return true;
   }
 
+  if (viewer.roleKeys.includes("pastor")) {
+    return request.roleKey === "pregador" || request.roleKey === "cantor";
+  }
+
   if (viewer.roleKeys.includes("anciao") && viewer.managedChurchIds.includes(request.churchId)) {
     return request.roleKey === "pregador" || request.roleKey === "cantor";
   }
@@ -35,7 +39,11 @@ export function canApprovePendingUserRole({
 }
 
 export function getAllowedManagedCreationRoles(roleKeys: RoleKey[]) {
-  if (roleKeys.includes("admin") || roleKeys.includes("anciao")) {
+  if (
+    roleKeys.includes("admin") ||
+    roleKeys.includes("pastor") ||
+    roleKeys.includes("anciao")
+  ) {
     return ["pregador", "cantor"] as ApprovalRequestRole[];
   }
 

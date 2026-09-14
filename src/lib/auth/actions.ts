@@ -630,7 +630,8 @@ export async function createUserByManagerAction(
   }
 
   const admin = createAdminSupabaseClient();
-  const allowedChurchIds = currentRoleKeys.includes("admin")
+  const allowedChurchIds =
+    currentRoleKeys.includes("admin") || currentRoleKeys.includes("pastor")
     ? await getAllActiveChurchIds(admin)
     : await getCurrentManagerChurchIds(admin, profile.appUser.id);
 
@@ -906,7 +907,10 @@ async function getPendingUserApprovalContext(
         churchLinks?.find((link) => link.role_id === userRole.role_id)?.church_id ??
         churchLinks?.[0]?.church_id;
 
-      if ((roleKey !== "pregador" && roleKey !== "cantor") || !churchId) {
+      if (
+        (roleKey !== "pastor" && roleKey !== "pregador" && roleKey !== "cantor") ||
+        !churchId
+      ) {
         return null;
       }
 
@@ -979,9 +983,10 @@ async function getUserApprovalApproverIds(
   const { data: roles } = await admin
     .from("roles")
     .select("id,key")
-    .in("key", ["admin", "anciao", "lider_musica"])
+    .in("key", ["admin", "pastor", "anciao", "lider_musica"])
     .is("deleted_at", null);
   const adminRoleId = roles?.find((role) => role.key === "admin")?.id;
+  const pastorRoleId = roles?.find((role) => role.key === "pastor")?.id;
   const elderRoleId = roles?.find((role) => role.key === "anciao")?.id;
   const musicRoleId = roles?.find((role) => role.key === "lider_musica")?.id;
   const approverIds = new Set<string>();
@@ -995,7 +1000,16 @@ async function getUserApprovalApproverIds(
     data?.forEach((item) => approverIds.add(item.user_id));
   }
 
-  if (elderRoleId) {
+  if (!roleKeys.includes("pastor") && pastorRoleId) {
+    const { data } = await admin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role_id", pastorRoleId)
+      .is("deleted_at", null);
+    data?.forEach((item) => approverIds.add(item.user_id));
+  }
+
+  if (!roleKeys.includes("pastor") && elderRoleId) {
     const { data } = await admin
       .from("user_church_links")
       .select("user_id")
@@ -1006,7 +1020,7 @@ async function getUserApprovalApproverIds(
     data?.forEach((item) => approverIds.add(item.user_id));
   }
 
-  if (roleKeys.includes("cantor") && musicRoleId) {
+  if (!roleKeys.includes("pastor") && roleKeys.includes("cantor") && musicRoleId) {
     const { data } = await admin
       .from("user_church_links")
       .select("user_id")

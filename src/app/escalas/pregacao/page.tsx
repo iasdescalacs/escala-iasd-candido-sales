@@ -42,7 +42,9 @@ export default async function EscalaPregacaoPage({
   if (!data.allowed) {
     return <AccessDenied />;
   }
-  const isAdmin = data.profile.roles.some((role) => role.key === "admin");
+  const isGlobalManager = data.profile.roles.some(
+    (role) => role.key === "admin" || role.key === "pastor",
+  );
   const selectedChurchId = data.churches.some((church) => church.id === requestedChurchId)
     ? requestedChurchId
     : "todas";
@@ -87,7 +89,7 @@ export default async function EscalaPregacaoPage({
         year={year}
       />
 
-      {isAdmin ? (
+      {isGlobalManager ? (
         <ChurchFilter
           churches={data.churches}
           month={month}
@@ -100,7 +102,7 @@ export default async function EscalaPregacaoPage({
         <ScheduleCalendar
           calendarDays={buildCalendarDays(year, month)}
           churches={filteredChurches}
-          groupByChurch={isAdmin}
+          groupByChurch={isGlobalManager}
           roleKey="pregador"
           services={filteredServices}
           swapRequests={filteredSwapRequests}
@@ -227,7 +229,7 @@ function AccessDenied() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
       <section className="rounded-lg border border-border bg-surface p-6 text-muted shadow-sm">
-        Você precisa ser ancião vinculado a uma igreja, ou administrador, para gerenciar a escala de pregação.
+        Você precisa ser ancião vinculado a uma igreja, Pastor ou administrador para gerenciar a escala de pregação.
       </section>
     </div>
   );

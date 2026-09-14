@@ -18,8 +18,10 @@ export async function requireWorshipManager(
   const profile = await requireApprovedUser();
   const roleKeys = profile.roles.map((role) => role.key);
   const isAdmin = roleKeys.includes("admin");
+  const isPastor = roleKeys.includes("pastor");
+  const isGlobalManager = isAdmin || isPastor;
 
-  if (!isAdmin && !roleKeys.includes("anciao")) {
+  if (!isGlobalManager && !roleKeys.includes("anciao")) {
     redirect(
       "/painel?mensagem=Você não tem permissão para gerenciar cultos.",
     );
@@ -27,7 +29,7 @@ export async function requireWorshipManager(
 
   let churches: WorshipManagementChurch[] = [];
 
-  if (isAdmin) {
+  if (isGlobalManager) {
     const { data } = await supabase
       .from("churches")
       .select("id,name,city,state,active")
@@ -73,6 +75,8 @@ export async function requireWorshipManager(
     churchIds: churches.map((church) => church.id),
     churches,
     isAdmin,
+    isGlobalManager,
+    isPastor,
     profile,
   };
 }

@@ -227,6 +227,144 @@ export type Database = {
         };
         Relationships: [];
       };
+      musical_formations: {
+        Row: {
+          id: string;
+          name: string;
+          formation_type: Database["public"]["Enums"]["musical_formation_type"];
+          status: Database["public"]["Enums"]["musical_formation_status"];
+          home_church_id: string;
+          created_by_user_id: Nullable<string>;
+          approved_by_user_id: Nullable<string>;
+          approved_at: Nullable<string>;
+          created_at: string;
+          updated_at: string;
+          deleted_at: Nullable<string>;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          formation_type: Database["public"]["Enums"]["musical_formation_type"];
+          status?: Database["public"]["Enums"]["musical_formation_status"];
+          home_church_id: string;
+          created_by_user_id?: Nullable<string>;
+          approved_by_user_id?: Nullable<string>;
+          approved_at?: Nullable<string>;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          formation_type?: Database["public"]["Enums"]["musical_formation_type"];
+          status?: Database["public"]["Enums"]["musical_formation_status"];
+          home_church_id?: string;
+          created_by_user_id?: Nullable<string>;
+          approved_by_user_id?: Nullable<string>;
+          approved_at?: Nullable<string>;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Relationships: [];
+      };
+      musical_formation_members: {
+        Row: {
+          id: string;
+          formation_id: string;
+          user_id: string;
+          member_role: Database["public"]["Enums"]["musical_member_role"];
+          created_at: string;
+          updated_at: string;
+          deleted_at: Nullable<string>;
+        };
+        Insert: {
+          id?: string;
+          formation_id: string;
+          user_id: string;
+          member_role?: Database["public"]["Enums"]["musical_member_role"];
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Update: {
+          id?: string;
+          formation_id?: string;
+          user_id?: string;
+          member_role?: Database["public"]["Enums"]["musical_member_role"];
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Relationships: [];
+      };
+      musical_formation_churches: {
+        Row: {
+          id: string;
+          formation_id: string;
+          church_id: string;
+          can_be_scheduled: boolean;
+          created_at: string;
+          updated_at: string;
+          deleted_at: Nullable<string>;
+        };
+        Insert: {
+          id?: string;
+          formation_id: string;
+          church_id: string;
+          can_be_scheduled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Update: {
+          id?: string;
+          formation_id?: string;
+          church_id?: string;
+          can_be_scheduled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Relationships: [];
+      };
+      musical_formation_availability: {
+        Row: {
+          id: string;
+          formation_id: string;
+          worship_service_id: string;
+          service_date: string;
+          available: boolean;
+          managed_by_user_id: Nullable<string>;
+          created_at: string;
+          updated_at: string;
+          deleted_at: Nullable<string>;
+        };
+        Insert: {
+          id?: string;
+          formation_id: string;
+          worship_service_id: string;
+          service_date: string;
+          available?: boolean;
+          managed_by_user_id?: Nullable<string>;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Update: {
+          id?: string;
+          formation_id?: string;
+          worship_service_id?: string;
+          service_date?: string;
+          available?: boolean;
+          managed_by_user_id?: Nullable<string>;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: Nullable<string>;
+        };
+        Relationships: [];
+      };
       history: {
         Row: {
           id: string;
@@ -435,6 +573,7 @@ export type Database = {
           end_time: string;
           preacher_user_id: Nullable<string>;
           singer_user_id: Nullable<string>;
+          singer_formation_id: Nullable<string>;
           preacher_name: Nullable<string>;
           singer_name: Nullable<string>;
           is_special: boolean;
@@ -454,6 +593,7 @@ export type Database = {
           end_time: string;
           preacher_user_id?: Nullable<string>;
           singer_user_id?: Nullable<string>;
+          singer_formation_id?: Nullable<string>;
           preacher_name?: Nullable<string>;
           singer_name?: Nullable<string>;
           is_special?: boolean;
@@ -473,6 +613,7 @@ export type Database = {
           end_time?: string;
           preacher_user_id?: Nullable<string>;
           singer_user_id?: Nullable<string>;
+          singer_formation_id?: Nullable<string>;
           preacher_name?: Nullable<string>;
           singer_name?: Nullable<string>;
           is_special?: boolean;
@@ -494,6 +635,10 @@ export type Database = {
           target_role: Database["public"]["Enums"]["role_key"];
           target_church_id: string;
         };
+        Returns: boolean;
+      };
+      can_manage_musical_formation: {
+        Args: { actor_id: string; target_formation_id: string };
         Returns: boolean;
       };
       can_manage_church_worship: {
@@ -535,6 +680,30 @@ export type Database = {
         };
         Returns: number;
       };
+      save_musical_formation: {
+        Args: {
+          actor_id: string;
+          target_formation_id: Nullable<string>;
+          target_name: string;
+          target_type: Database["public"]["Enums"]["musical_formation_type"];
+          target_home_church_id: string;
+          target_member_ids: string[];
+          target_responsible_ids: string[];
+          target_church_ids: string[];
+          target_status: Nullable<Database["public"]["Enums"]["musical_formation_status"]>;
+        };
+        Returns: string;
+      };
+      set_musical_formation_availability: {
+        Args: {
+          actor_id: string;
+          target_formation_id: string;
+          period_start: string;
+          period_end: string;
+          selected_service_ids: string[];
+        };
+        Returns: number;
+      };
       update_worship_service: {
         Args: {
           actor_id: string;
@@ -564,7 +733,16 @@ export type Database = {
     };
     Enums: {
       user_status: "pending" | "approved" | "blocked" | "inactive";
-      role_key: "admin" | "anciao" | "lider_musica" | "pregador" | "cantor";
+      role_key:
+        | "admin"
+        | "pastor"
+        | "anciao"
+        | "lider_musica"
+        | "pregador"
+        | "cantor";
+      musical_formation_type: "solo" | "dupla" | "trio" | "grupo";
+      musical_formation_status: "pending" | "active" | "inactive";
+      musical_member_role: "responsavel" | "integrante";
       notification_status: "unread" | "read" | "archived";
       swap_request_status: "pending" | "approved" | "rejected" | "cancelled";
       worship_service_type: "quarta" | "sabado" | "domingo" | "especial";

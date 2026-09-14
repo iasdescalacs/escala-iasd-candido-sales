@@ -8,7 +8,7 @@ import { getManagedAvailabilityRoleKeys } from "./manager-rules";
 
 type RoleRow = {
   id: string;
-  key: "admin" | "anciao" | "lider_musica" | AvailabilityRoleKey;
+  key: "admin" | "pastor" | "anciao" | "lider_musica" | AvailabilityRoleKey;
   name: string;
 };
 
@@ -25,10 +25,11 @@ export async function requireAvailabilityManager() {
 
   const admin = createAdminSupabaseClient();
   const isAdmin = viewerRoleKeys.includes("admin");
+  const isPastor = viewerRoleKeys.includes("pastor");
   const { data: roleRows } = await admin
     .from("roles")
     .select("id,key,name")
-    .in("key", ["pregador", "cantor", "anciao", "lider_musica"])
+    .in("key", ["pregador", "cantor", "pastor", "anciao", "lider_musica"])
     .is("deleted_at", null);
   const roles = (roleRows ?? []) as RoleRow[];
   const roleIds = Object.fromEntries(
@@ -53,6 +54,16 @@ export async function requireAvailabilityManager() {
     churchIdsByRole.pregador = churchIds;
     churchIdsByRole.cantor = churchIds;
   } else {
+    if (isPastor) {
+      const { data: churches } = await admin
+        .from("churches")
+        .select("id")
+        .eq("active", true)
+        .is("deleted_at", null);
+
+      churchIdsByRole.pregador = (churches ?? []).map((church) => church.id);
+    }
+
     const rolePairs: Array<{
       managerRoleKey: "anciao" | "lider_musica";
       targetRoleKey: AvailabilityRoleKey;
@@ -78,7 +89,10 @@ export async function requireAvailabilityManager() {
           .is("deleted_at", null);
 
         churchIdsByRole[targetRoleKey] = Array.from(
-          new Set((links ?? []).map((link) => link.church_id)),
+          new Set([
+            ...churchIdsByRole[targetRoleKey],
+            ...(links ?? []).map((link) => link.church_id),
+          ]),
         );
       }),
     );

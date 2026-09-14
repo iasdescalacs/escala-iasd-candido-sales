@@ -40,7 +40,8 @@ export async function getUserApprovalDashboardData(
   const supabase = createAdminSupabaseClient();
   const roleKeys = profile.roles.map((role) => role.key) as Database["public"]["Enums"]["role_key"][];
   const isAdmin = roleKeys.includes("admin");
-  const managedChurches = isAdmin
+  const isPastor = roleKeys.includes("pastor");
+  const managedChurches = isAdmin || isPastor
     ? await getAllChurches(supabase)
     : await getManagedChurches(supabase, profile.appUser.id);
   const managedChurchIds = managedChurches.map((church) => church.id);
@@ -116,7 +117,11 @@ async function getPendingApprovalRequests(
     const role = roleMap.get(userRole.role_id);
     const user = userMap.get(userRole.user_id);
 
-    if (!role || !user || (role.key !== "pregador" && role.key !== "cantor")) {
+    if (
+      !role ||
+      !user ||
+      (role.key !== "pastor" && role.key !== "pregador" && role.key !== "cantor")
+    ) {
       continue;
     }
 

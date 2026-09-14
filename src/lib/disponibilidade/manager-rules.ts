@@ -9,7 +9,7 @@ export function getManagedAvailabilityRoleKeys(
 
   const roles: AvailabilityRoleKey[] = [];
 
-  if (viewerRoleKeys.includes("anciao")) {
+  if (viewerRoleKeys.includes("pastor") || viewerRoleKeys.includes("anciao")) {
     roles.push("pregador");
   }
 

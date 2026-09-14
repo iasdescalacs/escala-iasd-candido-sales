@@ -13,6 +13,7 @@ const initialState: AuthActionState = { message: "" };
 
 const roleLabels = {
   cantor: "Cantor",
+  pastor: "Pastor",
   pregador: "Pregador",
 } as const;
 

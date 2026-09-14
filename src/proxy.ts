@@ -9,6 +9,7 @@ const protectedPrefixes = [
   "/disponibilidade",
   "/agenda",
   "/escalas",
+  "/formacoes",
 ];
 const adminPrefixes = ["/admin"];
 
@@ -60,6 +61,7 @@ export const config = {
     "/disponibilidade/:path*",
     "/agenda/:path*",
     "/escalas/:path*",
+    "/formacoes/:path*",
     "/admin/:path*",
   ],
 };

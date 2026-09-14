@@ -23,6 +23,7 @@ export type ScheduleService = Pick<
   | "preacher_user_id"
   | "preacher_name"
   | "singer_user_id"
+  | "singer_formation_id"
   | "singer_name"
 >;
 
@@ -34,6 +35,10 @@ export type ScheduleChurch = Pick<
 export type VolunteerOption = {
   id: string;
   full_name: string;
+  kind: "user" | "formation";
+  member_ids: string[];
+  resource_id: string;
+  type_label: string;
   church_id: string;
   service_date: string;
   service_id: string;
@@ -50,6 +55,7 @@ export type SwapRequestSummary = Database["public"]["Tables"]["swap_requests"]["
 
 export type UserAgendaItem = ScheduleService & {
   roleKey: ScheduleRoleKey;
+  canRequestSwap: boolean;
   church_name: string;
   church_city: string;
   church_state: string;
@@ -79,8 +85,10 @@ export async function getSchedulePageData({
   const supabase = createAdminSupabaseClient();
   const roleKeys = profile.roles.map((role) => role.key);
   const isAdmin = roleKeys.includes("admin");
+  const isPastorPreachingManager =
+    scheduleRoleKey === "pregador" && roleKeys.includes("pastor");
 
-  if (!isAdmin && !roleKeys.includes(managerRoleKey)) {
+  if (!isAdmin && !isPastorPreachingManager && !roleKeys.includes(managerRoleKey)) {
     return { allowed: false as const };
   }
 
@@ -103,7 +111,7 @@ export async function getSchedulePageData({
     return { allowed: false as const };
   }
 
-  const managedChurchIds = isAdmin
+  const managedChurchIds = isAdmin || isPastorPreachingManager
     ? await getAllChurchIds(supabase)
     : await getManagedChurchIds(supabase, {
         userId: profile.appUser.id,
@@ -132,7 +140,7 @@ export async function getSchedulePageData({
       supabase
         .from("worship_services")
         .select(
-          "id,church_id,service_date,service_type,start_time,title,preacher_user_id,preacher_name,singer_user_id,singer_name",
+          "id,church_id,service_date,service_type,start_time,title,preacher_user_id,preacher_name,singer_user_id,singer_formation_id,singer_name",
         )
         .in("church_id", managedChurchIds)
         .gte("service_date", monthStart)
@@ -172,14 +180,30 @@ export async function getUserAgendaPageData({
 }) {
   const profile = await requireApprovedUser();
   const supabase = createAdminSupabaseClient();
+  const { data: formationMemberships } = await supabase
+    .from("musical_formation_members")
+    .select("formation_id")
+    .eq("user_id", profile.appUser.id)
+    .is("deleted_at", null);
+  const formationIds =
+    formationMemberships?.map((membership) => membership.formation_id) ?? [];
+  const agendaFilter = [
+    "preacher_user_id.eq." + profile.appUser.id,
+    "singer_user_id.eq." + profile.appUser.id,
+  ];
+
+  if (formationIds.length > 0) {
+    agendaFilter.push("singer_formation_id.in.(" + formationIds.join(",") + ")");
+  }
+
   const [{ data: services }, { data: churches }, { data: notifications }] =
     await Promise.all([
       supabase
         .from("worship_services")
         .select(
-          "id,church_id,service_date,service_type,start_time,title,preacher_user_id,preacher_name,singer_user_id,singer_name",
+          "id,church_id,service_date,service_type,start_time,title,preacher_user_id,preacher_name,singer_user_id,singer_formation_id,singer_name",
         )
-        .or(`preacher_user_id.eq.${profile.appUser.id},singer_user_id.eq.${profile.appUser.id}`)
+        .or(agendaFilter.join(","))
         .gte("service_date", monthStart)
         .lte("service_date", monthEnd)
         .is("deleted_at", null)
@@ -203,6 +227,7 @@ export async function getUserAgendaPageData({
       agenda.push({
         ...service,
         roleKey: "pregador",
+        canRequestSwap: true,
         church_name: churchMap.get(service.church_id)?.name ?? "Igreja",
         church_city: churchMap.get(service.church_id)?.city ?? "Candido Sales",
         church_state: churchMap.get(service.church_id)?.state ?? "BA",
@@ -213,6 +238,21 @@ export async function getUserAgendaPageData({
       agenda.push({
         ...service,
         roleKey: "cantor",
+        canRequestSwap: true,
+        church_name: churchMap.get(service.church_id)?.name ?? "Igreja",
+        church_city: churchMap.get(service.church_id)?.city ?? "Candido Sales",
+        church_state: churchMap.get(service.church_id)?.state ?? "BA",
+      });
+    }
+
+    if (
+      service.singer_formation_id &&
+      formationIds.includes(service.singer_formation_id)
+    ) {
+      agenda.push({
+        ...service,
+        roleKey: "cantor",
+        canRequestSwap: false,
         church_name: churchMap.get(service.church_id)?.name ?? "Igreja",
         church_city: churchMap.get(service.church_id)?.city ?? "Candido Sales",
         church_state: churchMap.get(service.church_id)?.state ?? "BA",
@@ -248,6 +288,7 @@ export async function getPanelPendingSwapRequests(
   const supabase = createAdminSupabaseClient();
   const roleKeys = profile.roles.map((role) => role.key);
   const isAdmin = roleKeys.includes("admin");
+  const isPastor = roleKeys.includes("pastor");
   const requests: SwapRequestSummary[] = [];
 
   if (isAdmin) {
@@ -272,7 +313,12 @@ export async function getPanelPendingSwapRequests(
     const elderRoleId = managerRoles?.find((role) => role.key === "anciao")?.id;
     const musicLeaderRoleId = managerRoles?.find((role) => role.key === "lider_musica")?.id;
 
-    if (roleKeys.includes("anciao") && elderRoleId) {
+    if (isPastor) {
+      const churchIds = await getAllChurchIds(supabase);
+      requests.push(
+        ...(await getPendingSwapRequests(supabase, { roleKey: "pregador", churchIds })),
+      );
+    } else if (roleKeys.includes("anciao") && elderRoleId) {
       const churchIds = await getManagedChurchIds(supabase, {
         roleId: elderRoleId,
         userId: profile.appUser.id,
@@ -342,6 +388,22 @@ async function getVolunteerOptions(
   },
 ) {
   const assignmentColumn = roleKey === "pregador" ? "preacher_user_id" : "singer_user_id";
+  let assignmentQuery = supabase
+    .from("worship_services")
+    .select(
+      "id,service_date,preacher_user_id,singer_user_id,singer_formation_id",
+    )
+    .gte("service_date", monthStart)
+    .lte("service_date", monthEnd)
+    .is("deleted_at", null);
+
+  assignmentQuery =
+    roleKey === "pregador"
+      ? assignmentQuery.not(assignmentColumn, "is", null)
+      : assignmentQuery.or(
+          "singer_user_id.not.is.null,singer_formation_id.not.is.null",
+        );
+
   const [
     { data: links },
     { data: availability },
@@ -362,13 +424,7 @@ async function getVolunteerOptions(
       .gte("service_date", monthStart)
       .lte("service_date", monthEnd)
       .is("deleted_at", null),
-    supabase
-      .from("worship_services")
-      .select("id,service_date,preacher_user_id,singer_user_id")
-      .gte("service_date", monthStart)
-      .lte("service_date", monthEnd)
-      .not(assignmentColumn, "is", null)
-      .is("deleted_at", null),
+    assignmentQuery,
     supabase
       .from("worship_services")
       .select("id,church_id,service_date,is_special")
@@ -384,16 +440,15 @@ async function getVolunteerOptions(
     ]),
   );
 
-  if (userIds.length === 0) {
-    return [];
-  }
-
-  const { data: users } = await supabase
-    .from("users")
-    .select("id,full_name")
-    .in("id", userIds)
-    .eq("status", "approved")
-    .is("deleted_at", null);
+  const { data: users } =
+    userIds.length > 0
+      ? await supabase
+          .from("users")
+          .select("id,full_name")
+          .in("id", userIds)
+          .eq("status", "approved")
+          .is("deleted_at", null)
+      : { data: [] as Array<{ id: string; full_name: string }> };
   const names = new Map((users ?? []).map((user) => [user.id, user.full_name]));
   const normalizedAvailability = (availability ?? []).map((item) => ({
     available: item.available,
@@ -416,6 +471,40 @@ async function getVolunteerOptions(
           : assignment.singer_user_id,
     })),
   );
+  const assignedFormationIds =
+    roleKey === "cantor"
+      ? Array.from(
+          new Set(
+            (assignments ?? [])
+              .map((assignment) => assignment.singer_formation_id)
+              .filter((id): id is string => Boolean(id)),
+          ),
+        )
+      : [];
+  const { data: occupiedFormationMembers } =
+    assignedFormationIds.length > 0
+      ? await supabase
+          .from("musical_formation_members")
+          .select("formation_id,user_id")
+          .in("formation_id", assignedFormationIds)
+          .is("deleted_at", null)
+      : { data: [] as Array<{ formation_id: string; user_id: string }> };
+
+  if (roleKey === "cantor") {
+    for (const assignment of assignments ?? []) {
+      if (!assignment.singer_formation_id) {
+        continue;
+      }
+
+      for (const member of occupiedFormationMembers ?? []) {
+        if (member.formation_id === assignment.singer_formation_id) {
+          occupiedByUserDate.add(
+            member.user_id + ":" + assignment.service_date,
+          );
+        }
+      }
+    }
+  }
   const volunteers: VolunteerOption[] = [];
 
   for (const service of services ?? []) {
@@ -441,6 +530,10 @@ async function getVolunteerOptions(
         volunteers.push({
           id: userId,
           full_name: names.get(userId) ?? "Voluntário",
+          kind: "user",
+          member_ids: [userId],
+          resource_id: userId,
+          type_label: "Solo",
           church_id: service.church_id,
           service_date: service.service_date,
           service_id: service.id,
@@ -449,7 +542,159 @@ async function getVolunteerOptions(
     }
   }
 
+  if (roleKey === "cantor") {
+    volunteers.push(
+      ...(await getMusicalFormationVolunteerOptions(supabase, {
+        assignments: assignments ?? [],
+        churchIds,
+        monthEnd,
+        monthStart,
+        services: services ?? [],
+      })),
+    );
+  }
+
   return volunteers.sort((a, b) => a.full_name.localeCompare(b.full_name, "pt-BR"));
+}
+
+async function getMusicalFormationVolunteerOptions(
+  supabase: ReturnType<typeof createAdminSupabaseClient>,
+  {
+    assignments,
+    churchIds,
+    monthEnd,
+    monthStart,
+    services,
+  }: {
+    assignments: Array<{
+      id: string;
+      service_date: string;
+      preacher_user_id: string | null;
+      singer_user_id: string | null;
+      singer_formation_id: string | null;
+    }>;
+    churchIds: string[];
+    monthEnd: string;
+    monthStart: string;
+    services: Array<{
+      id: string;
+      church_id: string;
+      service_date: string;
+      is_special: boolean;
+    }>;
+  },
+) {
+  const [
+    { data: formations },
+    { data: formationChurches },
+    { data: availability },
+    { data: allMembers },
+  ] = await Promise.all([
+    supabase
+      .from("musical_formations")
+      .select("id,name,formation_type")
+      .eq("status", "active")
+      .is("deleted_at", null),
+    supabase
+      .from("musical_formation_churches")
+      .select("formation_id,church_id")
+      .in("church_id", churchIds)
+      .eq("can_be_scheduled", true)
+      .is("deleted_at", null),
+    supabase
+      .from("musical_formation_availability")
+      .select("formation_id,worship_service_id,service_date")
+      .eq("available", true)
+      .gte("service_date", monthStart)
+      .lte("service_date", monthEnd)
+      .is("deleted_at", null),
+    supabase
+      .from("musical_formation_members")
+      .select("formation_id,user_id")
+      .is("deleted_at", null),
+  ]);
+  const formationMap = new Map(
+    (formations ?? []).map((formation) => [formation.id, formation]),
+  );
+  const memberIdsByFormation = new Map<string, string[]>();
+
+  for (const member of allMembers ?? []) {
+    const memberIds = memberIdsByFormation.get(member.formation_id) ?? [];
+    memberIds.push(member.user_id);
+    memberIdsByFormation.set(member.formation_id, memberIds);
+  }
+
+  const occupiedMemberDates = new Set<string>();
+
+  for (const assignment of assignments) {
+    if (assignment.singer_user_id) {
+      occupiedMemberDates.add(
+        assignment.singer_user_id + ":" + assignment.service_date,
+      );
+    }
+
+    if (assignment.singer_formation_id) {
+      for (const memberId of
+        memberIdsByFormation.get(assignment.singer_formation_id) ?? []) {
+        occupiedMemberDates.add(memberId + ":" + assignment.service_date);
+      }
+    }
+  }
+
+  const options: VolunteerOption[] = [];
+
+  for (const service of services) {
+    const availableFormationIds = new Set(
+      (availability ?? [])
+        .filter(
+          (item) =>
+            item.worship_service_id === service.id &&
+            item.service_date === service.service_date,
+        )
+        .map((item) => item.formation_id),
+    );
+
+    for (const formationChurch of formationChurches ?? []) {
+      if (
+        formationChurch.church_id !== service.church_id ||
+        !availableFormationIds.has(formationChurch.formation_id)
+      ) {
+        continue;
+      }
+
+      const formation = formationMap.get(formationChurch.formation_id);
+      const memberIds =
+        memberIdsByFormation.get(formationChurch.formation_id) ?? [];
+      const hasConflict = memberIds.some((memberId) =>
+        occupiedMemberDates.has(memberId + ":" + service.service_date),
+      );
+
+      if (!formation || memberIds.length === 0 || hasConflict) {
+        continue;
+      }
+
+      options.push({
+        church_id: service.church_id,
+        full_name: formation.name,
+        id: "formation:" + formation.id,
+        kind: "formation",
+        member_ids: memberIds,
+        resource_id: formation.id,
+        service_date: service.service_date,
+        service_id: service.id,
+        type_label:
+          formation.formation_type === "dupla"
+            ? "Dupla"
+            : formation.formation_type === "trio"
+              ? "Trio"
+              : formation.formation_type === "grupo"
+                ? "Grupo"
+                : "Solo",
+      });
+    }
+  }
+
+  return options;
 }
 
 async function getPendingSwapRequests(
@@ -561,7 +806,7 @@ async function getSwapTargetServices(
   const { data: services } = await supabase
     .from("worship_services")
     .select(
-      "id,church_id,service_date,service_type,start_time,title,preacher_user_id,preacher_name,singer_user_id,singer_name",
+      "id,church_id,service_date,service_type,start_time,title,preacher_user_id,preacher_name,singer_user_id,singer_formation_id,singer_name",
     )
     .or(`preacher_user_id.not.is.null,singer_user_id.not.is.null`)
     .gte("service_date", monthStart)

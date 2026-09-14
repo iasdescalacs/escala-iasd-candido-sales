@@ -124,7 +124,7 @@ export function AdminChurchSchedule({
                           <option value="">Selecionar {personLabel}</option>
                           {availableVolunteers.map((volunteer) => (
                             <option key={volunteer.id} value={volunteer.id}>
-                              {volunteer.full_name}
+                              {volunteer.full_name} · {volunteer.type_label}
                             </option>
                           ))}
                         </select>
@@ -241,7 +241,12 @@ function buildPersonFilterOptions(
   const people = new Map<string, string>();
 
   for (const service of services) {
-    const id = roleKey === "pregador" ? service.preacher_user_id : service.singer_user_id;
+    const id =
+      roleKey === "pregador"
+        ? service.preacher_user_id
+        : service.singer_formation_id
+          ? "formation:" + service.singer_formation_id
+          : service.singer_user_id;
     const name = roleKey === "pregador" ? service.preacher_name : service.singer_name;
 
     if (id && name) {
@@ -269,7 +274,11 @@ function serviceMatchesPersonFilter(
   }
 
   const assignedUserId =
-    roleKey === "pregador" ? service.preacher_user_id : service.singer_user_id;
+    roleKey === "pregador"
+      ? service.preacher_user_id
+      : service.singer_formation_id
+        ? "formation:" + service.singer_formation_id
+        : service.singer_user_id;
 
   return (
     assignedUserId === personId ||

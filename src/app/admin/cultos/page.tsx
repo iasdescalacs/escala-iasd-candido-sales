@@ -118,7 +118,11 @@ export default async function AdminCultosPage({
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <section className="rounded-lg border border-border bg-surface p-6 shadow-sm">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
-          {management.isAdmin ? "Administração" : "Gestão da igreja"}
+          {management.isAdmin
+            ? "Administração"
+            : management.isPastor
+              ? "Gestão pastoral"
+              : "Gestão da igreja"}
         </p>
         <h1 className="mt-3 text-3xl font-semibold text-foreground">
           Cultos
@@ -137,7 +141,7 @@ export default async function AdminCultosPage({
           churches={churchOptions}
           defaultMonth={viewMonth}
           defaultYear={viewYear}
-          isAdmin={management.isAdmin}
+          isAdmin={management.isGlobalManager}
         />
       </section>
 
@@ -170,7 +174,7 @@ export default async function AdminCultosPage({
           </div>
           <ChurchFilter
             allChurchesLabel={
-              management.isAdmin ? "Todas as igrejas" : "Todas as minhas igrejas"
+              management.isGlobalManager ? "Todas as igrejas" : "Todas as minhas igrejas"
             }
             churches={allChurches}
             month={viewMonth}

@@ -165,7 +165,14 @@ function AgendaRoleSection({
       {item ? (
         <div className="mt-3 grid min-w-0 gap-4">
           <AgendaDetails item={item} />
-          <SwapRequestForm key={getAgendaKey(item)} item={item} targets={targets} />
+          {item.canRequestSwap ? (
+            <SwapRequestForm key={getAgendaKey(item)} item={item} targets={targets} />
+          ) : (
+            <p className="rounded-md bg-primary-soft p-3 text-sm text-primary-strong">
+              Esta escala pertence a uma formação musical. O responsável pela
+              formação deve combinar alterações com o líder de música.
+            </p>
+          )}
         </div>
       ) : (
         <div className="mt-3 flex min-w-0 items-center gap-3 rounded-md bg-surface-muted p-3 text-sm text-muted">

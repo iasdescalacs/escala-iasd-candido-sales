@@ -25,7 +25,7 @@ test("calendario de escala mostra pregador e louvor juntos", () => {
 });
 
 test("admin visualiza escalas agrupadas por igreja com filtro de pessoa", () => {
-  assert.match(pregacaoPage, /groupByChurch=\{isAdmin\}/);
+  assert.match(pregacaoPage, /groupByChurch=\{isGlobalManager\}/);
   assert.match(louvorPage, /groupByChurch=\{isAdmin\}/);
   assert.match(scheduleCalendar, /AdminChurchSchedule/);
   assert.match(adminChurchSchedule, /Escalas por igreja/);
@@ -44,7 +44,19 @@ test("exclusao de escala ignora seletor obrigatorio e volta para a definir", () 
   }
 
   assert.match(scheduleActions, /preacher_user_id: null, preacher_name: null/);
-  assert.match(scheduleActions, /singer_user_id: null, singer_name: null/);
+  assert.match(
+    scheduleActions,
+    /singer_formation_id: null,[\s\S]+singer_user_id: null,[\s\S]+singer_name: null/,
+  );
+});
+
+test("louvor oferece solos e formacoes com conflito por integrante", () => {
+  assert.match(scheduleQueries, /type_label: "Solo"/);
+  assert.match(scheduleQueries, /getMusicalFormationVolunteerOptions/);
+  assert.match(scheduleQueries, /musical_formation_availability/);
+  assert.match(scheduleActions, /targetValue\.startsWith\("formation:"\)/);
+  assert.match(scheduleActions, /musicalFormationHasConflictOnDate/);
+  assert.match(scheduleActions, /Um integrante da formação já está escalado/);
 });
 
 test("botoes da escala informam a acao em andamento", () => {

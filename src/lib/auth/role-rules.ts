@@ -1,6 +1,18 @@
-export type RoleKey = "admin" | "anciao" | "lider_musica" | "pregador" | "cantor";
+export type RoleKey =
+  | "admin"
+  | "pastor"
+  | "anciao"
+  | "lider_musica"
+  | "pregador"
+  | "cantor";
 
-export const assignableRoleKeys = ["anciao", "lider_musica", "pregador", "cantor"] as const;
+export const assignableRoleKeys = [
+  "pastor",
+  "anciao",
+  "lider_musica",
+  "pregador",
+  "cantor",
+] as const;
 export const selfManagedRoleKeys = ["pregador", "cantor"] as const;
 
 export type AssignableRoleKey = (typeof assignableRoleKeys)[number];
@@ -42,5 +54,5 @@ export function mergeSelfManagedRoles({
 }
 
 export function isManagerRoleKey(roleKey: RoleKey) {
-  return roleKey === "anciao" || roleKey === "lider_musica";
+  return roleKey === "pastor" || roleKey === "anciao" || roleKey === "lider_musica";
 }

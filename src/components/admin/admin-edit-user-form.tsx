@@ -108,7 +108,7 @@ export function AdminEditUserForm({
             ))}
           </div>
           <span className="text-xs font-normal text-muted">
-            Ancião e líder de música ficam vinculados à igreja principal. Pregador e cantor escolhem igrejas de escala em Disponibilidade.
+            Ancião e líder de música ficam vinculados à igreja principal. Pastor atua em todas as igrejas. Pregador e cantor escolhem igrejas de escala em Disponibilidade.
           </span>
         </fieldset>
 

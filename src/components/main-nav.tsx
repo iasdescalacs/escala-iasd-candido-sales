@@ -25,6 +25,8 @@ type MainNavProps = {
     isAdmin: boolean;
     isElder: boolean;
     isMusicLeader: boolean;
+    isPastor: boolean;
+    isSinger: boolean;
     isPending: boolean;
   };
 };
@@ -247,11 +249,14 @@ function getNavigation(viewer: MainNavProps["viewer"]): NavigationItem[] {
   if (viewer.isApproved) {
     return [
       ...protectedNavigation,
-      ...(viewer.isAdmin || viewer.isElder || viewer.isMusicLeader
+      ...(viewer.isAdmin || viewer.isPastor || viewer.isElder || viewer.isMusicLeader
         ? availabilityManagerNavigation
         : []),
-      ...(viewer.isAdmin || viewer.isElder ? elderNavigation : []),
+      ...(viewer.isAdmin || viewer.isPastor || viewer.isElder ? elderNavigation : []),
       ...(viewer.isAdmin || viewer.isMusicLeader ? musicLeaderNavigation : []),
+      ...(viewer.isAdmin || viewer.isMusicLeader || viewer.isSinger
+        ? [{ label: "Formações musicais", href: "/formacoes" }]
+        : []),
       ...(viewer.isAdmin ? adminNavigation : []),
       ...(viewer.isAdmin ? supportNavigation : []),
     ];

@@ -21,9 +21,9 @@ export async function assignScheduleAction(
   const profile = await requireApprovedUser();
   const serviceId = readString(formData, "serviceId");
   const roleKey = readScheduleRole(formData);
-  const userId = readString(formData, "userId");
+  const targetValue = readString(formData, "userId");
 
-  if (!serviceId || !roleKey || !userId) {
+  if (!serviceId || !roleKey || !targetValue) {
     return { message: "Selecione uma pessoa disponível para salvar a escala." };
   }
 
@@ -40,43 +40,111 @@ export async function assignScheduleAction(
     return { message: context.message };
   }
 
-  const volunteer = await getAvailableVolunteer({
-    admin,
-    userId,
-    roleId: context.roleId,
-    churchId: context.service.church_id,
-    serviceDate: context.service.service_date,
-    serviceId: context.service.id,
-    isSpecial: context.service.is_special,
-  });
+  const formationId =
+    roleKey === "cantor" && targetValue.startsWith("formation:")
+      ? targetValue.slice("formation:".length)
+      : null;
+  let selectedRecipientIds: string[] = [];
+  let updatePayload:
+    | {
+        preacher_user_id: string;
+        preacher_name: string;
+      }
+    | {
+        singer_user_id: string | null;
+        singer_formation_id: string | null;
+        singer_name: string;
+      };
 
-  if (!volunteer) {
-    return { message: "Essa pessoa não está disponível para essa igreja e data." };
-  }
+  if (formationId) {
+    const formation = await getAvailableFormation({
+      admin,
+      churchId: context.service.church_id,
+      formationId,
+      serviceDate: context.service.service_date,
+      serviceId: context.service.id,
+    });
 
-  const hasConflict = await volunteerHasConflictOnDate({
-    admin,
-    currentServiceId: serviceId,
-    roleKey,
-    serviceDate: context.service.service_date,
-    userId: volunteer.id,
-  });
+    if (!formation) {
+      return {
+        message:
+          "Essa formação não está disponível para essa igreja e culto.",
+      };
+    }
 
-  if (hasConflict) {
-    return {
-      message:
-        "Essa pessoa já está escalada nesse dia em outro culto. Escolha outro voluntário disponível.",
+    const hasConflict = await musicalFormationHasConflictOnDate({
+      admin,
+      currentServiceId: serviceId,
+      formationId: formation.id,
+      memberIds: formation.memberIds,
+      serviceDate: context.service.service_date,
+    });
+
+    if (hasConflict) {
+      return {
+        message:
+          "Um integrante da formação já está escalado nesse dia. Escolha outra formação disponível.",
+      };
+    }
+
+    selectedRecipientIds = formation.memberIds;
+    updatePayload = {
+      singer_formation_id: formation.id,
+      singer_name: formation.name,
+      singer_user_id: null,
     };
+  } else {
+    const volunteer = await getAvailableVolunteer({
+      admin,
+      userId: targetValue,
+      roleId: context.roleId,
+      churchId: context.service.church_id,
+      serviceDate: context.service.service_date,
+      serviceId: context.service.id,
+      isSpecial: context.service.is_special,
+    });
+
+    if (!volunteer) {
+      return { message: "Essa pessoa não está disponível para essa igreja e data." };
+    }
+
+    const hasConflict = await volunteerHasConflictOnDate({
+      admin,
+      currentServiceId: serviceId,
+      roleKey,
+      serviceDate: context.service.service_date,
+      userId: volunteer.id,
+    });
+
+    if (hasConflict) {
+      return {
+        message:
+          "Essa pessoa já está escalada nesse dia em outro culto. Escolha outro voluntário disponível.",
+      };
+    }
+
+    selectedRecipientIds = [volunteer.id];
+    updatePayload =
+      roleKey === "pregador"
+        ? {
+            preacher_name: volunteer.full_name,
+            preacher_user_id: volunteer.id,
+          }
+        : {
+            singer_formation_id: null,
+            singer_name: volunteer.full_name,
+            singer_user_id: volunteer.id,
+          };
   }
 
-  const updatePayload =
-    roleKey === "pregador"
-      ? { preacher_user_id: volunteer.id, preacher_name: volunteer.full_name }
-      : { singer_user_id: volunteer.id, singer_name: volunteer.full_name };
   const previousUserId =
     roleKey === "pregador"
       ? context.service.preacher_user_id
       : context.service.singer_user_id;
+  const previousFormationMemberIds =
+    roleKey === "cantor" && context.service.singer_formation_id
+      ? await getFormationMemberIds(admin, context.service.singer_formation_id)
+      : [];
   const { error } = await admin
     .from("worship_services")
     .update(updatePayload)
@@ -88,7 +156,11 @@ export async function assignScheduleAction(
   }
 
   await notifyUsers(admin, {
-    userIds: [volunteer.id, previousUserId].filter(Boolean) as string[],
+    userIds: [
+      ...selectedRecipientIds,
+      ...previousFormationMemberIds,
+      previousUserId,
+    ].filter(Boolean) as string[],
     title: "Escala atualizada",
     body: `${roleKey === "pregador" ? "Pregação" : "Louvor"} em ${formatDate(context.service.service_date)} foi atualizado.`,
     metadata: { serviceId, roleKey },
@@ -124,19 +196,29 @@ export async function clearScheduleAction(formData: FormData) {
     roleKey === "pregador"
       ? context.service.preacher_user_id
       : context.service.singer_user_id;
+  const previousFormationMemberIds =
+    roleKey === "cantor" && context.service.singer_formation_id
+      ? await getFormationMemberIds(admin, context.service.singer_formation_id)
+      : [];
   const updatePayload =
     roleKey === "pregador"
       ? { preacher_user_id: null, preacher_name: null }
-      : { singer_user_id: null, singer_name: null };
+      : {
+          singer_formation_id: null,
+          singer_user_id: null,
+          singer_name: null,
+        };
   await admin
     .from("worship_services")
     .update(updatePayload)
     .eq("id", serviceId)
     .is("deleted_at", null);
 
-  if (previousUserId) {
+  if (previousUserId || previousFormationMemberIds.length > 0) {
     await notifyUsers(admin, {
-      userIds: [previousUserId],
+      userIds: [previousUserId, ...previousFormationMemberIds].filter(
+        Boolean,
+      ) as string[],
       title: "Escala removida",
       body: `${roleKey === "pregador" ? "Pregação" : "Louvor"} em ${formatDate(context.service.service_date)} foi removido da sua agenda.`,
       metadata: { serviceId, roleKey },
@@ -163,7 +245,9 @@ export async function requestSwapAction(
   const admin = createAdminSupabaseClient();
   const { data: services } = await admin
     .from("worship_services")
-    .select("id,church_id,service_date,preacher_user_id,singer_user_id")
+    .select(
+      "id,church_id,service_date,preacher_user_id,singer_user_id,singer_formation_id",
+    )
     .in("id", [sourceServiceId, targetServiceId])
     .is("deleted_at", null);
 
@@ -276,7 +360,9 @@ export async function reviewSwapRequestAction(formData: FormData): Promise<AuthA
   if (decision === "approved") {
     const { data: services } = await admin
       .from("worship_services")
-      .select("id,service_date,preacher_user_id,preacher_name,singer_user_id,singer_name")
+      .select(
+        "id,service_date,preacher_user_id,preacher_name,singer_user_id,singer_formation_id,singer_name",
+      )
       .in("id", [request.source_service_id, request.target_service_id])
       .is("deleted_at", null);
     const source = services?.find((service) => service.id === request.source_service_id);
@@ -358,6 +444,7 @@ export async function reviewSwapRequestAction(formData: FormData): Promise<AuthA
       await admin
         .from("worship_services")
         .update({
+          singer_formation_id: target.singer_formation_id,
           singer_user_id: target.singer_user_id,
           singer_name: target.singer_name,
         })
@@ -365,6 +452,7 @@ export async function reviewSwapRequestAction(formData: FormData): Promise<AuthA
       await admin
         .from("worship_services")
         .update({
+          singer_formation_id: source.singer_formation_id,
           singer_user_id: source.singer_user_id,
           singer_name: source.singer_name,
         })
@@ -459,14 +547,23 @@ async function canManageService({
 > {
   const requiredRole = roleKey === "pregador" ? "anciao" : "lider_musica";
 
-  if (!managerRoles.includes("admin") && !managerRoles.includes(requiredRole)) {
+  const isPastorPreachingManager =
+    roleKey === "pregador" && managerRoles.includes("pastor");
+
+  if (
+    !managerRoles.includes("admin") &&
+    !isPastorPreachingManager &&
+    !managerRoles.includes(requiredRole)
+  ) {
     return { allowed: false, message: "Você não tem permissão para gerenciar essa escala." };
   }
 
   const [{ data: service }, { data: role }] = await Promise.all([
     admin
       .from("worship_services")
-      .select("id,church_id,service_date,is_special,preacher_user_id,singer_user_id")
+      .select(
+        "id,church_id,service_date,is_special,preacher_user_id,singer_user_id,singer_formation_id",
+      )
       .eq("id", serviceId)
       .is("deleted_at", null)
       .maybeSingle(),
@@ -477,7 +574,7 @@ async function canManageService({
     return { allowed: false, message: "Culto ou função não localizado." };
   }
 
-  if (managerRoles.includes("admin")) {
+  if (managerRoles.includes("admin") || isPastorPreachingManager) {
     return { allowed: true, service, roleId: role.id };
   }
 
@@ -587,6 +684,147 @@ async function getAvailableVolunteer({
   return user && userRole && isAvailable ? user : null;
 }
 
+async function getAvailableFormation({
+  admin,
+  churchId,
+  formationId,
+  serviceDate,
+  serviceId,
+}: {
+  admin: ReturnType<typeof createAdminSupabaseClient>;
+  churchId: string;
+  formationId: string;
+  serviceDate: string;
+  serviceId: string;
+}) {
+  const [
+    { data: formation },
+    { data: churchLink },
+    { data: availability },
+    { data: members },
+  ] = await Promise.all([
+    admin
+      .from("musical_formations")
+      .select("id,name")
+      .eq("id", formationId)
+      .eq("status", "active")
+      .is("deleted_at", null)
+      .maybeSingle(),
+    admin
+      .from("musical_formation_churches")
+      .select("id")
+      .eq("formation_id", formationId)
+      .eq("church_id", churchId)
+      .eq("can_be_scheduled", true)
+      .is("deleted_at", null)
+      .maybeSingle(),
+    admin
+      .from("musical_formation_availability")
+      .select("id")
+      .eq("formation_id", formationId)
+      .eq("worship_service_id", serviceId)
+      .eq("service_date", serviceDate)
+      .eq("available", true)
+      .is("deleted_at", null)
+      .maybeSingle(),
+    admin
+      .from("musical_formation_members")
+      .select("user_id")
+      .eq("formation_id", formationId)
+      .is("deleted_at", null),
+  ]);
+  const memberIds = members?.map((member) => member.user_id) ?? [];
+
+  if (!formation || !churchLink || !availability || memberIds.length === 0) {
+    return null;
+  }
+
+  const { data: approvedMembers } = await admin
+    .from("users")
+    .select("id")
+    .in("id", memberIds)
+    .eq("status", "approved")
+    .is("deleted_at", null);
+
+  if ((approvedMembers ?? []).length !== memberIds.length) {
+    return null;
+  }
+
+  return {
+    id: formation.id,
+    memberIds,
+    name: formation.name,
+  };
+}
+
+async function getFormationMemberIds(
+  admin: ReturnType<typeof createAdminSupabaseClient>,
+  formationId: string,
+) {
+  const { data } = await admin
+    .from("musical_formation_members")
+    .select("user_id")
+    .eq("formation_id", formationId)
+    .is("deleted_at", null);
+
+  return data?.map((member) => member.user_id) ?? [];
+}
+
+async function musicalFormationHasConflictOnDate({
+  admin,
+  currentServiceId,
+  formationId,
+  memberIds,
+  serviceDate,
+}: {
+  admin: ReturnType<typeof createAdminSupabaseClient>;
+  currentServiceId: string;
+  formationId: string;
+  memberIds: string[];
+  serviceDate: string;
+}) {
+  const { data: assignments } = await admin
+    .from("worship_services")
+    .select("id,singer_user_id,singer_formation_id")
+    .eq("service_date", serviceDate)
+    .neq("id", currentServiceId)
+    .or("singer_user_id.not.is.null,singer_formation_id.not.is.null")
+    .is("deleted_at", null);
+
+  if (
+    (assignments ?? []).some(
+      (assignment) =>
+        assignment.singer_formation_id === formationId ||
+        (assignment.singer_user_id &&
+          memberIds.includes(assignment.singer_user_id)),
+    )
+  ) {
+    return true;
+  }
+
+  const assignedFormationIds = Array.from(
+    new Set(
+      (assignments ?? [])
+        .map((assignment) => assignment.singer_formation_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  );
+
+  if (assignedFormationIds.length === 0) {
+    return false;
+  }
+
+  const { data: conflictingMembers } = await admin
+    .from("musical_formation_members")
+    .select("id")
+    .in("formation_id", assignedFormationIds)
+    .in("user_id", memberIds)
+    .is("deleted_at", null)
+    .limit(1);
+
+  return Boolean(conflictingMembers?.length);
+}
+
 async function getApproverIds(
   admin: ReturnType<typeof createAdminSupabaseClient>,
   { roleKey, churchIds }: { roleKey: RoleKey; churchIds: string[] },
@@ -595,10 +833,11 @@ async function getApproverIds(
   const { data: roles } = await admin
     .from("roles")
     .select("id,key")
-    .in("key", [managerRoleKey, "admin"])
+    .in("key", [managerRoleKey, "pastor", "admin"])
     .is("deleted_at", null);
   const managerRoleId = roles?.find((role) => role.key === managerRoleKey)?.id;
   const adminRoleId = roles?.find((role) => role.key === "admin")?.id;
+  const pastorRoleId = roles?.find((role) => role.key === "pastor")?.id;
   const approverIds = new Set<string>();
 
   if (managerRoleId) {
@@ -621,6 +860,15 @@ async function getApproverIds(
     admins?.forEach((adminUser) => approverIds.add(adminUser.user_id));
   }
 
+  if (roleKey === "pregador" && pastorRoleId) {
+    const { data: pastors } = await admin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role_id", pastorRoleId)
+      .is("deleted_at", null);
+    pastors?.forEach((pastor) => approverIds.add(pastor.user_id));
+  }
+
   return Array.from(approverIds);
 }
 
@@ -639,17 +887,63 @@ async function volunteerHasConflictOnDate({
   serviceDate: string;
   userId: string;
 }) {
-  const assignmentColumn = roleKey === "pregador" ? "preacher_user_id" : "singer_user_id";
-  const { data } = await admin
+  let query = admin
     .from("worship_services")
-    .select("id,service_date,preacher_user_id,singer_user_id")
+    .select(
+      "id,service_date,preacher_user_id,singer_user_id,singer_formation_id",
+    )
     .eq("service_date", serviceDate)
-    .eq(assignmentColumn, userId)
     .is("deleted_at", null);
+  query =
+    roleKey === "pregador"
+      ? query.eq("preacher_user_id", userId)
+      : query.or(
+          "singer_user_id.eq." +
+            userId +
+            ",singer_formation_id.not.is.null",
+        );
+  const { data } = await query;
+  const relevantAssignments = (data ?? []).filter(
+    (assignment) =>
+      assignment.id !== currentServiceId &&
+      !excludedServiceIds.includes(assignment.id),
+  );
+
+  if (
+    roleKey === "cantor" &&
+    relevantAssignments.some(
+      (assignment) => assignment.singer_user_id === userId,
+    )
+  ) {
+    return true;
+  }
+
+  if (roleKey === "cantor") {
+    const formationIds = Array.from(
+      new Set(
+        relevantAssignments
+          .map((assignment) => assignment.singer_formation_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+
+    if (formationIds.length > 0) {
+      const { data: memberships } = await admin
+        .from("musical_formation_members")
+        .select("id")
+        .eq("user_id", userId)
+        .in("formation_id", formationIds)
+        .is("deleted_at", null)
+        .limit(1);
+
+      if (memberships?.length) {
+        return true;
+      }
+    }
+  }
 
   return hasVolunteerDateConflict({
-    assignments: (data ?? [])
-      .filter((assignment) => !excludedServiceIds.includes(assignment.id))
+    assignments: relevantAssignments
       .map((assignment) => ({
         serviceId: assignment.id,
         serviceDate: assignment.service_date,
@@ -725,4 +1019,5 @@ type ServiceContext = Pick<
   | "is_special"
   | "preacher_user_id"
   | "singer_user_id"
+  | "singer_formation_id"
 >;

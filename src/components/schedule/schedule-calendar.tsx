@@ -160,7 +160,7 @@ export function ScheduleCalendar({
                           <option value="">Selecionar</option>
                           {availableVolunteers.map((volunteer) => (
                             <option key={volunteer.id} value={volunteer.id}>
-                              {volunteer.full_name}
+                              {volunteer.full_name} · {volunteer.type_label}
                             </option>
                           ))}
                         </select>
@@ -235,7 +235,7 @@ export function ScheduleCalendar({
                       <option value="">Selecionar voluntário</option>
                       {availableVolunteers.map((volunteer) => (
                         <option key={volunteer.id} value={volunteer.id}>
-                          {volunteer.full_name}
+                          {volunteer.full_name} · {volunteer.type_label}
                         </option>
                       ))}
                     </select>

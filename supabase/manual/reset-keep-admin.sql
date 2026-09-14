@@ -20,6 +20,10 @@ where u.email = :'admin_email'
 
 begin;
 
+-- Remove primeiro as formacoes; os vinculos, disponibilidades e referencias
+-- de louvor sao tratados pelas chaves estrangeiras da migration.
+delete from public.musical_formations;
+
 delete from public.notifications
 where user_id not in (select id from public.users where email = :'admin_email');
 
