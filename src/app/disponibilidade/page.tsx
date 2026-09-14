@@ -96,7 +96,10 @@ export default async function DisponibilidadePage({
         ])
       : [{ data: [] }, { data: [] }];
   const servicesByDate = groupServicesByDate((services ?? []) as ServiceSummary[]);
-  const availabilityByRole = groupAvailabilitySlotsByRole(availabilityRows ?? []);
+  const availabilityByRole = groupAvailabilitySlotsByRole(
+    availabilityRows ?? [],
+    (services ?? []) as ServiceSummary[],
+  );
   const churchesByRole = groupChurchesByRole(churchLinks ?? []);
   const monthTitle = capitalize(getMonthName(viewMonth));
 
@@ -211,13 +214,18 @@ function groupAvailabilitySlotsByRole(
     service_date: string;
     worship_service_id: string | null;
   }>,
+  services: ServiceSummary[],
 ) {
   const grouped: Record<string, string[]> = {};
+  const servicesById = new Map(services.map((service) => [service.id, service]));
 
   for (const row of rows) {
     grouped[row.role_id] = grouped[row.role_id] ?? [];
+    const linkedService = row.worship_service_id
+      ? servicesById.get(row.worship_service_id)
+      : null;
     grouped[row.role_id].push(
-      row.worship_service_id
+      row.worship_service_id && linkedService?.is_special
         ? getSpecialAvailabilitySlotKey(row.worship_service_id)
         : getRegularAvailabilitySlotKey(row.service_date),
     );

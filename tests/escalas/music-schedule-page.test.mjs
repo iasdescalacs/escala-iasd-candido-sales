@@ -61,10 +61,10 @@ test("botoes da escala informam a acao em andamento", () => {
 });
 
 test("escala respeita disponibilidade distinta para culto regular e especial", () => {
-  assert.match(scheduleQueries, /regularAvailabilityByUserDate/);
-  assert.match(scheduleQueries, /specialAvailabilityByUserService/);
+  assert.match(scheduleQueries, /isVolunteerAvailableForService/);
+  assert.match(scheduleQueries, /worship_service_id,available,managed/);
   assert.match(scheduleCalendar, /volunteer\.service_id === service\.id/);
   assert.match(adminChurchSchedule, /volunteer\.service_id === service\.id/);
-  assert.match(scheduleActions, /availabilityQuery\.eq\("worship_service_id", serviceId\)/);
-  assert.match(scheduleActions, /availabilityQuery\.is\("worship_service_id", null\)/);
+  assert.match(scheduleActions, /isVolunteerAvailableForService/);
+  assert.match(scheduleActions, /serviceId: item\.worship_service_id/);
 });

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { requireApprovedUser } from "@/lib/auth/session";
 import type { AuthActionState } from "@/lib/auth/actions";
+import { createNotificationsWithPush } from "@/lib/push/server";
 import type { Database } from "@/types/database";
 import {
   buildAvailabilitySlots,
@@ -11,6 +12,7 @@ import {
   normalizeSelectedSlots,
   validateAvailabilityMonth,
 } from "./rules";
+import { requireAvailabilityManager } from "./management";
 
 type AvailabilityInsert =
   Database["public"]["Tables"]["user_availability"]["Insert"];
@@ -139,6 +141,130 @@ export async function saveAvailabilityAction(
   revalidatePath("/disponibilidade");
 
   return { ok: true, message: "Disponibilidade salva com sucesso." };
+}
+
+export async function saveManagedAvailabilityAction(
+  _state: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const management = await requireAvailabilityManager();
+  const targetUserId = readString(formData, "targetUserId");
+  const roleKey = readString(formData, "roleKey");
+  const monthStart = readString(formData, "monthStart");
+  const monthEnd = readString(formData, "monthEnd");
+  const selectedServiceIds = Array.from(
+    new Set(readStringList(formData, "serviceIds")),
+  );
+  const validationError = validateAvailabilityMonth({ monthStart, monthEnd });
+
+  if (validationError) {
+    return { message: validationError };
+  }
+
+  if (!isAvailabilityRoleKey(roleKey)) {
+    return { message: "Função de disponibilidade inválida." };
+  }
+
+  if (!management.managedRoleKeys.includes(roleKey)) {
+    return { message: "Você não tem permissão para gerenciar essa função." };
+  }
+
+  if (!targetUserId) {
+    return { message: "Pesquise e selecione um voluntário." };
+  }
+
+  const roleId = management.roleIds[roleKey];
+  const churchIds = management.churchIdsByRole[roleKey];
+
+  if (!roleId || churchIds.length === 0) {
+    return {
+      message: "Nenhuma igreja está vinculada ao seu perfil para essa função.",
+    };
+  }
+
+  const [
+    { data: targetUser },
+    { data: targetRole },
+    { data: manageableServices, error: servicesError },
+  ] = await Promise.all([
+    management.admin
+      .from("users")
+      .select("id,full_name")
+      .eq("id", targetUserId)
+      .eq("status", "approved")
+      .is("deleted_at", null)
+      .maybeSingle(),
+    management.admin
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", targetUserId)
+      .eq("role_id", roleId)
+      .is("deleted_at", null)
+      .maybeSingle(),
+    management.admin
+      .from("worship_services")
+      .select("id")
+      .in("church_id", churchIds)
+      .gte("service_date", monthStart)
+      .lte("service_date", monthEnd)
+      .is("deleted_at", null),
+  ]);
+
+  if (!targetUser || !targetRole) {
+    return { message: "Voluntário aprovado com essa função não localizado." };
+  }
+
+  if (servicesError) {
+    return { message: "Não foi possível validar os cultos do mês." };
+  }
+
+  const manageableServiceIds = new Set(
+    (manageableServices ?? []).map((service) => service.id),
+  );
+
+  if (selectedServiceIds.some((serviceId) => !manageableServiceIds.has(serviceId))) {
+    return { message: "Um dos cultos selecionados não pertence às suas igrejas." };
+  }
+
+  const { error } = await management.admin.rpc(
+    "set_managed_user_availability",
+    {
+      actor_id: management.profile.appUser.id,
+      period_end: monthEnd,
+      period_start: monthStart,
+      selected_service_ids: selectedServiceIds,
+      target_role: roleKey,
+      target_user_id: targetUserId,
+    },
+  );
+
+  if (error) {
+    return { message: "Não foi possível salvar a disponibilidade da equipe." };
+  }
+
+  await createNotificationsWithPush(management.admin, [
+    {
+      body: `${management.profile.appUser.full_name} atualizou seus cultos disponíveis como ${
+        roleKey === "pregador" ? "pregador" : "cantor ou grupo"
+      }.`,
+      metadata: {
+        managedAvailability: true,
+        roleKey,
+      },
+      title: "Disponibilidade atualizada",
+      userId: targetUserId,
+    },
+  ]);
+
+  revalidatePath("/disponibilidade/equipe");
+  revalidatePath("/disponibilidade");
+  revalidatePath("/escalas/pregacao");
+  revalidatePath("/escalas/louvor");
+
+  return {
+    ok: true,
+    message: `Disponibilidade de ${targetUser.full_name} salva com sucesso.`,
+  };
 }
 
 async function updateChurchAvailability({

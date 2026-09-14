@@ -57,6 +57,13 @@ export const musicLeaderNavigation = [
   },
 ];
 
+export const availabilityManagerNavigation = [
+  {
+    label: "Disponibilidade da equipe",
+    href: "/disponibilidade/equipe",
+  },
+];
+
 export const adminNavigation = [
   {
     label: "Usuários",

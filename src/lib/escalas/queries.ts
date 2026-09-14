@@ -2,7 +2,10 @@ import "server-only";
 
 import { requireApprovedUser } from "@/lib/auth/session";
 import type { CurrentUserProfile } from "@/lib/auth/session";
-import { getOccupiedVolunteerDateKeys } from "@/lib/escalas/rules";
+import {
+  getOccupiedVolunteerDateKeys,
+  isVolunteerAvailableForService,
+} from "@/lib/escalas/rules";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database } from "@/types/database";
 
@@ -354,9 +357,8 @@ async function getVolunteerOptions(
       .is("deleted_at", null),
     supabase
       .from("user_availability")
-      .select("user_id,service_date,worship_service_id")
+      .select("user_id,service_date,worship_service_id,available,managed")
       .eq("role_id", roleId)
-      .eq("available", true)
       .gte("service_date", monthStart)
       .lte("service_date", monthEnd)
       .is("deleted_at", null),
@@ -393,16 +395,17 @@ async function getVolunteerOptions(
     .eq("status", "approved")
     .is("deleted_at", null);
   const names = new Map((users ?? []).map((user) => [user.id, user.full_name]));
-  const regularAvailabilityByUserDate = new Set(
-    (availability ?? [])
-      .filter((item) => !item.worship_service_id)
-      .map((item) => `${item.user_id}:${item.service_date}`),
-  );
-  const specialAvailabilityByUserService = new Set(
-    (availability ?? [])
-      .filter((item) => item.worship_service_id)
-      .map((item) => `${item.user_id}:${item.worship_service_id}`),
-  );
+  const normalizedAvailability = (availability ?? []).map((item) => ({
+    available: item.available,
+    managed: item.managed,
+    serviceDate: item.service_date,
+    serviceId: item.worship_service_id,
+    userId: item.user_id,
+  }));
+  const normalizedChurchLinks = (links ?? []).map((link) => ({
+    churchId: link.church_id,
+    userId: link.user_id,
+  }));
   const occupiedByUserDate = getOccupiedVolunteerDateKeys(
     (assignments ?? []).map((assignment) => ({
       serviceId: assignment.id,
@@ -416,22 +419,29 @@ async function getVolunteerOptions(
   const volunteers: VolunteerOption[] = [];
 
   for (const service of services ?? []) {
-    for (const link of links ?? []) {
-      const userDateKey = `${link.user_id}:${service.service_date}`;
-      const isAvailable = service.is_special
-        ? specialAvailabilityByUserService.has(`${link.user_id}:${service.id}`)
-        : regularAvailabilityByUserDate.has(userDateKey);
+    for (const userId of names.keys()) {
+      const userDateKey = `${userId}:${service.service_date}`;
+      const isAvailable = isVolunteerAvailableForService({
+        availability: normalizedAvailability,
+        churchLinks: normalizedChurchLinks,
+        service: {
+          churchId: service.church_id,
+          date: service.service_date,
+          id: service.id,
+          isSpecial: service.is_special,
+        },
+        userId,
+      });
 
       if (
-        link.church_id === service.church_id &&
         isAvailable &&
         !occupiedByUserDate.has(userDateKey) &&
-        names.has(link.user_id)
+        names.has(userId)
       ) {
         volunteers.push({
-          id: link.user_id,
-          full_name: names.get(link.user_id) ?? "Voluntário",
-          church_id: link.church_id,
+          id: userId,
+          full_name: names.get(userId) ?? "Voluntário",
+          church_id: service.church_id,
           service_date: service.service_date,
           service_id: service.id,
         });

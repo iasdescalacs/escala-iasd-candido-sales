@@ -7,6 +7,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import {
   adminNavigation,
   appConfig,
+  availabilityManagerNavigation,
   elderNavigation,
   musicLeaderNavigation,
   protectedNavigation,
@@ -244,6 +245,9 @@ function getNavigation(viewer: MainNavProps["viewer"]): NavigationItem[] {
   if (viewer.isApproved) {
     return [
       ...protectedNavigation,
+      ...(viewer.isAdmin || viewer.isElder || viewer.isMusicLeader
+        ? availabilityManagerNavigation
+        : []),
       ...(viewer.isAdmin || viewer.isElder ? elderNavigation : []),
       ...(viewer.isAdmin || viewer.isMusicLeader ? musicLeaderNavigation : []),
       ...(viewer.isAdmin ? adminNavigation : []),

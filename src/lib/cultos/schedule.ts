@@ -283,7 +283,10 @@ export function getAdjacentMonth(year: number, month: number, direction: -1 | 1)
 
 export function getMonthName(month: number) {
   const date = new Date(Date.UTC(2026, month - 1, 1));
-  return new Intl.DateTimeFormat("pt-BR", { month: "long" }).format(date);
+  return new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    timeZone: "UTC",
+  }).format(date);
 }
 
 export function getTemplateLabel(type: WorshipServiceType) {

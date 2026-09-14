@@ -73,6 +73,12 @@ Entregue até esta etapa:
 - Pregadores e cantores podem escolher as igrejas onde aceitam ser escalados.
 - Calendário de disponibilidade mostra um único `Culto regular` por data e cada culto especial como uma opção separada, com nome, igreja e horário.
 - Ao desmarcar uma igreja, os cultos especiais exclusivos dela desaparecem; o culto regular da data permanece quando existir em outra igreja selecionada.
+- Página `/disponibilidade/equipe` permite pesquisar voluntários aprovados pelo nome e atribuir disponibilidade em um calendário mensal.
+- Ancião pode gerenciar a disponibilidade de qualquer pregador aprovado nos cultos das igrejas onde é ancião responsável, mesmo que o pregador seja membro de outra igreja.
+- Líder de Música pode gerenciar a disponibilidade de qualquer cantor, dupla, trio ou grupo aprovado nos cultos das igrejas onde possui vínculo gerencial.
+- Administrador pode alternar entre Pregador e Cantor e gerenciar a disponibilidade em todas as igrejas ativas.
+- A disponibilidade gerencial é registrada por culto, mostra o nome do culto regular ou especial, igreja e horário, e não altera as preferências permanentes de igrejas escolhidas pelo voluntário.
+- Uma marcação gerencial por culto pode liberar o voluntário naquela igreja ou indicar indisponibilidade somente para aquele culto; as escalas continuam bloqueando conflitos no mesmo dia.
 - Calendários exibem lista legível no celular e grade mensal em telas maiores, evitando texto minúsculo ou cortado.
 - Página `/agenda` contém largura no celular para evitar corte lateral e rolagem horizontal.
 - Página `/escalas/pregacao` permite ao ancião ou admin escalar, trocar e remover pregadores disponíveis por culto e igreja.
@@ -205,6 +211,7 @@ src/
     admin/igrejas/
     admin/cultos/
     disponibilidade/
+      equipe/
     aguardando-aprovacao/
     alterar-senha/
     auth/callback/
@@ -309,6 +316,7 @@ Fluxo inicial:
 - Administrador gera cultos mensais em `/admin/cultos` para todas as igrejas ativas.
 - Administrador cria cultos especiais em `/admin/cultos`, vinculando o culto a uma igreja específica.
 - Pregadores e cantores informam disponibilidade em `/disponibilidade`.
+- Anciãos e líderes de música atribuem disponibilidade à equipe em `/disponibilidade/equipe`, conforme a função e as igrejas que gerenciam.
 - O tipo de usuário é escolhido no cadastro público e validado pelo vínculo salvo no banco.
 - Usuários `blocked` ou `inactive` não acessam o sistema.
 - Rotas protegidas redirecionam usuário sem permissão para `/login`.
@@ -346,6 +354,8 @@ supabase/migrations/20260910164500_fix_clear_worship_services_safe_delete.sql
 supabase/migrations/20260912113000_replace_special_worship_service_conflicts.sql
 supabase/migrations/20260912231500_edit_worship_services.sql
 supabase/migrations/20260913003000_allow_elders_manage_worship_services.sql
+supabase/migrations/20260913110000_manage_team_availability.sql
+supabase/migrations/20260913113000_protect_managed_availability.sql
 ```
 
 Tabelas iniciais:
@@ -517,8 +527,8 @@ Depois de conectar GitHub na Vercel, cada push na branch `main` deve gerar um de
 - Usuário inativo não pode acessar o sistema.
 - Uma pessoa pode ter várias funções na mesma conta, como Ancião, Líder de Música, Cantor e Pregador.
 - Administrador pode gerenciar todo o sistema.
-- Ancião gerencia pregadores das igrejas vinculadas e pregadores que marcaram disponibilidade para serem escalados naquela igreja.
-- Líder de música gerencia cantores e grupos das igrejas vinculadas e cantores que marcaram disponibilidade para serem escalados naquela igreja.
+- Ancião gerencia pregadores e pode atribuir disponibilidade por culto nas igrejas onde possui vínculo gerencial, inclusive para pregadores membros de outras igrejas.
+- Líder de música gerencia cantores e grupos e pode atribuir disponibilidade por culto nas igrejas onde possui vínculo gerencial, independentemente da igreja de origem do voluntário.
 - Pregador acessa sua disponibilidade e agenda, podendo marcar outras igrejas onde aceita ser escalado.
 - Cantor acessa sua disponibilidade e agenda, podendo marcar outras igrejas onde aceita ser escalado.
 - O sistema não deve permitir acesso indevido por alteração direta de URL.

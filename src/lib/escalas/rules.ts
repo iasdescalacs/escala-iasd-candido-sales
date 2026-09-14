@@ -4,6 +4,62 @@ export type VolunteerAssignment = {
   userId: string | null;
 };
 
+export type VolunteerAvailability = {
+  available: boolean;
+  managed: boolean;
+  serviceDate: string;
+  serviceId: string | null;
+  userId: string;
+};
+
+export type VolunteerChurchLink = {
+  churchId: string;
+  userId: string;
+};
+
+export function isVolunteerAvailableForService({
+  availability,
+  churchLinks,
+  service,
+  userId,
+}: {
+  availability: VolunteerAvailability[];
+  churchLinks: VolunteerChurchLink[];
+  service: {
+    churchId: string;
+    date: string;
+    id: string;
+    isSpecial: boolean;
+  };
+  userId: string;
+}) {
+  const hasChurchLink = churchLinks.some(
+    (link) => link.userId === userId && link.churchId === service.churchId,
+  );
+  const serviceAvailability = availability.find(
+    (item) => item.userId === userId && item.serviceId === service.id,
+  );
+
+  if (serviceAvailability) {
+    return (
+      serviceAvailability.available &&
+      (serviceAvailability.managed || hasChurchLink)
+    );
+  }
+
+  if (service.isSpecial || !hasChurchLink) {
+    return false;
+  }
+
+  return availability.some(
+    (item) =>
+      item.userId === userId &&
+      item.serviceId === null &&
+      item.serviceDate === service.date &&
+      item.available,
+  );
+}
+
 export function hasVolunteerDateConflict({
   assignments,
   currentServiceId,

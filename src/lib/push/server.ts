@@ -148,6 +148,10 @@ function getNotificationUrl(metadata: NotificationMetadata | undefined) {
     return "/painel";
   }
 
+  if (metadata.managedAvailability) {
+    return "/disponibilidade";
+  }
+
   return "/agenda";
 }
 

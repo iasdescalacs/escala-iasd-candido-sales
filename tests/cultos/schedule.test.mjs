@@ -4,6 +4,7 @@ import {
   buildCalendarDays,
   buildSpecialWorshipOccurrences,
   buildWorshipOccurrences,
+  getMonthName,
   validateSpecialWorshipRange,
   validateMonthRange,
 } from "../../src/lib/cultos/schedule.ts";
@@ -53,6 +54,10 @@ test("calendario mensal preenche semanas completas", () => {
   assert.equal(days.length % 7, 0);
   assert.equal(days.some((day) => day.date === "2026-09-01"), true);
   assert.equal(days.some((day) => day.date === "2026-09-30"), true);
+});
+
+test("nome do mes nao recua por causa do fuso horario", () => {
+  assert.equal(getMonthName(9), "setembro");
 });
 
 test("cria cultos especiais em todos os dias do periodo", () => {

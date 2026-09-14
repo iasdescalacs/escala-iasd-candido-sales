@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import type { AuthActionState } from "@/lib/auth/actions";
 import { requireApprovedUser } from "@/lib/auth/session";
-import { hasVolunteerDateConflict } from "@/lib/escalas/rules";
+import {
+  hasVolunteerDateConflict,
+  isVolunteerAvailableForService,
+} from "@/lib/escalas/rules";
 import { createNotificationsWithPush } from "@/lib/push/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database } from "@/types/database";
@@ -525,17 +528,18 @@ async function getAvailableVolunteer({
 }) {
   const availabilityQuery = admin
     .from("user_availability")
-    .select("id")
+    .select("user_id,service_date,worship_service_id,available,managed")
     .eq("user_id", userId)
     .eq("role_id", roleId)
     .eq("service_date", serviceDate)
-    .eq("available", true)
     .is("deleted_at", null);
-  const matchingAvailabilityQuery = isSpecial
-    ? availabilityQuery.eq("worship_service_id", serviceId)
-    : availabilityQuery.is("worship_service_id", null);
 
-  const [{ data: user }, { data: availability }, { data: churchLink }] = await Promise.all([
+  const [
+    { data: user },
+    { data: availability },
+    { data: churchLink },
+    { data: userRole },
+  ] = await Promise.all([
     admin
       .from("users")
       .select("id,full_name,status")
@@ -543,7 +547,7 @@ async function getAvailableVolunteer({
       .eq("status", "approved")
       .is("deleted_at", null)
       .maybeSingle(),
-    matchingAvailabilityQuery.maybeSingle(),
+    availabilityQuery,
     admin
       .from("user_church_links")
       .select("id")
@@ -553,9 +557,34 @@ async function getAvailableVolunteer({
       .eq("can_be_scheduled", true)
       .is("deleted_at", null)
       .maybeSingle(),
+    admin
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("role_id", roleId)
+      .is("deleted_at", null)
+      .maybeSingle(),
   ]);
 
-  return user && availability && churchLink ? user : null;
+  const isAvailable = isVolunteerAvailableForService({
+    availability: (availability ?? []).map((item) => ({
+      available: item.available,
+      managed: item.managed,
+      serviceDate: item.service_date,
+      serviceId: item.worship_service_id,
+      userId: item.user_id,
+    })),
+    churchLinks: churchLink ? [{ churchId, userId }] : [],
+    service: {
+      churchId,
+      date: serviceDate,
+      id: serviceId,
+      isSpecial,
+    },
+    userId,
+  });
+
+  return user && userRole && isAvailable ? user : null;
 }
 
 async function getApproverIds(

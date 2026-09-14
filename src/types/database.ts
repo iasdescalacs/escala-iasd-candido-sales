@@ -193,6 +193,8 @@ export type Database = {
           service_date: string;
           worship_service_id: Nullable<string>;
           available: boolean;
+          managed: boolean;
+          managed_by_user_id: Nullable<string>;
           created_at: string;
           updated_at: string;
           deleted_at: Nullable<string>;
@@ -204,6 +206,8 @@ export type Database = {
           service_date: string;
           worship_service_id?: Nullable<string>;
           available?: boolean;
+          managed?: boolean;
+          managed_by_user_id?: Nullable<string>;
           created_at?: string;
           updated_at?: string;
           deleted_at?: Nullable<string>;
@@ -215,6 +219,8 @@ export type Database = {
           service_date?: string;
           worship_service_id?: Nullable<string>;
           available?: boolean;
+          managed?: boolean;
+          managed_by_user_id?: Nullable<string>;
           created_at?: string;
           updated_at?: string;
           deleted_at?: Nullable<string>;
@@ -482,6 +488,14 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      can_manage_user_availability: {
+        Args: {
+          actor_id: string;
+          target_role: Database["public"]["Enums"]["role_key"];
+          target_church_id: string;
+        };
+        Returns: boolean;
+      };
       can_manage_church_worship: {
         Args: { actor_id: string; target_church_id: string };
         Returns: boolean;
@@ -507,6 +521,17 @@ export type Database = {
           actor_id: string;
           target_church_id: string;
           service_rows: Json;
+        };
+        Returns: number;
+      };
+      set_managed_user_availability: {
+        Args: {
+          actor_id: string;
+          target_user_id: string;
+          target_role: Database["public"]["Enums"]["role_key"];
+          period_start: string;
+          period_end: string;
+          selected_service_ids: string[];
         };
         Returns: number;
       };
