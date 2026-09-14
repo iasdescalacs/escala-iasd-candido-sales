@@ -18,6 +18,18 @@ const page = readFileSync(
   "src/app/disponibilidade/equipe/page.tsx",
   "utf8",
 );
+const search = readFileSync(
+  "src/components/availability/managed-volunteer-search.tsx",
+  "utf8",
+);
+const searchRoute = readFileSync(
+  "src/app/api/disponibilidade/equipe/usuarios/route.ts",
+  "utf8",
+);
+const calendar = readFileSync(
+  "src/components/availability/managed-availability-calendar-form.tsx",
+  "utf8",
+);
 const actions = readFileSync("src/lib/disponibilidade/actions.ts", "utf8");
 const navigation = readFileSync("src/config/app.ts", "utf8");
 
@@ -42,11 +54,34 @@ test("limita as funcoes que cada gestor pode administrar", () => {
 });
 
 test("pagina oferece pesquisa por nome e calendario mensal por culto", () => {
-  assert.match(page, /name="busca"/);
+  assert.match(page, /ManagedVolunteerSearch/);
+  assert.match(search, /name="busca"/);
+  assert.match(search, /setTimeout\(async \(\) =>/);
+  assert.match(search, /}, 300\)/);
+  assert.match(search, /role="combobox"/);
+  assert.match(search, /role="listbox"/);
   assert.match(page, /buildCalendarDays/);
   assert.match(page, /worship_services/);
   assert.match(page, /A busca inclui voluntários de qualquer igreja/);
   assert.match(navigation, /Disponibilidade da equipe/);
+});
+
+test("sugestoes repetem autenticacao e permissao no servidor", () => {
+  assert.match(searchRoute, /decideProtectedAccess/);
+  assert.match(searchRoute, /getManagedAvailabilityRoleKeys/);
+  assert.match(searchRoute, /managedRoleKeys\.includes\(roleKey\)/);
+  assert.match(searchRoute, /status: 401/);
+  assert.match(searchRoute, /status: 403/);
+  assert.match(searchRoute, /private, no-store/);
+  assert.match(searchRoute, /\.eq\("status", "approved"\)/);
+  assert.match(searchRoute, /\.select\("id,full_name"\)/);
+});
+
+test("calendario identifica o culto e o dia selecionados", () => {
+  assert.match(calendar, /CircleCheck/);
+  assert.match(calendar, /Há disponibilidade neste dia/);
+  assert.match(calendar, /Disponível para este culto/);
+  assert.match(calendar, /ring-2 ring-success/);
 });
 
 test("servidor e banco repetem a autorizacao gerencial", () => {

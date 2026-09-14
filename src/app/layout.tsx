@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { AppShell } from "@/components/app-shell";
 import { PwaRegister } from "@/components/pwa-register";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -45,6 +46,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-foreground">
+        <Script id="capture-pwa-install-prompt" strategy="beforeInteractive">
+          {`
+            window.__escalaIasdInstallPrompt = null;
+            window.addEventListener("beforeinstallprompt", function (event) {
+              event.preventDefault();
+              window.__escalaIasdInstallPrompt = event;
+            });
+            window.addEventListener("appinstalled", function () {
+              window.__escalaIasdInstallPrompt = null;
+            });
+          `}
+        </Script>
         <ThemeProvider>
           <PwaRegister />
           <AppShell>{children}</AppShell>

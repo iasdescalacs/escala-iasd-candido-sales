@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   isIosDevice,
   isStandaloneMode,
+  PWA_INSTALL_VISIBILITY_EVENT,
   SHOW_PWA_INSTALL_HELP_EVENT,
 } from "@/lib/pwa/client";
 
@@ -28,6 +29,19 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
   const [isVisible, setIsVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isInstallPromptVisible, setIsInstallPromptVisible] = useState(false);
+
+  useEffect(() => {
+    const handleInstallVisibility = (event: Event) => {
+      setIsInstallPromptVisible(Boolean((event as CustomEvent<boolean>).detail));
+    };
+
+    window.addEventListener(PWA_INSTALL_VISIBILITY_EVENT, handleInstallVisibility);
+
+    return () => {
+      window.removeEventListener(PWA_INSTALL_VISIBILITY_EVENT, handleInstallVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     if (!enabled) {
@@ -64,7 +78,12 @@ export function PushNotificationPrompt({ enabled }: { enabled: boolean }) {
       .catch(() => setStatus("unsupported"));
   }, [enabled]);
 
-  if (!enabled || !isVisible || status === "subscribed") {
+  if (
+    !enabled ||
+    !isVisible ||
+    isInstallPromptVisible ||
+    status === "subscribed"
+  ) {
     return null;
   }
 

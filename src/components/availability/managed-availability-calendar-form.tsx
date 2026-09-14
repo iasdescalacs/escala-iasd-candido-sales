@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { CheckCheck, X } from "lucide-react";
+import { CheckCheck, CircleCheck, X } from "lucide-react";
 import { ActionMessage } from "@/components/auth/action-message";
 import { SubmitButton } from "@/components/auth/submit-button";
 import type { AuthActionState } from "@/lib/auth/actions";
@@ -131,50 +131,84 @@ export function ManagedAvailabilityCalendarForm({
             </div>
 
             <div className="hidden grid-cols-7 sm:grid">
-              {calendarDays.map((day) => (
-                <div
-                  className={`min-h-32 min-w-0 border-b border-r border-border p-2 ${
-                    day.currentMonth ? "bg-background" : "bg-surface-muted/60"
-                  }`}
-                  key={day.date}
-                >
-                  <span
-                    className={`text-xs font-semibold ${
-                      day.currentMonth ? "text-foreground" : "text-muted"
+              {calendarDays.map((day) => {
+                const dayServices = servicesByDate[day.date] ?? [];
+                const hasSelectedService = dayServices.some((service) =>
+                  selectedServices.has(service.id),
+                );
+
+                return (
+                  <div
+                    className={`min-h-32 min-w-0 border-b border-r border-border p-2 ${
+                      day.currentMonth ? "bg-background" : "bg-surface-muted/60"
                     }`}
+                    key={day.date}
                   >
-                    {day.day}
-                  </span>
-                  <div className="mt-2 grid min-w-0 gap-1.5">
-                    {(servicesByDate[day.date] ?? []).map((service) => (
+                    <div className="flex items-center justify-between gap-1">
+                      <span
+                        className={`text-xs font-semibold ${
+                          day.currentMonth ? "text-foreground" : "text-muted"
+                        }`}
+                      >
+                        {day.day}
+                      </span>
+                      {hasSelectedService ? (
+                        <CircleCheck
+                          aria-label="Há disponibilidade neste dia"
+                          className="h-4 w-4 shrink-0 text-success"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="mt-2 grid min-w-0 gap-1.5">
+                      {dayServices.map((service) => (
+                        <ServiceCheckbox
+                          checked={selectedServices.has(service.id)}
+                          compact
+                          key={service.id}
+                          onChange={handleServiceChange}
+                          service={service}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="grid gap-2 p-3 sm:hidden">
+              {calendarDays.map((day) => {
+                const dayServices = servicesByDate[day.date] ?? [];
+
+                if (dayServices.length === 0) {
+                  return null;
+                }
+
+                const hasSelectedService = dayServices.some((service) =>
+                  selectedServices.has(service.id),
+                );
+
+                return (
+                  <section className="grid min-w-0 gap-1.5" key={day.date}>
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+                      <span>{formatDate(day.date)}</span>
+                      {hasSelectedService ? (
+                        <CircleCheck
+                          aria-label="Há disponibilidade neste dia"
+                          className="h-4 w-4 shrink-0 text-success"
+                        />
+                      ) : null}
+                    </div>
+                    {dayServices.map((service) => (
                       <ServiceCheckbox
                         checked={selectedServices.has(service.id)}
-                        compact
                         key={service.id}
                         onChange={handleServiceChange}
                         service={service}
                       />
                     ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="grid gap-2 p-3 sm:hidden">
-              {calendarDays.flatMap((day) =>
-                (servicesByDate[day.date] ?? []).map((service) => (
-                  <div className="min-w-0" key={service.id}>
-                    <p className="mb-1 text-xs font-semibold text-muted">
-                      {formatDate(day.date)}
-                    </p>
-                    <ServiceCheckbox
-                      checked={selectedServices.has(service.id)}
-                      onChange={handleServiceChange}
-                      service={service}
-                    />
-                  </div>
-                )),
-              )}
+                  </section>
+                );
+              })}
             </div>
           </div>
 
@@ -210,7 +244,7 @@ function ServiceCheckbox({
         service.isSpecial
           ? "border-warning/40 bg-warning/10 hover:bg-warning/15"
           : "border-primary/20 bg-primary-soft/60 hover:brightness-95"
-      }`}
+      } ${checked ? "ring-2 ring-success/70" : ""}`}
     >
       <input
         checked={checked}
@@ -232,6 +266,12 @@ function ServiceCheckbox({
           {service.churchName} · {service.startTime.slice(0, 5)}
         </span>
       </span>
+      {checked ? (
+        <CircleCheck
+          aria-label="Disponível para este culto"
+          className={`${compact ? "h-3.5 w-3.5" : "h-5 w-5"} ml-auto shrink-0 text-success`}
+        />
+      ) : null}
     </label>
   );
 }

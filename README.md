@@ -73,11 +73,12 @@ Entregue até esta etapa:
 - Pregadores e cantores podem escolher as igrejas onde aceitam ser escalados.
 - Calendário de disponibilidade mostra um único `Culto regular` por data e cada culto especial como uma opção separada, com nome, igreja e horário.
 - Ao desmarcar uma igreja, os cultos especiais exclusivos dela desaparecem; o culto regular da data permanece quando existir em outra igreja selecionada.
-- Página `/disponibilidade/equipe` permite pesquisar voluntários aprovados pelo nome e atribuir disponibilidade em um calendário mensal.
+- Página `/disponibilidade/equipe` sugere voluntários aprovados durante a digitação do nome e permite atribuir disponibilidade em um calendário mensal.
 - Ancião pode gerenciar a disponibilidade de qualquer pregador aprovado nos cultos das igrejas onde é ancião responsável, mesmo que o pregador seja membro de outra igreja.
 - Líder de Música pode gerenciar a disponibilidade de qualquer cantor, dupla, trio ou grupo aprovado nos cultos das igrejas onde possui vínculo gerencial.
 - Administrador pode alternar entre Pregador e Cantor e gerenciar a disponibilidade em todas as igrejas ativas.
 - A disponibilidade gerencial é registrada por culto, mostra o nome do culto regular ou especial, igreja e horário, e não altera as preferências permanentes de igrejas escolhidas pelo voluntário.
+- Cada culto selecionado recebe uma confirmação verde e o respectivo dia mostra um ícone de disponibilidade no calendário desktop e na lista para celular.
 - Uma marcação gerencial por culto pode liberar o voluntário naquela igreja ou indicar indisponibilidade somente para aquele culto; as escalas continuam bloqueando conflitos no mesmo dia.
 - Calendários exibem lista legível no celular e grade mensal em telas maiores, evitando texto minúsculo ou cortado.
 - Página `/agenda` contém largura no celular para evitar corte lateral e rolagem horizontal.
@@ -110,6 +111,10 @@ Entregue até esta etapa:
 - Notificações internas também disparam Web Push para dispositivos autorizados.
 - Usuários aprovados recebem um aviso fechável para ativar notificações push.
 - O sistema mostra um aviso de instalação do PWA quando o navegador permitir instalar o app.
+- Enquanto o app não estiver instalado, o topo mantém um botão com ícone de download que reabre o aviso de instalação mesmo depois de ele ser fechado.
+- O evento nativo de instalação é capturado antes da hidratação da interface para evitar perdê-lo quando o service worker já estiver ativo.
+- Quando o navegador não oferece o diálogo automático, o aviso identifica Android, navegador e, quando o `user-agent` fornece esses dados, versão e fabricante Samsung ou Motorola para mostrar instruções manuais adequadas.
+- Os avisos de instalação e de notificações são exibidos em sequência para não se sobreporem em telas pequenas.
 - O manifest possui ícones PNG 192x192 e 512x512 para melhorar a instalação no Android.
 - No iPhone/iPad, o aviso mostra as etapas de instalação pelo Safari e o site fornece um `apple-touch-icon` dedicado.
 - No iOS, o aviso de notificações orienta instalar e abrir o app pela Tela de Início; somente então oferece a ativação do Web Push, conforme a exigência da plataforma.
@@ -266,9 +271,13 @@ Fluxo implementado:
 Compatibilidade esperada:
 
 - Android Chrome/Edge: funciona como PWA ou site com permissão concedida.
-- Android Chrome/Edge: a instalação aparece pelo botão do sistema quando o navegador dispara `beforeinstallprompt`; se o botão nativo não estiver disponível, o aviso orienta instalar pelo menu do navegador.
+- Android Chrome/Edge: a instalação aparece pelo botão do sistema quando o navegador dispara `beforeinstallprompt`; se o botão nativo não estiver disponível, o aviso e o ícone de download no topo orientam instalar pelo menu de três pontos.
+- Samsung Internet: use o ícone de instalação da barra ou o menu do navegador e confirme a inclusão na Tela inicial ou na tela de aplicativos.
+- Motorola e outros aparelhos com Chrome: use `Menu > Instalar app` ou `Adicionar à tela inicial` quando o Chrome não oferecer o diálogo automático.
 - Windows Chrome/Edge: funciona com navegador compatível e permissão concedida.
 - iPhone/iPad: requer iOS/iPadOS com suporte a Web Push e o app adicionado à Tela de Início pelo Safari.
+
+O site não consegue forçar o diálogo nativo nem decidir sua exibição somente pela marca do aparelho. O navegador considera suporte, critérios de instalação, instalação anterior e decisões anteriores do usuário. Por isso, a interface usa detecção de capacidade primeiro e mantém as instruções manuais como alternativa.
 
 Instalação no iPhone/iPad:
 

@@ -15,6 +15,7 @@ import {
   supportNavigation,
 } from "@/config/app";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { PwaInstallButton } from "@/components/pwa-install-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 type MainNavProps = {
@@ -52,6 +53,7 @@ export function MainNav({ viewer }: MainNavProps) {
         <DesktopNavigation items={navigation} pathname={pathname} />
 
         <div className="flex shrink-0 items-center gap-2">
+          <PwaInstallButton />
           <ThemeToggle />
           {viewer.isAuthenticated ? <div className="hidden md:block"><LogoutButton /></div> : null}
           <button

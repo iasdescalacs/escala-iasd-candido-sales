@@ -3,13 +3,16 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Search,
   UserRoundSearch,
 } from "lucide-react";
 import {
   ManagedAvailabilityCalendarForm,
   type ManagedAvailabilityService,
 } from "@/components/availability/managed-availability-calendar-form";
+import {
+  ManagedVolunteerSearch,
+  type VolunteerSuggestion,
+} from "@/components/availability/managed-volunteer-search";
 import {
   buildCalendarDays,
   getAdjacentMonth,
@@ -21,10 +24,7 @@ import type { AvailabilityRoleKey } from "@/lib/disponibilidade/rules";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-type PersonSummary = {
-  id: string;
-  full_name: string;
-};
+type PersonSummary = VolunteerSuggestion;
 
 type ServiceRow = {
   id: string;
@@ -250,64 +250,15 @@ export default async function DisponibilidadeEquipePage({
           <UserRoundSearch size={18} aria-hidden="true" />
           <h2 className="font-semibold">Pesquisar {roleName.toLocaleLowerCase("pt-BR")}</h2>
         </div>
-        <form className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row" method="get">
-          <input name="ano" type="hidden" value={year} />
-          <input name="mes" type="hidden" value={month} />
-          <input name="funcao" type="hidden" value={roleKey} />
-          <label className="sr-only" htmlFor="team-availability-search">
-            Nome da pessoa
-          </label>
-          <input
-            className="h-11 min-w-0 flex-1 rounded-md border border-border bg-background px-3 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20"
-            defaultValue={search}
-            id="team-availability-search"
-            maxLength={80}
-            name="busca"
-            placeholder="Digite pelo menos 2 letras do nome"
-            type="search"
-          />
-          <button
-            className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:brightness-95"
-            type="submit"
-          >
-            <Search size={17} aria-hidden="true" />
-            Pesquisar
-          </button>
-        </form>
-
-        {search.length > 0 && search.length < 2 ? (
-          <p className="mt-3 text-sm text-warning">
-            Digite pelo menos 2 letras para pesquisar.
-          </p>
-        ) : null}
-
-        {search.length >= 2 ? (
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {volunteers.length > 0 ? (
-              volunteers.map((person) => (
-                <Link
-                  className={`min-w-0 rounded-md border px-3 py-3 text-sm font-semibold transition ${
-                    selectedPerson?.id === person.id
-                      ? "border-primary bg-primary-soft text-primary-strong"
-                      : "border-border bg-background text-foreground hover:border-primary/50 hover:bg-surface-muted"
-                  }`}
-                  href={buildPageHref({
-                    ...commonHref,
-                    search,
-                    userId: person.id,
-                  })}
-                  key={person.id}
-                >
-                  <span className="block truncate">{person.full_name}</span>
-                </Link>
-              ))
-            ) : (
-              <p className="text-sm text-muted">
-                Nenhuma pessoa aprovada foi encontrada com esse nome.
-              </p>
-            )}
-          </div>
-        ) : null}
+        <ManagedVolunteerSearch
+          initialSearch={search}
+          initialSuggestions={volunteers}
+          month={month}
+          roleKey={roleKey}
+          roleName={roleName}
+          selectedUserId={selectedPerson?.id}
+          year={year}
+        />
       </section>
 
       {churchIds.length === 0 ? (
