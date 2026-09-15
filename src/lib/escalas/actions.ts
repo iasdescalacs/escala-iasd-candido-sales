@@ -3,10 +3,8 @@
 import { revalidatePath } from "next/cache";
 import type { AuthActionState } from "@/lib/auth/actions";
 import { requireApprovedUser } from "@/lib/auth/session";
-import {
-  hasVolunteerDateConflict,
-  isVolunteerAvailableForService,
-} from "@/lib/escalas/rules";
+import { formatScheduleConflictNotice } from "@/lib/escalas/conflicts";
+import { isVolunteerAvailableForService } from "@/lib/escalas/rules";
 import { createNotificationsWithPush } from "@/lib/push/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Database } from "@/types/database";
@@ -72,7 +70,7 @@ export async function assignScheduleAction(
       };
     }
 
-    const hasConflict = await musicalFormationHasConflictOnDate({
+    const conflict = await getMusicalFormationConflictOnDate({
       admin,
       currentServiceId: serviceId,
       formationId: formation.id,
@@ -80,10 +78,14 @@ export async function assignScheduleAction(
       serviceDate: context.service.service_date,
     });
 
-    if (hasConflict) {
+    if (conflict) {
       return {
-        message:
-          "Um integrante da formação já está escalado nesse dia. Escolha outra formação disponível.",
+        message: await buildScheduleConflictMessage(admin, {
+          churchId: conflict.assignment.church_id,
+          personId: conflict.personId,
+          serviceDate: conflict.assignment.service_date,
+          subjectName: formation.name,
+        }),
       };
     }
 
@@ -108,7 +110,7 @@ export async function assignScheduleAction(
       return { message: "Essa pessoa não está disponível para essa igreja e data." };
     }
 
-    const hasConflict = await volunteerHasConflictOnDate({
+    const conflict = await getVolunteerConflictOnDate({
       admin,
       currentServiceId: serviceId,
       roleKey,
@@ -116,10 +118,13 @@ export async function assignScheduleAction(
       userId: volunteer.id,
     });
 
-    if (hasConflict) {
+    if (conflict) {
       return {
-        message:
-          "Essa pessoa já está escalada nesse dia em outro culto. Escolha outro voluntário disponível.",
+        message: await buildScheduleConflictMessage(admin, {
+          churchId: conflict.church_id,
+          serviceDate: conflict.service_date,
+          subjectName: volunteer.full_name,
+        }),
       };
     }
 
@@ -379,7 +384,7 @@ export async function reviewSwapRequestAction(formData: FormData): Promise<AuthA
 
     const [sourceConflict, targetConflict] = await Promise.all([
       targetUserId
-        ? volunteerHasConflictOnDate({
+        ? getVolunteerConflictOnDate({
             admin,
             currentServiceId: source.id,
             excludedServiceIds: [target.id],
@@ -389,7 +394,7 @@ export async function reviewSwapRequestAction(formData: FormData): Promise<AuthA
           })
         : false,
       sourceUserId
-        ? volunteerHasConflictOnDate({
+        ? getVolunteerConflictOnDate({
             admin,
             currentServiceId: target.id,
             excludedServiceIds: [source.id],
@@ -770,7 +775,7 @@ async function getFormationMemberIds(
   return data?.map((member) => member.user_id) ?? [];
 }
 
-async function musicalFormationHasConflictOnDate({
+async function getMusicalFormationConflictOnDate({
   admin,
   currentServiceId,
   formationId,
@@ -785,21 +790,26 @@ async function musicalFormationHasConflictOnDate({
 }) {
   const { data: assignments } = await admin
     .from("worship_services")
-    .select("id,singer_user_id,singer_formation_id")
+    .select("id,church_id,service_date,singer_user_id,singer_formation_id")
     .eq("service_date", serviceDate)
     .neq("id", currentServiceId)
     .or("singer_user_id.not.is.null,singer_formation_id.not.is.null")
     .is("deleted_at", null);
 
-  if (
-    (assignments ?? []).some(
-      (assignment) =>
-        assignment.singer_formation_id === formationId ||
-        (assignment.singer_user_id &&
-          memberIds.includes(assignment.singer_user_id)),
-    )
-  ) {
-    return true;
+  const directConflict = (assignments ?? []).find(
+    (assignment) =>
+      assignment.singer_formation_id === formationId ||
+      (assignment.singer_user_id && memberIds.includes(assignment.singer_user_id)),
+  );
+
+  if (directConflict) {
+    return {
+      assignment: directConflict,
+      personId:
+        directConflict.singer_user_id && memberIds.includes(directConflict.singer_user_id)
+          ? directConflict.singer_user_id
+          : undefined,
+    };
   }
 
   const assignedFormationIds = Array.from(
@@ -811,18 +821,27 @@ async function musicalFormationHasConflictOnDate({
   );
 
   if (assignedFormationIds.length === 0) {
-    return false;
+    return null;
   }
 
   const { data: conflictingMembers } = await admin
     .from("musical_formation_members")
-    .select("id")
+    .select("formation_id,user_id")
     .in("formation_id", assignedFormationIds)
     .in("user_id", memberIds)
     .is("deleted_at", null)
     .limit(1);
 
-  return Boolean(conflictingMembers?.length);
+  const conflictingMember = conflictingMembers?.[0];
+  const conflictingAssignment = conflictingMember
+    ? (assignments ?? []).find(
+        (assignment) => assignment.singer_formation_id === conflictingMember.formation_id,
+      )
+    : undefined;
+
+  return conflictingAssignment
+    ? { assignment: conflictingAssignment, personId: conflictingMember?.user_id }
+    : null;
 }
 
 async function getApproverIds(
@@ -872,7 +891,7 @@ async function getApproverIds(
   return Array.from(approverIds);
 }
 
-async function volunteerHasConflictOnDate({
+async function getVolunteerConflictOnDate({
   admin,
   currentServiceId,
   excludedServiceIds = [],
@@ -890,7 +909,7 @@ async function volunteerHasConflictOnDate({
   let query = admin
     .from("worship_services")
     .select(
-      "id,service_date,preacher_user_id,singer_user_id,singer_formation_id",
+      "id,church_id,service_date,preacher_user_id,singer_user_id,singer_formation_id",
     )
     .eq("service_date", serviceDate)
     .is("deleted_at", null);
@@ -909,13 +928,14 @@ async function volunteerHasConflictOnDate({
       !excludedServiceIds.includes(assignment.id),
   );
 
-  if (
-    roleKey === "cantor" &&
-    relevantAssignments.some(
-      (assignment) => assignment.singer_user_id === userId,
-    )
-  ) {
-    return true;
+  const directConflict = relevantAssignments.find((assignment) =>
+    roleKey === "pregador"
+      ? assignment.preacher_user_id === userId
+      : assignment.singer_user_id === userId,
+  );
+
+  if (directConflict) {
+    return directConflict;
   }
 
   if (roleKey === "cantor") {
@@ -930,31 +950,69 @@ async function volunteerHasConflictOnDate({
     if (formationIds.length > 0) {
       const { data: memberships } = await admin
         .from("musical_formation_members")
-        .select("id")
+        .select("formation_id")
         .eq("user_id", userId)
         .in("formation_id", formationIds)
         .is("deleted_at", null)
         .limit(1);
 
-      if (memberships?.length) {
-        return true;
+      const membershipFormationIds = new Set(
+        memberships?.map((membership) => membership.formation_id) ?? [],
+      );
+      const formationConflict = relevantAssignments.find(
+        (assignment) =>
+          assignment.singer_formation_id &&
+          membershipFormationIds.has(assignment.singer_formation_id),
+      );
+
+      if (formationConflict) {
+        return formationConflict;
       }
     }
   }
 
-  return hasVolunteerDateConflict({
-    assignments: relevantAssignments
-      .map((assignment) => ({
-        serviceId: assignment.id,
-        serviceDate: assignment.service_date,
-        userId:
-          roleKey === "pregador"
-            ? assignment.preacher_user_id
-            : assignment.singer_user_id,
-      })),
-    currentServiceId,
+  return null;
+}
+
+async function buildScheduleConflictMessage(
+  admin: ReturnType<typeof createAdminSupabaseClient>,
+  {
+    churchId,
+    personId,
     serviceDate,
-    userId,
+    subjectName,
+  }: {
+    churchId: string;
+    personId?: string;
+    serviceDate: string;
+    subjectName: string;
+  },
+) {
+  const [{ data: church }, { data: person }] = await Promise.all([
+    admin
+      .from("churches")
+      .select("name,city,state")
+      .eq("id", churchId)
+      .is("deleted_at", null)
+      .maybeSingle(),
+    personId
+      ? admin
+          .from("users")
+          .select("full_name")
+          .eq("id", personId)
+          .is("deleted_at", null)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const resolvedName = person?.full_name ?? subjectName;
+  const churchName = church
+    ? `${church.name} - ${church.city}/${church.state}`
+    : "outra igreja";
+
+  return formatScheduleConflictNotice({
+    churchName,
+    serviceDate,
+    subjectName: resolvedName,
   });
 }
 

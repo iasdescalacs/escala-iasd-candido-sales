@@ -29,6 +29,17 @@ type PdfLogo = {
   width: number;
 };
 
+type PdfCalendarTextLine = {
+  bold?: boolean;
+  lineHeight: number;
+  size: number;
+  text: string;
+};
+
+const PDF_CALENDAR_TOP = 496;
+const PDF_CALENDAR_BOTTOM = 70;
+const PDF_CALENDAR_ROW_COUNT = 6;
+
 type SimplePdfOptions = {
   calendar?: PdfCalendar;
   calendars?: PdfCalendarPage[];
@@ -211,10 +222,16 @@ function buildCalendarStream({
   const days = buildCalendarDays(calendar.year, calendar.month);
   const eventsByDate = groupEvents(calendar.events);
   const startX = 36;
-  const startY = 462;
   const cellWidth = 110;
-  const cellHeight = 56;
+  const rowHeights = calculatePdfCalendarRowHeights(calendar);
+  const rowBottoms: number[] = [];
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+  let currentRowTop = PDF_CALENDAR_TOP;
+
+  for (const rowHeight of rowHeights) {
+    rowBottoms.push(currentRowTop - rowHeight);
+    currentRowTop -= rowHeight;
+  }
 
   commands.push("0.180 0.427 0.906 RG", "0.180 0.427 0.906 rg", "36 572 770 3 re f");
   if (logo) {
@@ -239,7 +256,8 @@ function buildCalendarStream({
     const column = index % 7;
     const row = Math.floor(index / 7);
     const x = startX + column * cellWidth;
-    const y = startY - 22 - row * cellHeight;
+    const y = rowBottoms[row];
+    const cellHeight = rowHeights[row];
 
     commands.push(`${x} ${y} ${cellWidth} ${cellHeight} re S`);
   }
@@ -251,31 +269,179 @@ function buildCalendarStream({
     const column = index % 7;
     const row = Math.floor(index / 7);
     const x = startX + column * cellWidth;
-    const y = startY - 22 - row * cellHeight;
+    const y = rowBottoms[row];
+    const cellHeight = rowHeights[row];
 
     commands.push("0.015 0.239 0.443 rg");
     addText(commands, `${day.day} ${weekDays[column]}`, x + 5, y + cellHeight - 14, 8, true);
     commands.push("0 G");
     const events = eventsByDate.get(day.date) ?? [];
-    events.slice(0, 2).forEach((event, eventIndex) => {
-      const eventY = y + cellHeight - 29 - eventIndex * 21;
-      const eventLines = event.lines.slice(0, 3);
-
-      addText(commands, event.title, x + 5, eventY, 6.5, true, 28);
-      eventLines.forEach((line, lineIndex) => {
-        addText(commands, line, x + 5, eventY - 8 - lineIndex * 7, 5.5, false, 34);
-      });
+    drawCalendarCellEvents(commands, {
+      cellHeight,
+      events,
+      x: x + 5,
+      y,
     });
-
-    if (events.length > 2) {
-      addText(commands, `+${events.length - 2} culto(s)`, x + 5, y + 4, 5.5);
-    }
   }
 
   const extraLines = formatSections(sections).slice(0, 5);
   extraLines.forEach((line, index) => addText(commands, line, 36, 42 - index * 10, 7));
 
   return commands.join("\n");
+}
+
+export function calculatePdfCalendarRowHeights(calendar: PdfCalendar) {
+  const days = buildCalendarDays(calendar.year, calendar.month);
+  const eventsByDate = groupEvents(calendar.events);
+  const desiredHeights = Array.from({ length: PDF_CALENDAR_ROW_COUNT }, (_, row) => {
+    const rowDays = days.slice(row * 7, row * 7 + 7);
+    const contentHeight = Math.max(
+      ...rowDays.map((day) => getCalendarCellRequiredHeight(eventsByDate.get(day.date) ?? [])),
+    );
+
+    return Math.max(46, contentHeight);
+  });
+  const availableHeight = PDF_CALENDAR_TOP - PDF_CALENDAR_BOTTOM;
+  const desiredTotal = desiredHeights.reduce((total, height) => total + height, 0);
+
+  if (desiredTotal <= availableHeight) {
+    const sharedExtra = (availableHeight - desiredTotal) / PDF_CALENDAR_ROW_COUNT;
+    return desiredHeights.map((height) => height + sharedExtra);
+  }
+
+  const minimumHeight = 42;
+  const flexibleHeight = availableHeight - minimumHeight * PDF_CALENDAR_ROW_COUNT;
+  const desiredExtra = desiredHeights.map((height) => Math.max(0, height - minimumHeight));
+  const desiredExtraTotal = desiredExtra.reduce((total, height) => total + height, 0);
+
+  return desiredExtra.map(
+    (height) => minimumHeight + (desiredExtraTotal > 0 ? (height / desiredExtraTotal) * flexibleHeight : 0),
+  );
+}
+
+function getCalendarCellRequiredHeight(events: PdfCalendarEvent[]) {
+  const lines = buildCalendarCellLines(events);
+  return 24 + lines.reduce((total, line) => total + line.lineHeight, 0) + 5;
+}
+
+function drawCalendarCellEvents(
+  commands: string[],
+  {
+    cellHeight,
+    events,
+    x,
+    y,
+  }: {
+    cellHeight: number;
+    events: PdfCalendarEvent[];
+    x: number;
+    y: number;
+  },
+) {
+  const lines = buildCalendarCellLines(events);
+  const contentTop = y + cellHeight - 29;
+  const availableHeight = Math.max(0, contentTop - (y + 5));
+  const visibleLines: PdfCalendarTextLine[] = [];
+  let usedHeight = 0;
+  let truncated = false;
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const hasRemainingLines = index < lines.length - 1;
+    const overflowReserve = hasRemainingLines ? 6 : 0;
+
+    if (usedHeight + line.lineHeight + overflowReserve > availableHeight) {
+      truncated = true;
+      break;
+    }
+
+    visibleLines.push(line);
+    usedHeight += line.lineHeight;
+  }
+
+  if (truncated) {
+    visibleLines.push({ lineHeight: 6, size: 5, text: "Mais informações..." });
+  }
+
+  let cursorY = contentTop;
+
+  for (const line of visibleLines) {
+    if (line.text) {
+      addText(commands, line.text, x, cursorY, line.size, line.bold, 60);
+    }
+    cursorY -= line.lineHeight;
+  }
+}
+
+function buildCalendarCellLines(events: PdfCalendarEvent[]) {
+  const visibleEvents = events.slice(0, 3);
+  const lines: PdfCalendarTextLine[] = [];
+
+  visibleEvents.forEach((event, eventIndex) => {
+    if (eventIndex > 0) {
+      lines.push({ lineHeight: 2, size: 0, text: "" });
+    }
+
+    wrapText(event.title, 28).forEach((text) => {
+      lines.push({ bold: true, lineHeight: 7, size: 6.2, text });
+    });
+
+    event.lines.forEach((line) => {
+      wrapText(line, 34).forEach((text) => {
+        lines.push({ lineHeight: 6.2, size: 5.4, text });
+      });
+    });
+  });
+
+  if (events.length > visibleEvents.length) {
+    lines.push({
+      bold: true,
+      lineHeight: 6.2,
+      size: 5.2,
+      text: `+${events.length - visibleEvents.length} culto(s)`,
+    });
+  }
+
+  return lines;
+}
+
+function wrapText(value: string, maxCharacters: number) {
+  const words = value.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    const chunks = splitLongWord(word, maxCharacters);
+
+    for (const chunk of chunks) {
+      const candidate = currentLine ? `${currentLine} ${chunk}` : chunk;
+
+      if (candidate.length <= maxCharacters) {
+        currentLine = candidate;
+      } else {
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+        currentLine = chunk;
+      }
+    }
+  }
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines.length > 0 ? lines : [""];
+}
+
+function splitLongWord(word: string, maxCharacters: number) {
+  const chunks: string[] = [];
+
+  for (let index = 0; index < word.length; index += maxCharacters) {
+    chunks.push(word.slice(index, index + maxCharacters));
+  }
+
+  return chunks;
 }
 
 async function loadLogoForPdf(): Promise<PdfLogo | undefined> {

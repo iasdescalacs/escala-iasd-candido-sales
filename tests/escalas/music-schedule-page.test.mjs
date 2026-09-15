@@ -55,8 +55,9 @@ test("louvor oferece solos e formacoes com conflito por integrante", () => {
   assert.match(scheduleQueries, /getMusicalFormationVolunteerOptions/);
   assert.match(scheduleQueries, /musical_formation_availability/);
   assert.match(scheduleActions, /targetValue\.startsWith\("formation:"\)/);
-  assert.match(scheduleActions, /musicalFormationHasConflictOnDate/);
-  assert.match(scheduleActions, /Um integrante da formação já está escalado/);
+  assert.match(scheduleActions, /getMusicalFormationConflictOnDate/);
+  assert.match(scheduleActions, /buildScheduleConflictMessage/);
+  assert.match(scheduleActions, /personId: conflict\.personId/);
 });
 
 test("botoes da escala informam a acao em andamento", () => {

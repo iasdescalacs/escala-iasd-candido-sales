@@ -5,6 +5,18 @@ import {
   hasVolunteerDateConflict,
   isVolunteerAvailableForService,
 } from "../../src/lib/escalas/rules.ts";
+import { formatScheduleConflictNotice } from "../../src/lib/escalas/conflicts.ts";
+
+test("aviso de conflito informa pessoa igreja e data", () => {
+  assert.equal(
+    formatScheduleConflictNotice({
+      churchName: "Igreja Central - Candido Sales/BA",
+      serviceDate: "2026-09-20",
+      subjectName: "Maria da Silva",
+    }),
+    "Conflito de escala: Maria da Silva já participa da escala em Igreja Central - Candido Sales/BA no dia 20/09/2026. Escolha outra opção.",
+  );
+});
 
 test("detecta voluntario ja escalado em outro culto no mesmo dia", () => {
   const assignments = [

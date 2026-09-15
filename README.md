@@ -4,7 +4,7 @@ Sistema web para organização de escalas da IASD Candido Sales.
 
 ## Etapa Atual
 
-### Etapa atual: Formações musicais e perfil Pastor
+### Etapa atual: Formações musicais e vínculo global do Pastor
 
 Entregue até esta etapa:
 
@@ -91,6 +91,7 @@ Entregue até esta etapa:
 - Botões de salvar, excluir, aprovar e recusar exibem um indicador de carregamento com o nome da ação até o servidor concluir.
 - Pregadores e cantores já escalados em um dia não aparecem como disponíveis para outro culto no mesmo dia.
 - O servidor bloqueia conflito de agenda ao salvar escala, mesmo que alguém tente enviar a ação manualmente.
+- Quando ocorre conflito, o aviso informa o nome da pessoa ou formação já escalada, a igreja e a data; conflitos entre integrantes de duplas, trios e grupos seguem a mesma regra.
 - Página `/agenda` permite aos usuários aprovados consultar suas escalas, notificações e solicitar permuta com pessoa da mesma função.
 - Calendário de `/agenda` permite tocar ou clicar em uma escala para atualizar as seções fixas de `Pregação` e `Louvor`.
 - Seções `Pregação` e `Louvor` ficam uma abaixo da outra na página `/agenda`.
@@ -107,6 +108,7 @@ Entregue até esta etapa:
 - Admin pode filtrar `/escalas/pregacao` e `/admin/cultos` por todas as igrejas ou por uma igreja específica; o PDF e o compartilhamento seguem o mesmo filtro.
 - PDF das escalas prioriza igreja e pregador dentro de cada dia, com linhas do calendário em cinza claro para não cobrir o texto.
 - PDF das escalas usa o logo da IASD, cores do tema do site e mostra a data com o dia da semana no cabeçalho de cada quadrado.
+- As linhas semanais do PDF ajustam a altura conforme o conteúdo, quebram nomes longos e limitam o texto dentro da própria célula para impedir sobreposição no admin e nos demais perfis.
 - Pedidos de permuta ficam pendentes para aprovação do ancião, líder de música ou admin e geram notificações no sistema.
 - Notificações internas também disparam Web Push para dispositivos autorizados.
 - Usuários aprovados recebem um aviso fechável para ativar notificações push.
@@ -145,6 +147,9 @@ Entregue até esta etapa:
 - Admin pode criar e editar usuários com múltiplas funções.
 - Perfil do usuário permite adicionar ou remover funções de escala (`Pregador` e `Cantor`).
 - Funções gerenciais, como `Ancião` e `Líder de Música`, ficam vinculadas à igreja principal selecionada no cadastro ou pelo administrador.
+- A função `Pastor` não cria vínculo com uma igreja específica: seu acesso global deriva da função atribuída. O campo de igreja é desabilitado no cadastro e na edição.
+- Quando a mesma conta tiver `Pastor` e `Líder de Música`, a igreja volta a ser obrigatória somente para delimitar a liderança musical local.
+- Pastor que também for `Pregador` ou `Cantor` escolhe as igrejas onde aceita ser escalado em `/disponibilidade`, sem vínculo automático no cadastro.
 - Cantores podem continuar disponíveis e escalados como solistas mesmo quando também integram ou lideram uma dupla, trio ou grupo.
 - A página `/formacoes` cadastra duplas, trios e grupos com igreja de origem, integrantes, responsáveis e igrejas atendidas.
 - Uma formação criada por cantor responsável fica pendente até aprovação; administrador ou Líder de Música da igreja de origem pode ativá-la.
@@ -163,7 +168,7 @@ Pendente:
 
 - Cadastrar pelo menos uma igreja real em `/admin/igrejas` antes de liberar novos cadastros públicos.
 - Confirmar login real do administrador criado no Supabase Auth.
-- Validar os novos fluxos de Pastor e formações com contas reais dos cinco perfis do sistema.
+- Validar os novos fluxos de Pastor e formações com contas reais dos seis perfis do sistema.
 
 ## Tecnologias
 
@@ -325,7 +330,7 @@ Fluxo inicial:
 - O cadastro cria uma conta no Supabase Auth e um perfil em `public.users` com status `pending`.
 - Usuário pendente é enviado para `/aguardando-aprovacao`.
 - Administrador acessa `/admin/usuarios` para aprovar, bloquear ou inativar usuários.
-- Administrador também pode criar usuários em `/admin/usuarios`, definindo uma ou mais funções, igreja, status e senha inicial.
+- Administrador também pode criar usuários em `/admin/usuarios`, definindo uma ou mais funções, status e senha inicial; a igreja é exigida apenas quando as funções selecionadas precisam de vínculo local.
 - Administrador pode adicionar ou desmarcar funções na edição do usuário em `/admin/usuarios/[id]/editar`.
 - Administrador cadastra igrejas em `/admin/igrejas` antes de liberar cadastros públicos vinculados.
 - Administrador gera cultos mensais em `/admin/cultos` para todas as igrejas ativas.
@@ -373,6 +378,7 @@ supabase/migrations/20260913110000_manage_team_availability.sql
 supabase/migrations/20260913113000_protect_managed_availability.sql
 supabase/migrations/20260914001000_add_pastor_role_value.sql
 supabase/migrations/20260914002000_add_musical_formations.sql
+supabase/migrations/20260914230000_remove_pastor_church_links.sql
 ```
 
 Tabelas iniciais:
@@ -544,6 +550,7 @@ Depois de conectar GitHub na Vercel, cada push na branch `main` deve gerar um de
 - Usuário inativo não pode acessar o sistema.
 - Uma pessoa pode ter várias funções na mesma conta, como Pastor, Ancião, Líder de Música, Cantor e Pregador.
 - A função `Pastor` atua globalmente: cria e altera escalas de pregação, gerencia cultos de todas as igrejas, atribui disponibilidade a pregadores e cadastra ou aprova pregadores e cantores.
+- Pastor não é vinculado automaticamente a nenhuma igreja. Se também for Líder de Música, apenas essa função mantém um vínculo local; as preferências de escala como Pregador/Cantor são configuradas em Disponibilidade.
 - Somente o administrador pode aprovar outro Pastor; operações destrutivas globais e a administração de igrejas continuam exclusivas do administrador.
 - Administrador pode gerenciar todo o sistema.
 - Ancião gerencia pregadores e pode atribuir disponibilidade por culto nas igrejas onde possui vínculo gerencial, inclusive para pregadores membros de outras igrejas.
