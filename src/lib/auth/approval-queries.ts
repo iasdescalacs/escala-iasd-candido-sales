@@ -14,7 +14,7 @@ type Role = Pick<Database["public"]["Tables"]["roles"]["Row"], "id" | "key" | "n
 type Church = Pick<Database["public"]["Tables"]["churches"]["Row"], "id" | "name" | "city" | "state">;
 
 export type UserApprovalRequest = {
-  churchId: string;
+  churchId: string | null;
   churchName: string;
   createdAt: string;
   email: string;
@@ -111,6 +111,12 @@ async function getPendingApprovalRequests(
   const roleMap = new Map((roles ?? []).map((role) => [role.id, role as Role]));
   const churchMap = new Map((churches ?? []).map((church) => [church.id, church as Church]));
   const userMap = new Map(users.map((user) => [user.id, user]));
+  const pastorRoleId = (roles ?? []).find((role) => role.key === "pastor")?.id;
+  const pastorUserIds = new Set(
+    (userRoles ?? [])
+      .filter((userRole) => userRole.role_id === pastorRoleId)
+      .map((userRole) => userRole.user_id),
+  );
   const rows: UserApprovalRequest[] = [];
 
   for (const userRole of userRoles ?? []) {
@@ -125,19 +131,23 @@ async function getPendingApprovalRequests(
       continue;
     }
 
+    if (!isAdmin && pastorUserIds.has(user.id)) {
+      continue;
+    }
+
     const link = (links ?? []).find(
       (item) => item.user_id === user.id && item.role_id === role.id,
     );
     const church = link ? churchMap.get(link.church_id) : undefined;
 
-    if (!church) {
+    if (!church && role.key !== "pastor" && !pastorUserIds.has(user.id)) {
       continue;
     }
 
     const canApprove = canApprovePendingUserRole({
-      request: { churchId: church.id, roleKey: role.key },
+      request: { churchId: church?.id ?? null, roleKey: role.key },
       viewer: {
-        managedChurchIds: isAdmin ? [church.id] : managedChurchIds,
+        managedChurchIds: isAdmin && church ? [church.id] : managedChurchIds,
         roleKeys,
       },
     });
@@ -147,8 +157,10 @@ async function getPendingApprovalRequests(
     }
 
     rows.push({
-      churchId: church.id,
-      churchName: `${church.name} - ${church.city}/${church.state}`,
+      churchId: church?.id ?? null,
+      churchName: church
+        ? `${church.name} - ${church.city}/${church.state}`
+        : "Todas as igrejas",
       createdAt: user.created_at,
       email: user.email,
       phone: user.phone,

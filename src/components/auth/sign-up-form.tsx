@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { ChurchOption, RoleOption } from "@/lib/admin/lookups";
 import { signUpAction, type AuthActionState } from "@/lib/auth/actions";
+import { requiresPrimaryChurch } from "@/lib/auth/role-rules";
 import { ActionMessage } from "./action-message";
 import { PasswordField } from "./password-field";
 import { PhoneInput } from "./phone-input";
@@ -19,13 +20,29 @@ export function SignUpForm({
   churches: ChurchOption[];
 }) {
   const [state, formAction] = useActionState(signUpAction, initialState);
-  const hasOptions = roles.length > 0 && churches.length > 0;
+  const [selectedRoleKeys, setSelectedRoleKeys] = useState<string[]>([]);
+  const [churchId, setChurchId] = useState("");
+  const primaryChurchRequired = requiresPrimaryChurch(selectedRoleKeys);
+  const missingRequiredOptions =
+    roles.length === 0 || (primaryChurchRequired && churches.length === 0);
+
+  function handleRoleChange(roleKey: string, checked: boolean) {
+    const nextRoleKeys = checked
+      ? [...selectedRoleKeys, roleKey]
+      : selectedRoleKeys.filter((selectedRoleKey) => selectedRoleKey !== roleKey);
+
+    setSelectedRoleKeys(nextRoleKeys);
+
+    if (!requiresPrimaryChurch(nextRoleKeys)) {
+      setChurchId("");
+    }
+  }
 
   return (
     <form action={formAction} className="grid gap-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
       <ActionMessage state={state} />
 
-      {!hasOptions ? (
+      {missingRequiredOptions ? (
         <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning">
           O cadastro depende de pelo menos uma igreja ativa cadastrada pelo administrador.
         </p>
@@ -72,8 +89,10 @@ export function SignUpForm({
               >
                 <input
                   className="h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
-                  disabled={!hasOptions}
+                  checked={selectedRoleKeys.includes(role.key)}
+                  disabled={roles.length === 0}
                   name="roleKeys"
+                  onChange={(event) => handleRoleChange(role.key, event.target.checked)}
                   type="checkbox"
                   value={role.key}
                 />
@@ -90,17 +109,26 @@ export function SignUpForm({
           Igreja onde é membro
           <select
             className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-            disabled={!hasOptions}
+            disabled={!primaryChurchRequired || churches.length === 0}
             name="churchId"
-            required
+            onChange={(event) => setChurchId(event.target.value)}
+            required={primaryChurchRequired}
+            value={churchId}
           >
-            <option value="">Selecione</option>
+            <option value="">
+              {primaryChurchRequired ? "Selecione" : "Não se aplica ao Pastor"}
+            </option>
             {churches.map((church) => (
               <option key={church.id} value={church.id}>
                 {church.name}
               </option>
             ))}
           </select>
+          <span className="text-xs font-normal text-muted">
+            {primaryChurchRequired
+              ? "Obrigatória para funções com gestão local."
+              : "O Pastor atua em todas as igrejas; igrejas para cantar ou pregar são escolhidas em Disponibilidade."}
+          </span>
         </label>
 
         <PasswordField autoComplete="new-password" label="Senha" name="password" />

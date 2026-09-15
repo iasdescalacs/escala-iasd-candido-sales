@@ -14,8 +14,10 @@ import {
 import {
   isManagerRoleKey,
   isRoleKey,
+  linksRoleToPrimaryChurch,
   mergeSelfManagedRoles,
   normalizeRoleKeys,
+  requiresPrimaryChurch,
   type RoleKey,
 } from "./role-rules";
 import { requireAdminUser, requireApprovedUser } from "./session";
@@ -90,8 +92,17 @@ export async function signUpAction(
   const churchId = readString(formData, "churchId");
   const password = readString(formData, "password");
   const confirmPassword = readString(formData, "confirmPassword");
+  const primaryChurchRequired = requiresPrimaryChurch(roleKeys);
 
-  if (!fullName || !email || !phone || roleKeys.length === 0 || !churchId || !password || !confirmPassword) {
+  if (
+    !fullName ||
+    !email ||
+    !phone ||
+    roleKeys.length === 0 ||
+    (primaryChurchRequired && !churchId) ||
+    !password ||
+    !confirmPassword
+  ) {
     return { message: "Preencha todos os campos obrigatórios." };
   }
 
@@ -153,7 +164,7 @@ export async function signUpAction(
   const rolesError = await syncUserRolesAndPrimaryChurch(admin, {
     userId: profile.id,
     roleKeys,
-    churchId,
+    churchId: churchId || null,
   });
 
   if (rolesError) {
@@ -161,7 +172,7 @@ export async function signUpAction(
   }
 
   await notifyUserApprovalApprovers(admin, {
-    churchId,
+    churchId: churchId || null,
     roleKeys,
     userId: profile.id,
     userName: fullName,
@@ -254,32 +265,42 @@ export async function updateProfileAction(
   }
 
   const admin = createAdminSupabaseClient();
-  const { data: primaryLink } = await admin
+  const { data: primaryLinks } = await admin
     .from("user_church_links")
-    .select("church_id")
+    .select("church_id,role_id")
     .eq("user_id", profile.appUser.id)
     .is("deleted_at", null)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
+  let primaryLink = primaryLinks?.[0] ?? null;
 
-  if (!primaryLink && roleKeys.some((roleKey) => roleKey === "pregador" || roleKey === "cantor")) {
+  if (roleKeys.includes("pastor") && roleKeys.includes("lider_musica")) {
+    const { data: musicLeaderRole } = await admin
+      .from("roles")
+      .select("id")
+      .eq("key", "lider_musica")
+      .is("deleted_at", null)
+      .maybeSingle();
+    primaryLink =
+      primaryLinks?.find((link) => link.role_id === musicLeaderRole?.id) ?? null;
+  }
+
+  const primaryChurchRequired = requiresPrimaryChurch(roleKeys);
+
+  if (!primaryLink && primaryChurchRequired) {
     return {
       message:
         "Seu perfil não tem igreja principal vinculada. Procure o administrador para ajustar seu cadastro.",
     };
   }
 
-  if (primaryLink) {
-    const roleUpdateError = await syncUserRolesAndPrimaryChurch(admin, {
-      userId: profile.appUser.id,
-      roleKeys,
-      churchId: primaryLink.church_id,
-    });
+  const roleUpdateError = await syncUserRolesAndPrimaryChurch(admin, {
+    userId: profile.appUser.id,
+    roleKeys,
+    churchId: primaryLink?.church_id ?? null,
+  });
 
-    if (roleUpdateError) {
-      return { message: roleUpdateError };
-    }
+  if (roleUpdateError) {
+    return { message: roleUpdateError };
   }
 
   revalidatePath("/perfil");
@@ -340,7 +361,13 @@ export async function approvePendingUserAction(formData: FormData): Promise<Auth
 
   const roleKeys = profile.roles.map((role) => role.key) as RoleKey[];
   const managedChurchIds = roleKeys.includes("admin")
-    ? Array.from(new Set(context.requests.map((request) => request.churchId)))
+    ? Array.from(
+        new Set(
+          context.requests
+            .map((request) => request.churchId)
+            .filter((churchId): churchId is string => Boolean(churchId)),
+        ),
+      )
     : await getCurrentManagerChurchIds(admin, profile.appUser.id);
   const canApproveAllRequests = context.requests.every((request) =>
     canApprovePendingUserRole({
@@ -438,8 +465,16 @@ export async function updateUserByAdminAction(
   const status = readString(formData, "status");
   const roleKeys = normalizeRoleKeys(readStringList(formData, "roleKeys"), { allowAdmin: true });
   const churchId = readString(formData, "churchId");
+  const primaryChurchRequired = requiresPrimaryChurch(roleKeys);
 
-  if (!userId || !fullName || !phone || !isUserStatus(status) || roleKeys.length === 0 || !churchId) {
+  if (
+    !userId ||
+    !fullName ||
+    !phone ||
+    !isUserStatus(status) ||
+    roleKeys.length === 0 ||
+    (primaryChurchRequired && !churchId)
+  ) {
     return { message: "Preencha nome, telefone, função, igreja e status." };
   }
 
@@ -461,7 +496,7 @@ export async function updateUserByAdminAction(
   const roleUpdateError = await syncUserRolesAndPrimaryChurch(admin, {
     userId,
     roleKeys,
-    churchId,
+    churchId: churchId || null,
   });
 
   if (roleUpdateError) {
@@ -523,8 +558,16 @@ export async function createUserByAdminAction(
   const churchId = readString(formData, "churchId");
   const password = readString(formData, "password");
   const status = readString(formData, "status") || "approved";
+  const primaryChurchRequired = requiresPrimaryChurch(roleKeys);
 
-  if (!fullName || !email || !phone || roleKeys.length === 0 || !churchId || !password) {
+  if (
+    !fullName ||
+    !email ||
+    !phone ||
+    roleKeys.length === 0 ||
+    (primaryChurchRequired && !churchId) ||
+    !password
+  ) {
     return { message: "Preencha todos os campos obrigatórios." };
   }
 
@@ -575,7 +618,7 @@ export async function createUserByAdminAction(
   const rolesError = await syncUserRolesAndPrimaryChurch(admin, {
     userId: profile.id,
     roleKeys,
-    churchId,
+    churchId: churchId || null,
   });
 
   if (rolesError) {
@@ -740,13 +783,17 @@ async function syncUserRolesAndPrimaryChurch(
   }: {
     userId: string;
     roleKeys: RoleKey[];
-    churchId: string;
+    churchId: string | null;
   },
 ) {
   const validRoleKeys = roleKeys.filter(isRoleKey);
 
   if (validRoleKeys.length === 0) {
     return "Escolha pelo menos uma função válida.";
+  }
+
+  if (requiresPrimaryChurch(validRoleKeys) && !churchId) {
+    return "Escolha a igreja principal para as funções selecionadas.";
   }
 
   const { data: roles } = await admin
@@ -778,8 +825,18 @@ async function syncUserRolesAndPrimaryChurch(
 
   for (const role of roles) {
     const roleKey = role.key as RoleKey;
+    const linkToPrimaryChurch = linksRoleToPrimaryChurch(roleKey, validRoleKeys);
 
-    if (isManagerRoleKey(roleKey)) {
+    if (!linkToPrimaryChurch && roleKey !== "pregador" && roleKey !== "cantor") {
+      await admin
+        .from("user_church_links")
+        .update({ deleted_at: now })
+        .eq("user_id", userId)
+        .eq("role_id", role.id)
+        .is("deleted_at", null);
+    }
+
+    if (linkToPrimaryChurch && isManagerRoleKey(roleKey) && churchId) {
       await admin
         .from("user_church_links")
         .update({ deleted_at: now })
@@ -794,6 +851,7 @@ async function syncUserRolesAndPrimaryChurch(
       roleId: role.id,
       roleKey,
       churchId,
+      linkToChurch: linkToPrimaryChurch,
     });
 
     if (roleError) {
@@ -811,11 +869,13 @@ async function attachRoleAndChurch(
     roleId,
     roleKey,
     churchId,
+    linkToChurch,
   }: {
     userId: string;
     roleId: string;
     roleKey: RoleKey;
-    churchId: string;
+    churchId: string | null;
+    linkToChurch: boolean;
   },
 ) {
   const { data: currentRoleLink } = await admin
@@ -836,6 +896,10 @@ async function attachRoleAndChurch(
     if (error) {
       return "Não foi possível atualizar as funções do usuário.";
     }
+  }
+
+  if (!linkToChurch || !churchId) {
+    return null;
   }
 
   const { data: currentChurchLink } = await admin
@@ -900,6 +964,9 @@ async function getPendingUserApprovalContext(
       .is("deleted_at", null),
   ]);
   const roleMap = new Map((roles ?? []).map((role) => [role.id, role.key]));
+  const userHasPastor = (userRoles ?? []).some(
+    (userRole) => roleMap.get(userRole.role_id) === "pastor",
+  );
   const requests = (userRoles ?? [])
     .map((userRole) => {
       const roleKey = roleMap.get(userRole.role_id);
@@ -907,16 +974,20 @@ async function getPendingUserApprovalContext(
         churchLinks?.find((link) => link.role_id === userRole.role_id)?.church_id ??
         churchLinks?.[0]?.church_id;
 
-      if (
-        (roleKey !== "pastor" && roleKey !== "pregador" && roleKey !== "cantor") ||
-        !churchId
-      ) {
+      if (roleKey !== "pastor" && roleKey !== "pregador" && roleKey !== "cantor") {
         return null;
       }
 
-      return { churchId, roleKey };
+      if (!churchId && roleKey !== "pastor" && !userHasPastor) {
+        return null;
+      }
+
+      return { churchId: churchId ?? null, roleKey };
     })
-    .filter((request): request is { churchId: string; roleKey: ApprovalRequestRole } => Boolean(request));
+    .filter(
+      (request): request is { churchId: string | null; roleKey: ApprovalRequestRole } =>
+        Boolean(request),
+    );
 
   return requests.length > 0 ? { requests } : null;
 }
@@ -953,7 +1024,7 @@ async function notifyUserApprovalApprovers(
     userId,
     userName,
   }: {
-    churchId: string;
+    churchId: string | null;
     roleKeys: RoleKey[];
     userId: string;
     userName: string;
@@ -978,7 +1049,7 @@ async function notifyUserApprovalApprovers(
 
 async function getUserApprovalApproverIds(
   admin: ReturnType<typeof createAdminSupabaseClient>,
-  { churchId, roleKeys }: { churchId: string; roleKeys: RoleKey[] },
+  { churchId, roleKeys }: { churchId: string | null; roleKeys: RoleKey[] },
 ) {
   const { data: roles } = await admin
     .from("roles")
@@ -1009,7 +1080,7 @@ async function getUserApprovalApproverIds(
     data?.forEach((item) => approverIds.add(item.user_id));
   }
 
-  if (!roleKeys.includes("pastor") && elderRoleId) {
+  if (!roleKeys.includes("pastor") && elderRoleId && churchId) {
     const { data } = await admin
       .from("user_church_links")
       .select("user_id")
@@ -1020,7 +1091,12 @@ async function getUserApprovalApproverIds(
     data?.forEach((item) => approverIds.add(item.user_id));
   }
 
-  if (!roleKeys.includes("pastor") && roleKeys.includes("cantor") && musicRoleId) {
+  if (
+    !roleKeys.includes("pastor") &&
+    roleKeys.includes("cantor") &&
+    musicRoleId &&
+    churchId
+  ) {
     const { data } = await admin
       .from("user_church_links")
       .select("user_id")

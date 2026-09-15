@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { ActionMessage } from "@/components/auth/action-message";
 import { PhoneInput } from "@/components/auth/phone-input";
 import { SubmitButton } from "@/components/auth/submit-button";
@@ -10,6 +10,7 @@ import {
   updateUserByAdminAction,
   type AuthActionState,
 } from "@/lib/auth/actions";
+import { requiresPrimaryChurch } from "@/lib/auth/role-rules";
 
 const initialState: AuthActionState = { message: "" };
 
@@ -35,7 +36,21 @@ export function AdminEditUserForm({
   };
 }) {
   const [state, formAction] = useActionState(updateUserByAdminAction, initialState);
-  const selectedRoles = new Set(currentRoleKeys);
+  const [selectedRoleKeys, setSelectedRoleKeys] = useState(currentRoleKeys);
+  const [churchId, setChurchId] = useState(currentChurchId);
+  const primaryChurchRequired = requiresPrimaryChurch(selectedRoleKeys);
+
+  function handleRoleChange(roleKey: string, checked: boolean) {
+    const nextRoleKeys = checked
+      ? [...selectedRoleKeys, roleKey]
+      : selectedRoleKeys.filter((selectedRoleKey) => selectedRoleKey !== roleKey);
+
+    setSelectedRoleKeys(nextRoleKeys);
+
+    if (!requiresPrimaryChurch(nextRoleKeys)) {
+      setChurchId("");
+    }
+  }
 
   return (
     <form action={formAction} className="grid gap-4 rounded-lg border border-border bg-surface p-6 shadow-sm">
@@ -72,20 +87,29 @@ export function AdminEditUserForm({
         </label>
 
         <label className="grid gap-2 text-sm font-medium text-foreground">
-          Igreja principal
+          Igreja de vínculo
           <select
             className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-            defaultValue={currentChurchId}
+            disabled={!primaryChurchRequired || churches.length === 0}
             name="churchId"
-            required
+            onChange={(event) => setChurchId(event.target.value)}
+            required={primaryChurchRequired}
+            value={churchId}
           >
-            <option value="">Selecione</option>
+            <option value="">
+              {primaryChurchRequired ? "Selecione" : "Não se aplica ao Pastor"}
+            </option>
             {churches.map((church) => (
               <option key={church.id} value={church.id}>
                 {church.name}
               </option>
             ))}
           </select>
+          <span className="text-xs font-normal text-muted">
+            {primaryChurchRequired
+              ? "Obrigatória para funções com gestão local."
+              : "O Pastor recebe acesso global sem vínculo com uma igreja específica."}
+          </span>
         </label>
 
         <fieldset className="grid gap-2 text-sm font-medium text-foreground md:col-span-2">
@@ -98,8 +122,9 @@ export function AdminEditUserForm({
               >
                 <input
                   className="h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
-                  defaultChecked={selectedRoles.has(role.key)}
+                  checked={selectedRoleKeys.includes(role.key)}
                   name="roleKeys"
+                  onChange={(event) => handleRoleChange(role.key, event.target.checked)}
                   type="checkbox"
                   value={role.key}
                 />

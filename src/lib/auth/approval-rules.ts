@@ -8,7 +8,7 @@ export type ApprovalViewer = {
 };
 
 export type PendingApprovalRequest = {
-  churchId: string;
+  churchId: string | null;
   roleKey: ApprovalRequestRole;
 };
 
@@ -27,11 +27,19 @@ export function canApprovePendingUserRole({
     return request.roleKey === "pregador" || request.roleKey === "cantor";
   }
 
-  if (viewer.roleKeys.includes("anciao") && viewer.managedChurchIds.includes(request.churchId)) {
+  if (
+    request.churchId &&
+    viewer.roleKeys.includes("anciao") &&
+    viewer.managedChurchIds.includes(request.churchId)
+  ) {
     return request.roleKey === "pregador" || request.roleKey === "cantor";
   }
 
-  if (viewer.roleKeys.includes("lider_musica") && viewer.managedChurchIds.includes(request.churchId)) {
+  if (
+    request.churchId &&
+    viewer.roleKeys.includes("lider_musica") &&
+    viewer.managedChurchIds.includes(request.churchId)
+  ) {
     return request.roleKey === "cantor";
   }
 

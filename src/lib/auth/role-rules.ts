@@ -56,3 +56,18 @@ export function mergeSelfManagedRoles({
 export function isManagerRoleKey(roleKey: RoleKey) {
   return roleKey === "pastor" || roleKey === "anciao" || roleKey === "lider_musica";
 }
+
+export function requiresPrimaryChurch(roleKeys: readonly string[]) {
+  return !roleKeys.includes("pastor") || roleKeys.includes("lider_musica");
+}
+
+export function linksRoleToPrimaryChurch(
+  roleKey: RoleKey,
+  selectedRoleKeys: readonly RoleKey[],
+) {
+  if (!selectedRoleKeys.includes("pastor")) {
+    return true;
+  }
+
+  return roleKey === "lider_musica";
+}

@@ -38,16 +38,23 @@ export default async function AdminEditarUsuarioPage({
       .is("deleted_at", null),
     supabase
       .from("user_church_links")
-      .select("church_id")
+      .select("church_id,role_id")
       .eq("user_id", id)
       .is("deleted_at", null)
-      .order("created_at", { ascending: true })
-      .limit(1),
+      .order("created_at", { ascending: true }),
   ]);
 
   if (!user) {
     notFound();
   }
+
+  const currentRoleKeys = roles
+    .filter((role) => userRoles?.some((userRole) => userRole.role_id === role.id))
+    .map((role) => role.key);
+  const musicLeaderRoleId = roles.find((role) => role.key === "lider_musica")?.id;
+  const currentChurchLink = currentRoleKeys.includes("pastor")
+    ? userChurchLinks?.find((link) => link.role_id === musicLeaderRoleId)
+    : userChurchLinks?.[0];
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -69,10 +76,8 @@ export default async function AdminEditarUsuarioPage({
       <section className="mt-6">
         <AdminEditUserForm
           churches={churches}
-          currentChurchId={userChurchLinks?.[0]?.church_id ?? ""}
-          currentRoleKeys={roles
-            .filter((role) => userRoles?.some((userRole) => userRole.role_id === role.id))
-            .map((role) => role.key)}
+          currentChurchId={currentChurchLink?.church_id ?? ""}
+          currentRoleKeys={currentRoleKeys}
           roles={roles}
           user={user}
         />

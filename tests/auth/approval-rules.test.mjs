@@ -10,6 +10,7 @@ test("admin aprova pregador e cantor de qualquer igreja", () => {
 
   assert.equal(canApprovePendingUserRole({ viewer, request: { roleKey: "pregador", churchId: "a" } }), true);
   assert.equal(canApprovePendingUserRole({ viewer, request: { roleKey: "cantor", churchId: "b" } }), true);
+  assert.equal(canApprovePendingUserRole({ viewer, request: { roleKey: "pastor", churchId: null } }), true);
 });
 
 test("anciao aprova pregador e cantor apenas de igreja gerenciada", () => {
@@ -41,4 +42,18 @@ test("pastor aprova pregador e cantor em qualquer igreja, mas nao outro pastor",
   assert.equal(canApprovePendingUserRole({ viewer, request: { roleKey: "pregador", churchId: "a" } }), true);
   assert.equal(canApprovePendingUserRole({ viewer, request: { roleKey: "cantor", churchId: "b" } }), true);
   assert.equal(canApprovePendingUserRole({ viewer, request: { roleKey: "pastor", churchId: "a" } }), false);
+});
+
+test("gestores locais nao aprovam solicitacao sem igreja", () => {
+  const elder = { roleKeys: ["anciao"], managedChurchIds: ["central"] };
+  const musicLeader = { roleKeys: ["lider_musica"], managedChurchIds: ["central"] };
+
+  assert.equal(
+    canApprovePendingUserRole({ viewer: elder, request: { roleKey: "pregador", churchId: null } }),
+    false,
+  );
+  assert.equal(
+    canApprovePendingUserRole({ viewer: musicLeader, request: { roleKey: "cantor", churchId: null } }),
+    false,
+  );
 });
