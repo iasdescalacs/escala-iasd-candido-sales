@@ -105,7 +105,7 @@ export function SignUpForm({
           </span>
         </fieldset>
 
-        <label className="grid gap-2 text-sm font-medium text-foreground">
+        <label className="grid gap-2 text-sm font-medium text-foreground sm:col-span-2">
           Igreja onde é membro
           <select
             className="h-11 rounded-md border border-border bg-background px-3 text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"

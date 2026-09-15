@@ -144,6 +144,7 @@ Entregue até esta etapa:
 - Painel permite que ancião cadastre pregador ou cantor nas igrejas gerenciadas, e que líder de música cadastre cantor na própria igreja, com confirmação obrigatória da senha inicial e campos organizados em linhas compactas e responsivas.
 - Ancião vê em `Escala de pregação` as permutas pendentes que envolvem qualquer igreja gerenciada por ele.
 - Cadastro público permite selecionar mais de uma função para a mesma conta.
+- No cadastro público, a igreja ocupa uma linha própria e os campos `Senha` e `Confirmar senha` ficam lado a lado quando houver espaço, mantendo o formulário em uma coluna no celular.
 - Admin pode criar e editar usuários com múltiplas funções.
 - Perfil do usuário permite adicionar ou remover funções de escala (`Pregador` e `Cantor`).
 - Funções gerenciais, como `Ancião` e `Líder de Música`, ficam vinculadas à igreja principal selecionada no cadastro ou pelo administrador.
